@@ -22,6 +22,7 @@ Basic configuration
 To use the project you will need:
 [Node JS v16.11 or newer](https://nodejs.org/en/)
 You will need to install some modules using the following command
+
 `npm install discord.js @discordjs/voice @discordjs/opus ffmpeg-static libsodium-wrappers opusscript discordjs-button-pagination @koenie06/discord.js-music dotenv`
 
 Please do not withdraw the license and keep the credits on this project.
