@@ -2,7 +2,7 @@
 A complete code to download for a Welcomer Bot
 ### Configuration
 Copy the `env.example` and rename it to `.env`
-```.env
+```env
 DISCORD_TOKEN = 
 PREFIX = *
 OWNER_ID = 
