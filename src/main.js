@@ -34,7 +34,7 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
     if(newState.channelId != null && oldState.channelId == null) {
         if(!enabledJoin) return;
         song = './music/users/' + newState.id + '.mp3'
-        if (!existsSync(song)) song = './music/defualt.mp3';
+        if (!existsSync(song)) song = './music/default.mp3';
         Continue = true;
         State = newState;
         delay = 750;
