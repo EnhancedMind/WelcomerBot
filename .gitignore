@@ -1,0 +1,7 @@
+.env
+node_modules/
+music/music.mp3
+music/users/*.mp3
+music/users/userList.md
+package-lock.json
+howto.md

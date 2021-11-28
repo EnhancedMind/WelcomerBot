@@ -1,0 +1,24 @@
+{
+  "name": "discordbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Tomáš Novotný",
+  "license": "ISC",
+  "dependencies": {
+    "@discordjs/opus": "^0.7.0",
+    "@discordjs/voice": "^0.7.5",
+    "@koenie06/discord.js-music": "^1.2.9",
+    "discord.js": "^13.3.1",
+    "discordjs-button-pagination": "^1.0.7",
+    "dotenv": "^10.0.0",
+    "ffmpeg-static": "^4.4.0",
+    "libsodium-wrappers": "^0.7.9",
+    "opusscript": "^0.0.8",
+    "yt-search": "^0.1.1",
+    "ytdl-core": "^4.9.1"
+  }
+}
