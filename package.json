@@ -17,8 +17,6 @@
     "dotenv": "^10.0.0",
     "ffmpeg-static": "^4.4.0",
     "libsodium-wrappers": "^0.7.9",
-    "opusscript": "^0.0.8",
-    "yt-search": "^0.1.1",
-    "ytdl-core": "^4.9.1"
+    "opusscript": "^0.0.8"
   }
 }
