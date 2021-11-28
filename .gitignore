@@ -5,3 +5,4 @@ music/users/*.mp3
 music/users/userList.md
 package-lock.json
 howto.md
+.gitattributes
