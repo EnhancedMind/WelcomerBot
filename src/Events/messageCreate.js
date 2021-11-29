@@ -1,19 +1,16 @@
-console.clear();
-const Client = require('./Structures/Client.js');
-const client = new Client();
-const { token } = require('./Data/data.js');
-client.start(token);
+const Event = require('../Structures/Event.js');
 
-/**
- * to fix
- * wlcm command
- * status command
- * => enabledJoin and enabledLeave variables
- */
+const { prefix } = require('../Data/data.js');
 
+module.exports = new Event('messageCreate', async (client, message) => {
+    if(message.author.bot) return;
+    if(!message.content.startsWith(prefix)) return;
 
+    const args = message.content.substring(prefix.length).split(/ +/);
+    const command = client.commands.find(cmd => cmd.name == args[0]);
+	if (!command) return message.channel.send(`${args[0]} is not a valid command!`);
+	command.run(message, args, client);
 
-/*client.on('messageCreate', async (message) => {
 
     switch (false) {
         case 'status':
@@ -50,4 +47,4 @@ client.start(token);
             break;
 
     }
-});*/
+});
