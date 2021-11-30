@@ -10,7 +10,7 @@ PREFIX = *
 OWNER_ID = 
 
 STATUS = online
-GAME = work in progress
+GAME = made by EnhancedMind ❤️
 ```
 Basic configuration
 - `DISCORD_TOKEN` the token of your discord bot you can get from [Discord Developers](https://discord.com/developers/applications)
