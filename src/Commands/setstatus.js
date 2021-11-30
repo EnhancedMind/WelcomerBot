@@ -4,11 +4,12 @@ const { owner } = require('../Data/data.js');
 
 module.exports = new Command({
 	name: 'setstatus',
-	description: 'setstatus',
+	aliases: [ ],
+	description: 'Sets the status the bot displays',
 	async run(message, args, client) {
 		if (message.author.id != owner) return message.channel.send('Invalid permission!');
-        if (!(args[1] == 'online' || args[1] == 'idle' || args[1] == 'dnd' || args[1] == 'invisible')) return message.channel.send('Invalid argument!');
-        client.user.setStatus(args[1]);
-        message.channel.send(`Status set to ${args[1]}`);
+        if (!(args[0] == 'online' || args[0] == 'idle' || args[0] == 'dnd' || args[0] == 'invisible')) return message.channel.send('Invalid argument!');
+        client.user.setStatus(args[0]);
+        message.channel.send(`Status set to ${args[0]}`);
 	}
 });

@@ -1,13 +1,10 @@
 {
-  "name": "discordbot",
-  "version": "1.0.0",
-  "description": "",
+  "name": "welcomerbot",
+  "version": "0.2.1",
+  "description": "Discord bot that plays sounds or music when somebody joins or leaves a voice channel",
   "main": "src/main.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "Tomáš Novotný",
-  "license": "ISC",
+  "author": "EnhancedMind",
+  "license": "GPL-3.0-or-later",
   "dependencies": {
     "@discordjs/opus": "^0.7.0",
     "@discordjs/voice": "^0.7.5",
@@ -18,5 +15,13 @@
     "ffmpeg-static": "^4.4.0",
     "libsodium-wrappers": "^0.7.9",
     "opusscript": "^0.0.8"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EnhancedMind/WelcomerBot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/EnhancedMind/WelcomerBot/issues"
+  },
+  "homepage": "https://github.com/EnhancedMind/WelcomerBot#readme"
 }

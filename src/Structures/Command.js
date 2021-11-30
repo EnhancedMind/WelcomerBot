@@ -1,5 +1,4 @@
 const Client = require('./Client.js');
-
 const Discord = require('discord.js');
 
 /**
@@ -16,6 +15,7 @@ class Command {
 	 */
 	constructor(options) {
 		this.name = options.name;
+		this.aliases = options.aliases;
 		this.description = options.description;
 		this.run = options.run;
 	}

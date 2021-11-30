@@ -4,7 +4,8 @@ const { owner } = require('../Data/data.js');
 
 module.exports = new Command({
 	name: 'shutdown',
-	description: 'shutdown',
+    aliases: [ 'gosleep' ],
+	description: 'Safely shuts down the bot',
 	async run(message, args, client) {
 		if (message.author.id != owner) return message.channel.send('Invalid permission!');
         console.log('Powering off...');

@@ -7,7 +7,7 @@ const owner = process.env.OWNER_ID;
 const status = process.env.STATUS;
 const game = process.env.GAME;
 
-let enabledJoin = true;
-let enabledLeave = true;
+const enabledJoin = true;
+const enabledLeave = true;
 
 module.exports = { token, prefix, owner, status, game, enabledJoin, enabledLeave };

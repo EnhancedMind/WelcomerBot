@@ -2,10 +2,11 @@ const Command = require('../Structures/Command.js');
 
 module.exports = new Command({
 	name: 'say',
-	description: 'repeats',
+	aliases: [ ],
+	description: 'Repeats whatever the message said, then quietly deletes the message',
 	async run(message, args, client) {
-		if (!args[1]) return message.channel.send('Invalid argument!');
+		if (!args[0]) return message.channel.send('Invalid argument!');
         message.delete();
-        message.channel.send(args.slice(1).join(' '));
+        message.channel.send(args.slice(0).join(' '));
 	}
 });

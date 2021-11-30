@@ -32,7 +32,6 @@ module.exports = new Event('voiceStateUpdate', (client, oldState, newState) => {
 
     const player = createAudioPlayer();
     const resource = createAudioResource(song);
-
     const connection = joinVoiceChannel({
         channelId: State.channelId,
         guildId: State.guild.id,

@@ -5,7 +5,8 @@ const music = require('@koenie06/discord.js-music');  //https://www.npmjs.com/pa
 
 module.exports = new Command({
 	name: 'stop',
-	description: 'stop',
+	aliases: [ 'Fuckoff', 'dc' ],
+	description: 'Stops the audio player',
 	async run(message, args, client) {
 		const connection = getVoiceConnection(message.guild.id);
         if (connection) connection.destroy();
