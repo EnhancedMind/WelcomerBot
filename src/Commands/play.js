@@ -7,7 +7,7 @@ const music = require('@koenie06/discord.js-music');  //https://www.npmjs.com/pa
 module.exports = new Command({
 	name: 'play',
     aliases: [ 'p' ],
-	description: 'Plays the song from the music folder(if arg ends with .mp3) or from youtube',
+	description: "Plays some music (.mp3 plays bot's local files)",
 	async run(message, args, client) {
 		if (!args[0]) return message.channel.send('Invalid argument!');
         if (args[0].endsWith('.mp3')) {
@@ -15,14 +15,14 @@ module.exports = new Command({
             if (existsSync(`./music/${args[0]}`)) song = `./music/${args[0]}`;
             if (existsSync(`./music/users/${args[0]}`)) song = `./music/users/${args[0]}`;
             if (!song) return message.channel.send("Couldn't find that!");
-            const channel = message.member.voice.channel;
+            let channel = message.member.voice.channel;
         	if(!channel) return message.channel.send('Join a voice channel! :wink:');
             message.channel.send(`Looking for ${args[0]} in local files!`);
 
-		    const player = createAudioPlayer();
-        	const resource = createAudioResource(song);
+		    let player = createAudioPlayer();
+        	let resource = createAudioResource(song);
 
-		    const connection = joinVoiceChannel({
+		    let connection = joinVoiceChannel({
     		    channelId: channel.id,
     		    guildId: message.guild.id,
     			adapterCreator: message.guild.voiceAdapterCreator,

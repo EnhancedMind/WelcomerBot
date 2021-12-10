@@ -1,5 +1,6 @@
 const Command = require('../Structures/Command.js');
 
+const { consoleLog } = require('../Structures/Log.js');
 const { token, owner } = require('../Data/data.js');
 
 module.exports = new Command({
@@ -8,11 +9,16 @@ module.exports = new Command({
 	description: "Restarts the bot's client",
 	async run(message, args, client) {
 		if (message.author.id != owner) return message.channel.send('Invalid permission!');
-		console.log('Restarting...');
+		consoleLog('[INFO] Restarting...');
 		message.channel.send('Restarting...')
 		.then(() => client.destroy())
 		.then(() => client.login(token))
-		.then(() => { console.log(`${client.user.username} is online!`);
-					  message.channel.send('Done!')});
+		.then(() => { 
+			consoleLog(`[INFO] ${client.user.username} is online and ready on ${client.guilds.cache.size} servers!`);
+			message.channel.messages.fetch({limit: 1}).then(result => {
+				message.channel.bulkDelete(result);
+			});
+			message.channel.send('Done!')
+		});
 	}
 });

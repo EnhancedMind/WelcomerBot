@@ -1,6 +1,6 @@
 {
   "name": "welcomerbot",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Discord bot that plays sounds or music when somebody joins or leaves a voice channel",
   "main": "src/main.js",
   "author": "EnhancedMind",

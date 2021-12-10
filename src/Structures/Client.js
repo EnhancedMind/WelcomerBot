@@ -8,6 +8,7 @@ const intents = new Discord.Intents([ Discord.Intents.FLAGS.GUILDS,
 
 const { token } = require('../Data/data.js');
 const { readdirSync } = require('fs');
+const { initLog, fileLog } = require('./Log.js');
 
 class Client extends Discord.Client {
 	constructor() {
@@ -20,6 +21,8 @@ class Client extends Discord.Client {
 	}
 
     start() {
+		initLog();
+		
         readdirSync('./src/Commands')
 	        .filter(file => file.endsWith('.js'))
 	        .forEach(file => {
@@ -27,7 +30,7 @@ class Client extends Discord.Client {
 		         * @type {Command}
         		 */
 		        const command = require(`../Commands/${file}`);
-        		console.log(`Command ${command.name} loaded`);
+				fileLog(`[INFO] Command ${command.name} loaded`);
 		        this.commands.set(command.name, command);
 	        });
         
@@ -38,7 +41,7 @@ class Client extends Discord.Client {
 				 * @type {Event}
 				 */
 				const event = require(`../Events/${file}`);
-				console.log(`Event ${event.event} loaded`);
+				fileLog(`[INFO] Event ${event.event} loaded`)
 				this.on(event.event, event.run.bind(null, this));
 			});
 

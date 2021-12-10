@@ -9,65 +9,69 @@ module.exports = new Command({
     aliases: ['h'],
 	description: 'Shows the help menu',
 	async run(message, args, client) {
-		const everyoneHelp = new MessageEmbed()
+		let everyoneHelp = new MessageEmbed()
             .setColor(0x3399FF)
             .setAuthor(client.user.username, client.user.displayAvatarURL({ size: 1024, dynamic: true }))
             .setDescription('This bot comes from a GitHub project [EnhancedMind/WelcomerBot](https://github.com/EnhancedMind/WelcomerBot).\nThe use is possible for free while keeping the credits.\n Made by EnhancedMind :heart:')
             .setTitle('**Help is here!**')
-            .addField('**Prefix**', `:wavy_dash:The prefix is:   **${prefix}**`)
-            .addField('**Pages**', '`1. Help`,  `2. Admin help`,  `3. Owner help`')
-            .addField('**Help**', ':wavy_dash:Shows this')
-            .addField('**Aliases**', ':wavy_dash:Shows the aliases for the commands')
-            .addField('**Ping**', ":wavy_dash:Shows the bot's ping")
-            .addField('**Status**', ":wavy_dash:Shows if the bot's play at join or leave functions are enabled")
-            .addField('**Hello**', ":wavy_dash:Says Hello!")
-            .addField('**Say [message]**', ':wavy_dash:Repeats whatever shit you said, then quietly deletes your message')
-            .addField('**Play [song]**', ":wavy_dash:Plays some music (.mp3 plays bot's local files)")
-            .addField('**Stop**', ':wavy_dash:Stops the audio player')
+            .addField('**Prefix**'       , `:wavy_dash:The prefix is:   **${prefix}**`)
+            .addField('**Pages**'        , '`1. Help`,  `2. Admin help`,  `3. Owner help`')
+            .addField('**Help**'         , `:wavy_dash:${client.commands.get('help').description}`)
+            .addField('**Aliases**'      , `:wavy_dash:${client.commands.get('aliases').description}`)
+            .addField('**Ping**'         , `:wavy_dash:${client.commands.get('ping').description}`)
+            .addField('**Status**'       , `:wavy_dash:${client.commands.get('status').description}`)
+            .addField('**Hello**'        , `:wavy_dash:${client.commands.get('hello').description}`)
+            .addField('**Say [message]**', `:wavy_dash:${client.commands.get('say').description}`)
+            .addField('**Play [song]**'  , `:wavy_dash:${client.commands.get('play').description}`)
+            .addField('**Stop**'         , `:wavy_dash:${client.commands.get('stop').description}`)
 
-        const adminHelp = new MessageEmbed()
+        let adminHelp = new MessageEmbed()
             .setColor(0x3399FF)
             .setAuthor(client.user.username, client.user.displayAvatarURL({ size: 1024, dynamic: true }))
             .setTitle('**Admin help is here!**')
             .addField('**Pages**', '`1. Help`,  `2. Admin help`,  `3. Owner help`')
-            .addField('**Clear <amount> <confirm>**', ':wavy_dash:Deletes the amount of messages **!ALL MESSAGES!**')
+            .addField('**Clear <amount> <confirm>**', `:wavy_dash:${client.commands.get('clear').description}`)
             
-        const ownerHelp = new MessageEmbed()
+        let ownerHelp = new MessageEmbed()
             .setColor(0x3399FF)
             .setAuthor(client.user.username, client.user.displayAvatarURL({ size: 1024, dynamic: true }))
             .setTitle('**Owner help is here!**')
             .addField('**Pages**', '`1. Help`,  `2. Admin help`,  `3. Owner help`')
-            .addField('**Setgame [game]**', ':wavy_dash:Sets the game the bot is playing')
-            .addField('**Setstatus <status>**', ':wavy_dash:Sets the status the bot displays')
-            .addField('**Wlcm <action> <> <>**', ':wavy_dash:Enables or disable the play at join or leave function')
-            .addField('**Restart**', ":wavy_dash:Restarts the bot's client")
-            .addField('**Shutdown**', ':wavy_dash:Safely shuts down the bot')
+            .addField('**Log [data]**'            , `:wavy_dash:${client.commands.get('log').description}`)
+            .addField('**Debug <logFile>**'       , `:wavy_dash:${client.commands.get('debug').description}`)
+            .addField('**Setgame [game]**'        , `:wavy_dash:${client.commands.get('setgame').description}`)
+            .addField('**Setstatus <status>**'    , `:wavy_dash:${client.commands.get('setstatus').description}`)
+            .addField('**Reset**'                 , `:wavy_dash:${client.commands.get('reset').description}`)
+            .addField('**Welcome <action> <> <>**', `:wavy_dash:${client.commands.get('welcome').description}`)
+            .addField('**Restart**'               , `:wavy_dash:${client.commands.get('restart').description}`)
+            .addField('**Shutdown**'              , `:wavy_dash:${client.commands.get('shutdown').description}`)
 
-        const previousButton = new MessageButton()
+        let previousButton = new MessageButton()
             .setCustomId('previousbtn')
             .setEmoji('◀️')
             .setLabel('')
             .setStyle('SECONDARY')
 
-        const nextButton = new MessageButton()
+        let nextButton = new MessageButton()
             .setCustomId('nextbtn')
             .setEmoji('▶️')
             .setLabel('')
             .setStyle('SECONDARY')
 
-        const pages = [
+        let pages = [
             everyoneHelp,
             adminHelp,
             ownerHelp,
         ]
 
-		const buttonList = [
+		let buttonList = [
             previousButton,
             nextButton,
         ]
 
-        const timeout = '120000';
+        let timeout = '120000';
 
         paginationEmbed(message, pages, buttonList, timeout);
+
 	}
 });

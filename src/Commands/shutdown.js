@@ -1,5 +1,6 @@
 const Command = require('../Structures/Command.js');
 
+const { consoleLog } = require('../Structures/Log.js');
 const { owner } = require('../Data/data.js');
 
 module.exports = new Command({
@@ -8,7 +9,7 @@ module.exports = new Command({
 	description: 'Safely shuts down the bot',
 	async run(message, args, client) {
 		if (message.author.id != owner) return message.channel.send('Invalid permission!');
-        console.log('Powering off...');
+        consoleLog('[INFO] Powering off...');
         message.channel.send(':bulb: Shutting down...').then(() => {
             client.destroy();
             process.exit(0);

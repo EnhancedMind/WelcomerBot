@@ -8,62 +8,65 @@ module.exports = new Command({
     aliases: ['alias'],
 	description: 'Shows the aliases for the commands',
 	async run(message, args, client) {
-		const everyoneAliases = new MessageEmbed()
+		let everyoneAliases = new MessageEmbed()
             .setColor(0x3399FF)
             .setAuthor(client.user.username, client.user.displayAvatarURL({ size: 1024, dynamic: true }))
             .setTitle('**Aliases!**')
             .addField('**Pages**', '`1. Aliases`,  `2. Admin Aliases`,  `3. Owner Aliases`')
-            .addField('**Help**', ':wavy_dash:**`h`**')
-            .addField('**Aliases**', ':wavy_dash:**`Alias`**')
-            .addField('**Ping**', ":wavy_dash:**` `**")
-            .addField('**Status**', ":wavy_dash:**` `**")
-            .addField('**Hello**', ":wavy_dash:**`Hi`**,  **`Hey`**")
-            .addField('**Say**', ':wavy_dash:**` `**')
-            .addField('**Play**', ":wavy_dash:**`p`**")
-            .addField('**Stop**', ':wavy_dash:**`Fuckoff`**,  **`dc`**')
+            .addField('**Help**'   , `:wavy_dash:**\`${client.commands.get('help').aliases.join('`**, **`')}\`**`)
+            .addField('**Aliases**', `:wavy_dash:**\`${client.commands.get('aliases').aliases.join('`**, **`')}\`**`)
+            .addField('**Ping**'   , `:wavy_dash:**\`${client.commands.get('ping').aliases.join('`**, **`')}\`**`)
+            .addField('**Status**' , `:wavy_dash:**\`${client.commands.get('status').aliases.join('`**, **`')}\`**`)
+            .addField('**Hello**'  , `:wavy_dash:**\`${client.commands.get('hello').aliases.join('`**, **`')}\`**`)
+            .addField('**Say**'    , `:wavy_dash:**\`${client.commands.get('say').aliases.join('`**, **`')}\`**`)
+            .addField('**Play**'   , `:wavy_dash:**\`${client.commands.get('play').aliases.join('`**, **`')}\`**`)
+            .addField('**Stop**'   , `:wavy_dash:**\`${client.commands.get('stop').aliases.join('`**, **`')}\`**`)
 
-        const adminAliases = new MessageEmbed()
+        let adminAliases = new MessageEmbed()
             .setColor(0x3399FF)
             .setAuthor(client.user.username, client.user.displayAvatarURL({ size: 1024, dynamic: true }))
             .setTitle('**Admin aliases!**')
             .addField('**Pages**', '`1. Aliases`,  `2. Admin Aliases`,  `3. Owner Aliases`')
-            .addField('**Clear**', ':wavy_dash:**`Purge`**')
+            .addField('**Clear**', `:wavy_dash:**\`${client.commands.get('clear').aliases.join('`**, **`')}\`**`)
             
-        const ownerAliases = new MessageEmbed()
+        let ownerAliases = new MessageEmbed()
             .setColor(0x3399FF)
             .setAuthor(client.user.username, client.user.displayAvatarURL({ size: 1024, dynamic: true }))
             .setTitle('**Owner aliases!**')
-            .addField('**Pages**', '`1. Aliases`,  `2. Admin Aliases`,  `3. Owner Aliases`')
-            .addField('**Setgame**', ':wavy_dash:**` `**')
-            .addField('**Setstatus**', ':wavy_dash:**` `**')
-            .addField('**Welcome**', ':wavy_dash:**`Wlcm`**')
-            .addField('**Restart**', ":wavy_dash:**`Reboot`**")
-            .addField('**Shutdown**', ':wavy_dash:**`GoSleep`**')
+            .addField('**Pages**'    , '`1. Aliases`,  `2. Admin Aliases`,  `3. Owner Aliases`')
+            .addField('**Log**'      , `:wavy_dash:**\`${client.commands.get('log').aliases.join('`**, **`')}\`**`)
+            .addField('**Debug**'    , `:wavy_dash:**\`${client.commands.get('debug').aliases.join('`**, **`')}\`**`)
+            .addField('**Setgame**'  , `:wavy_dash:**\`${client.commands.get('setgame').aliases.join('`**, **`')}\`**`)
+            .addField('**Setstatus**', `:wavy_dash:**\`${client.commands.get('setstatus').aliases.join('`**, **`')}\`**`)
+            .addField('**Reset**'    , `:wavy_dash:**\`${client.commands.get('reset').aliases.join('`**, **`')}\`**`)
+            .addField('**Welcome**'  , `:wavy_dash:**\`${client.commands.get('welcome').aliases.join('`**, **`')}\`**`)
+            .addField('**Restart**'  , `:wavy_dash:**\`${client.commands.get('restart').aliases.join('`**, **`')}\`**`)
+            .addField('**Shutdown**' , `:wavy_dash:**\`${client.commands.get('shutdown').aliases.join('`**, **`')}\`**`)
 
-        const previousButton = new MessageButton()
+        let previousButton = new MessageButton()
             .setCustomId('previousbtn')
             .setEmoji('◀️')
             .setLabel('')
             .setStyle('SECONDARY')
 
-        const nextButton = new MessageButton()
+        let nextButton = new MessageButton()
             .setCustomId('nextbtn')
             .setEmoji('▶️')
             .setLabel('')
             .setStyle('SECONDARY')
 
-        const pages = [
+        let pages = [
             everyoneAliases,
             adminAliases,
             ownerAliases,
         ]
 
-		const buttonList = [
+		let buttonList = [
             previousButton,
             nextButton,
         ]
 
-        const timeout = '120000';
+        let timeout = '120000';
 
         paginationEmbed(message, pages, buttonList, timeout);
 	}

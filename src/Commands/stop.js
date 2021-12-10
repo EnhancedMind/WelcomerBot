@@ -8,10 +8,10 @@ module.exports = new Command({
 	aliases: [ 'Fuckoff', 'dc' ],
 	description: 'Stops the audio player',
 	async run(message, args, client) {
-		const connection = getVoiceConnection(message.guild.id);
+		let connection = getVoiceConnection(message.guild.id);
         if (connection) connection.destroy();
 
-        const isConnected = await music.isConnected({ interaction: message });
+        let isConnected = await music.isConnected({ interaction: message });
         if (isConnected) music.stop({ interaction: message });
 
         message.channel.send(':stop_button: The player has stopped!');
