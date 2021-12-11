@@ -20,7 +20,7 @@ function fileLog(data) {
 
 function consoleLog(data) {
     fileLog(data);
-    console.log(data);
+    console.log(`[${new Date().toLocaleString('cs-CZ', { hour: 'numeric', minute: 'numeric', second: 'numeric' })}] ${data}`);
 }
 
 module.exports = { initLog, fileLog, consoleLog }
