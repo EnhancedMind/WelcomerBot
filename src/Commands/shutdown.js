@@ -1,6 +1,6 @@
 const Command = require('../Structures/Command.js');
 
-const { consoleLog } = require('../Structures/Log.js');
+const { consoleLog } = require('../Data/Log.js');
 const { owner } = require('../Data/data.js');
 
 module.exports = new Command({

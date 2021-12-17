@@ -1,7 +1,7 @@
 const Event = require('../Structures/Event.js');
 
 const { status, game } = require('../Data/data.js');
-const { consoleLog } = require('../Structures/Log.js');
+const { consoleLog } = require('../Data/Log.js');
 
 module.exports = new Event('ready', async (client) => {
     consoleLog(`[INFO] ${client.user.username} is online and ready on ${client.guilds.cache.size} servers!`);

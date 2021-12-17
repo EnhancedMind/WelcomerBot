@@ -2,19 +2,25 @@ const Event = require('../Structures/Event.js');
 
 const { createAudioPlayer, createAudioResource, joinVoiceChannel, AudioPlayerStatus } = require('@discordjs/voice');
 const { existsSync } = require('fs');
+const { getPlayType } = require('../Data/data.js');
+
+let enabledJoin = getPlayType('join');
+let enabledLeave = getPlayType('leave');
+let Continue = false;
+let State;
+let song;
+let delay;
 
 module.exports = new Event('voiceStateUpdate', (client, oldState, newState) => {
     if(oldState.member.user.bot || newState.member.user.bot) return; 
 
-    let { enabledJoin, enabledLeave } = require('../Data/data.js');
-    let Continue = false;
-    let State = newState;
-    let song;
-    let delay = 0;
+    enabledJoin = getPlayType('join');
+    enabledLeave = getPlayType('leave');
+    Continue = false;
     
     if(newState.channelId && !oldState.channelId) {
         if(!enabledJoin) return;
-        song = `./music/users/${newState.id}.mp3`
+        song = `./music/users/${newState.id}.mp3`;
         if (!existsSync(song)) song = './music/default.mp3';
         Continue = true;
         State = newState;
@@ -22,8 +28,7 @@ module.exports = new Event('voiceStateUpdate', (client, oldState, newState) => {
     } 
     if(!newState.channelId && oldState.channelId) {
         if(!enabledLeave) return;
-        let random = Math.floor( Math.random() * (2-0) + 0 );
-        song = `./music/leave${random}.mp3`;
+        song = `./music/leave${Math.floor( Math.random() * (2-0) + 0 )}.mp3`;
         Continue = true;
         State = oldState;
         delay = 150;

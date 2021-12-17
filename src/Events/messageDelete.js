@@ -1,7 +1,7 @@
 const Event = require('../Structures/Event.js');
 
 const { appendFile } = require('fs');
-const { consoleLog } = require('../Structures/Log.js');
+const { consoleLog } = require('../Data/Log.js');
 
 module.exports = new Event('messageDelete', async (client, message) => {
     let attachment;

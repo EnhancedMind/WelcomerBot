@@ -6,9 +6,9 @@ const intents = new Discord.Intents([ Discord.Intents.FLAGS.GUILDS,
                                       Discord.Intents.FLAGS.GUILD_MESSAGES,
                                       Discord.Intents.FLAGS.GUILD_VOICE_STATES ]);
 
-const { token } = require('../Data/data.js');
+const { token, enabledJoinDefault, enabledLeaveDefault, setPlayType } = require('../Data/data.js');
 const { readdirSync } = require('fs');
-const { initLog, fileLog } = require('./Log.js');
+const { initLog, fileLog } = require('../Data/Log.js');
 
 class Client extends Discord.Client {
 	constructor() {
@@ -44,6 +44,9 @@ class Client extends Discord.Client {
 				fileLog(`[INFO] Event ${event.event} loaded`)
 				this.on(event.event, event.run.bind(null, this));
 			});
+
+		setPlayType('join', enabledJoinDefault);
+    	setPlayType('leave', enabledLeaveDefault);
 
         this.login(token);
     }
