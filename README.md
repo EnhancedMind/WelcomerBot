@@ -27,6 +27,7 @@ Basic configuration
 ### Instalation
 To use the project you will need:
 [Node JS v16.11 or newer](https://nodejs.org/en/)
+[FFmpeg](https://ffmpeg.org/download.html)
 You will need to install some modules using the following command
 
 `npm i`
