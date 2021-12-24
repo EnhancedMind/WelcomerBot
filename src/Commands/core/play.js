@@ -1,8 +1,9 @@
-const Command = require('../Structures/Command.js');
+const Command = require('../../Structures/Command.js');
 
 const { createAudioPlayer, createAudioResource, joinVoiceChannel, AudioPlayerStatus } = require('@discordjs/voice');
 const { existsSync } = require('fs');
 const music = require('@koenie06/discord.js-music');  //https://www.npmjs.com/package/@koenie06/discord.js-music
+const { advancedLogging } = require('../../Data/data.js');
 
 module.exports = new Command({
 	name: 'play',
@@ -10,6 +11,8 @@ module.exports = new Command({
 	description: "Plays some music (.mp3 plays bot's local files)",
 	async run(message, args, client) {
 		if (!args[0]) return message.channel.send('Invalid argument!');
+        if (!message.member.voice.channel) return message.channel.send('You need to be in a voice channel to do that!');
+        if (message.member.voice.channelId == message.guild.afkChannelId) return message.channel.send("Can't play into an AFK channel!")
         if (args[0].endsWith('.mp3')) {
             let song;
             if (existsSync(`./music/${args[0]}`)) song = `./music/${args[0]}`;
@@ -27,6 +30,7 @@ module.exports = new Command({
     		    guildId: message.guild.id,
     			adapterCreator: message.guild.voiceAdapterCreator,
                 selfDeaf: false,
+                debug: advancedLogging,
         	});
 
         	player.play(resource);

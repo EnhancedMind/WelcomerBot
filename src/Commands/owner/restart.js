@@ -1,7 +1,7 @@
-const Command = require('../Structures/Command.js');
+const Command = require('../../Structures/Command.js');
 
-const { consoleLog } = require('../Data/Log.js');
-const { token, owner } = require('../Data/data.js');
+const { consoleLog } = require('../../Data/Log.js');
+const { token, owner } = require('../../Data/data.js');
 
 module.exports = new Command({
 	name: 'restart',

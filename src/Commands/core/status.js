@@ -1,6 +1,6 @@
-const Command = require('../Structures/Command.js');
+const Command = require('../../Structures/Command.js');
 
-const { getPlayType } = require('../Data/data.js');
+const { getPlayType } = require('../../Data/data.js');
 
 module.exports = new Command({
 	name: 'status',

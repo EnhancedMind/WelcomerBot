@@ -1,8 +1,8 @@
-const Command = require('../Structures/Command.js');
+const Command = require('../../Structures/Command.js');
 
-const paginationEmbed = require('discordjs-button-pagination');
-const { MessageEmbed, MessageButton } = require('discord.js');
-const { prefix } = require('../Data/data.js');
+const { MessageEmbed } = require('discord.js');
+const paginator = require('../../Structures/Paginator.js');
+const { prefix } = require('../../Data/data.js');
 
 module.exports = new Command({
 	name: 'help',
@@ -46,17 +46,6 @@ module.exports = new Command({
             .addField('**Restart**'               , `:wavy_dash:${client.commands.get('restart').description}`)
             .addField('**Shutdown**'              , `:wavy_dash:${client.commands.get('shutdown').description}`)
 
-        let previousButton = new MessageButton()
-            .setCustomId('previousbtn')
-            .setEmoji('◀️')
-            .setLabel('')
-            .setStyle('SECONDARY')
-
-        let nextButton = new MessageButton()
-            .setCustomId('nextbtn')
-            .setEmoji('▶️')
-            .setLabel('')
-            .setStyle('SECONDARY')
 
         let pages = [
             everyoneHelp,
@@ -64,14 +53,6 @@ module.exports = new Command({
             ownerHelp,
         ]
 
-		let buttonList = [
-            previousButton,
-            nextButton,
-        ]
-
-        let timeout = '120000';
-
-        paginationEmbed(message, pages, buttonList, timeout);
-
+        paginator(message, pages);
 	}
 });

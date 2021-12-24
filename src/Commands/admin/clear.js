@@ -1,4 +1,4 @@
-const Command = require('../Structures/Command.js');
+const Command = require('../../Structures/Command.js');
 
 const { Permissions } = require('discord.js');
 

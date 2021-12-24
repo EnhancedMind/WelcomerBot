@@ -1,7 +1,7 @@
-const Command = require('../Structures/Command.js');
+const Command = require('../../Structures/Command.js');
 
-const paginationEmbed = require('discordjs-button-pagination');
-const { MessageEmbed, MessageButton } = require('discord.js');
+const { MessageEmbed } = require('discord.js');
+const paginator = require('../../Structures/Paginator.js');
 
 module.exports = new Command({
 	name: 'aliases',
@@ -43,31 +43,12 @@ module.exports = new Command({
             .addField('**Restart**'  , `:wavy_dash:**\`${client.commands.get('restart').aliases.join('`**, **`')}\`**`)
             .addField('**Shutdown**' , `:wavy_dash:**\`${client.commands.get('shutdown').aliases.join('`**, **`')}\`**`)
 
-        let previousButton = new MessageButton()
-            .setCustomId('previousbtn')
-            .setEmoji('◀️')
-            .setLabel('')
-            .setStyle('SECONDARY')
-
-        let nextButton = new MessageButton()
-            .setCustomId('nextbtn')
-            .setEmoji('▶️')
-            .setLabel('')
-            .setStyle('SECONDARY')
-
         let pages = [
             everyoneAliases,
             adminAliases,
             ownerAliases,
         ]
 
-		let buttonList = [
-            previousButton,
-            nextButton,
-        ]
-
-        let timeout = '120000';
-
-        paginationEmbed(message, pages, buttonList, timeout);
+        paginator(message, pages);
 	}
 });

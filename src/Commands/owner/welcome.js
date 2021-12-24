@@ -1,7 +1,7 @@
-const Command = require('../Structures/Command.js');
+const Command = require('../../Structures/Command.js');
 
-const { owner } = require('../Data/data.js');
-const { enabledJoinDefault, enabledLeaveDefault, setPlayType, getPlayType } = require('../Data/data.js');
+const { owner } = require('../../Data/data.js');
+const { enabledJoinDefault, enabledLeaveDefault, setPlayType, getPlayType } = require('../../Data/data.js');
 
 let argValid;
 

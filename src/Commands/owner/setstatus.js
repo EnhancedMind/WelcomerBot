@@ -1,6 +1,6 @@
-const Command = require('../Structures/Command.js');
+const Command = require('../../Structures/Command.js');
 
-const { owner, status } = require('../Data/data.js');
+const { owner, status } = require('../../Data/data.js');
 
 module.exports = new Command({
 	name: 'setstatus',
