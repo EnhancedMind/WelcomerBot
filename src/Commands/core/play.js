@@ -4,6 +4,7 @@ const { createAudioPlayer, createAudioResource, joinVoiceChannel, AudioPlayerSta
 const { existsSync } = require('fs');
 const music = require('@koenie06/discord.js-music');  //https://www.npmjs.com/package/@koenie06/discord.js-music
 const { advancedLogging } = require('../../Data/data.js');
+const { fileLog } = require('../../Data/Log.js');
 
 module.exports = new Command({
 	name: 'play',
@@ -41,6 +42,11 @@ module.exports = new Command({
                     connection.destroy();
                 }, 200);
 	        });
+
+            player.on('error', (err) => {
+                fileLog(err);
+                console.log(err);
+            });
         }
         else {
             music.play({

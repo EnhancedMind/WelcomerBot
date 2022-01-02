@@ -11,9 +11,7 @@ const paginator = async (msg, pages, emojiList = [ '◀️', '▶️', '⏹️' 
     if (!msg && !msg.channel) throw new Error("Channel is inaccessible.");
     if (!pages) throw new Error("Pages are not given.");
     if (emojiList[0].style === "LINK" || emojiList[1].style === "LINK" || emojiList[2].style === "LINK")
-        throw new Error(
-            "Link buttons are not supported'"
-         );
+        throw new Error("Link buttons are not supported'");
     if (emojiList.length !== 3) throw new Error("Need three buttons.");
   
     let page = 0;

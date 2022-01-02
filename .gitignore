@@ -10,9 +10,9 @@ src/notes.md
 logs/
 test.js
 *.old
-build.bat
-WelcomerBot.exe
+dist/
 src/Events/error.js
 src/Events/warn.js
 src/Events/resume.js
 src/Commands/fun/
+src/Commands/minecraft

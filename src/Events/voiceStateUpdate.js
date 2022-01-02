@@ -4,6 +4,7 @@ const { createAudioPlayer, createAudioResource, joinVoiceChannel, AudioPlayerSta
 const { existsSync } = require('fs');
 const { getPlayType } = require('../Data/data.js');
 const { advancedLogging } = require('../Data/data.js');
+const { fileLog } = require('../Data/Log.js');
 
 let Continue = false;
 let State;
@@ -53,5 +54,11 @@ module.exports = new Event('voiceStateUpdate', (client, oldState, newState) => {
                 connection.destroy();
             }, 150);
         });
+
+        player.on('error', (err) => {
+            fileLog(err);
+            console.log(err);
+        });
+        
     }, delay);
 });
