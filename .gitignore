@@ -6,4 +6,13 @@ music/users/userList.md
 package-lock.json
 howto.md
 .gitattributes
-READMEalpha.md
+src/notes.md
+logs/
+test.js
+*.old
+dist/
+src/Events/error.js
+src/Events/warn.js
+src/Events/resume.js
+src/Commands/fun/
+src/Commands/minecraft
