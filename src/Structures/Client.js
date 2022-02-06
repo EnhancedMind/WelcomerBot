@@ -8,6 +8,8 @@ const intents = new Discord.Intents([
     Discord.Intents.FLAGS.GUILD_VOICE_STATES,
 	Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS ]);
 
+const pjson = require('../../package.json');
+
 const { token, enabledJoinDefault, enabledLeaveDefault, setPlayType } = require('../Data/data.js');
 const { readdirSync } = require('fs');
 const { initLog, fileLog } = require('../Data/Log.js');
@@ -23,6 +25,8 @@ class Client extends Discord.Client {
 	}
 
     start() {
+		console.log(`This application comes from a GitHub project EnhancedMind/WelcomerBot (https://github.com/EnhancedMind/WelcomerBot).\nThe use is possible for free while keeping the credits.\nMade by EnhancedMind\nVersion ${pjson.version}\n`);
+
 		initLog();
 
 		readdirSync('./src/Commands')

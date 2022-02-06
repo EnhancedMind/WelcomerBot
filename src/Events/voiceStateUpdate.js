@@ -25,9 +25,9 @@ module.exports = new Event('voiceStateUpdate', (client, oldState, newState) => {
         State = newState;
         delay = 900;
     } 
-    if(!newState.channelId && oldState.channelId) {
+    else if(!newState.channelId && oldState.channelId) {
         if(!getPlayType('leave')) return;
-        song = `./music/leave${Math.floor( Math.random() * (2-0) + 0 )}.mp3`;
+        song = `./music/leave${Math.round( Math.random() * (1-0) + 0 )}.mp3`;
         Continue = true;
         State = oldState;
         delay = 150;

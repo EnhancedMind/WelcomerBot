@@ -1,3 +1,8 @@
+# Version 0.2.6
+Added the random command which generates random nubers  
+The run.bat no longer exits when the bot throws errors
+Added credits at the start  
+
 # Version 0.2.5
 The audio player now log errors  
 Fixed the wrong formation in .md files  
