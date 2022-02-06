@@ -16,3 +16,6 @@ src/Events/warn.js
 src/Events/resume.js
 src/Commands/fun/
 src/Commands/minecraft
+src/Data/commands.js
+src/Structures/Client.js.build
+distnew/

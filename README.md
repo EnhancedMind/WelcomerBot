@@ -31,7 +31,8 @@ To use the project you will need:
 
 You will need to install some modules using the following command  
   
-`npm i`
+`npm i`  
   
   
 ### Please do not withdraw the license and keep the credits on this project.
+### Made with ❤️ by EnhancedMind  
