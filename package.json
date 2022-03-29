@@ -1,6 +1,6 @@
 {
   "name": "welcomerbot",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Discord bot that plays sounds or music when somebody joins or leaves a voice channel",
   "main": "src/main.js",
   "bin": "src/main.js",
@@ -22,16 +22,17 @@
     "@discordjs/opus": "^0.7.0",
     "@discordjs/voice": "^0.7.5",
     "@koenie06/discord.js-music": "^1.2.9",
-    "discord.js": "^13.3.1",
+    "discord.js": "^13.6.0",
     "dotenv": "^10.0.0",
-    "ffmpeg-static": "^4.4.0",
-    "libsodium-wrappers": "^0.7.9",
-    "opusscript": "^0.0.8"
+    "ffmpeg-static": "^4.4.1",
+    "libsodium-wrappers": "^0.7.9"
   },
   "pkg": {
-    "scripts": [ ],
-    "assets": [ ],
-    "targets": [ "node16-win-x64" ],
-    "outputPath": "distnew"
+    "scripts": [],
+    "assets": [],
+    "targets": [
+      "node16-win-x64"
+    ],
+    "outputPath": "dist"
   }
 }

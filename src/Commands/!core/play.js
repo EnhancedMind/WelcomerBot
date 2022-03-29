@@ -9,6 +9,7 @@ const { fileLog } = require('../../Data/Log.js');
 module.exports = new Command({
 	name: 'play',
     aliases: [ 'p' ],
+    syntax: 'play [song name] or [URL]',
 	description: "Plays some music (.mp3 plays bot's local files)",
 	async run(message, args, client) {
 		if (!args[0]) return message.channel.send('Invalid argument!');

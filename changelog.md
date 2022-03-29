@@ -1,6 +1,17 @@
+# Version 0.2.7
+Renamed the reset command to reload as it makes more sense  
+Added rld alias for the reload command  
+Updated the paginator to support upcoming discordjs v14  
+Changed the help and alias command to load dynamicaly from the command files  
+Added syntax option to the commands for dynamic help and alias loading  
+Renamed the core folder inside the commands folder to !core due to ascii priorities for help and alias command loading  
+No longer is stuck in error loop when logs/ dir does not exist  
+Added config.json as other way for configuartion and for (maybe) future docker container  
+Added the option to log when the bot voicestate update gets triggered and who did it, where and when  
+
 # Version 0.2.6
-Added the random command which generates random nubers  
-The run.bat no longer exits when the bot throws errors
+Added the random command which generates random numbers  
+The run.bat no longer exits when the bot throws errors  
 Added credits at the start  
 
 # Version 0.2.5

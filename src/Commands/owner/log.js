@@ -7,6 +7,7 @@ const { owner } = require('../../Data/data.js');
 module.exports = new Command({
 	name: 'log',
 	aliases: [ ' ' ],
+    syntax: 'log [data]',
 	description: 'Manually log into file',
 	async run(message, args, client) {
         if (message.author.id != owner) return message.channel.send('Invalid permission!');

@@ -5,6 +5,7 @@ const { owner, game } = require('../../Data/data.js');
 module.exports = new Command({
 	name: 'setgame',
 	aliases: [ ' ' ],
+	syntax: 'setgame [game]',
 	description: 'Sets the game the bot is playing',
 	async run(message, args, client) {
 		if (message.author.id != owner) return message.channel.send('Invalid permission!');

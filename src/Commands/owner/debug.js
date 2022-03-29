@@ -6,6 +6,7 @@ const { owner } = require('../../Data/data.js');
 module.exports = new Command({
 	name: 'debug',
 	aliases: [ 'getlog' ],
+	syntax: 'debug <logFile>',
 	description: 'Sends selected log as a message attachment',
 	async run(message, args, client) {
 		if (message.author.id != owner) return message.channel.send('Invalid permission!');

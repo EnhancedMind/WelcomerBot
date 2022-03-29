@@ -1,7 +1,9 @@
-const { appendFile, writeFile } = require('fs');
+const { appendFile, writeFile, existsSync, mkdirSync } = require('fs');
 const { rstLogOnStart } = require('../Data/data.js');
 
 function initLog() {
+    if(!existsSync('./logs')) mkdirSync('./logs');
+
     if (rstLogOnStart == 'true') {
         writeFile('./logs/sessionLog.txt', '', function(err) {
             if(err) {
