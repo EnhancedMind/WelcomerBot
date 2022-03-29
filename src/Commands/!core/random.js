@@ -3,6 +3,7 @@ const Command = require('../../Structures/Command.js');
 module.exports = new Command({
 	name: 'random',
 	aliases: [ 'rn' ],
+    syntax: 'random <min> <max> or <max>',
 	description: 'Generates random number in range',
 	async run(message, args, client) {
         if (!args[0]) return message.channel.send('Invalid arguments!');

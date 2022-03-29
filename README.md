@@ -10,6 +10,9 @@ DISCORD_TOKEN =
 PREFIX = *
 OWNER_ID = 
 
+RST_LOG = true
+DEL_LOG = true
+
 STATUS = online
 GAME = made by EnhancedMind ❤️
 ```

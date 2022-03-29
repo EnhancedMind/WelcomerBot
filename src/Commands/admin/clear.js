@@ -5,6 +5,7 @@ const { Permissions } = require('discord.js');
 module.exports = new Command({
 	name: 'clear',
     aliases: [ 'purge' ],
+    syntax: 'clear <amount> <confirm>',
 	description: 'Deletes the amount of messages **!ALL MESSAGES!**',
 	async run(message, args, client) {
 		if (!message.member.permissions.has(Permissions.FLAGS.ADMINISTRATOR)) return message.channel.send('Invalid permission!');

@@ -5,6 +5,7 @@ const { owner, status } = require('../../Data/data.js');
 module.exports = new Command({
 	name: 'setstatus',
 	aliases: [ ' ' ],
+	syntax: 'setstatus <status>',
 	description: 'Sets the status the bot displays',
 	async run(message, args, client) {
 		if (message.author.id != owner) return message.channel.send('Invalid permission!');

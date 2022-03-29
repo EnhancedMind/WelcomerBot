@@ -16,7 +16,7 @@ const paginator = async (msg, pages, emojiList = [ '◀️', '▶️', '⏹️' 
   
     let page = 0;
 
-    const curPage = await msg.channel.send({ embeds: [pages[page].setFooter(`Page ${page + 1} / ${pages.length}`)] });
+    const curPage = await msg.channel.send({ embeds: [pages[page].setFooter({ text: `Page ${page + 1} / ${pages.length}` })] });
 
     for (const emoji of emojiList) curPage.react(emoji);
 
@@ -46,12 +46,12 @@ const paginator = async (msg, pages, emojiList = [ '◀️', '▶️', '⏹️' 
 			default:
 				break;
 		}
-        curPage.edit({ embeds: [pages[page].setFooter(`Page ${page + 1} / ${pages.length}`)] });
+        curPage.edit({ embeds: [pages[page].setFooter({ text: `Page ${page + 1} / ${pages.length}` })] });
         collector.resetTimer();
     });
 
     collector.on('end', async () => {
-        if (!curPage.deleted) {
+        if (curPage.deletable) {
 			curPage.reactions.removeAll();
 		}
     });

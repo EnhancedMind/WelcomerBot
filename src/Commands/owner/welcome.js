@@ -8,6 +8,7 @@ let argValid;
 module.exports = new Command({
 	name: 'welcome',
     aliases: [ 'wlcm' ],
+    syntax: 'welcome <action> <type> <optional type>',
 	description: 'Enables or disables the play at join or leave function',
 	async run(message, args, client) {
 		if (message.author.id != owner) return message.channel.send('Invalid permission!');

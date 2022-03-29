@@ -1,0 +1,15 @@
+{
+    "bot": {
+        "token": "put your bot token here",
+        "prefix": "*",
+        "owner_id": "put your discord id here"
+    },
+    "logs": {
+        "reset_log": "false",
+        "log_del_mes": "false"
+    },
+    "status": {
+        "status": "online",
+        "game": "made by EnhancedMind ❤️"
+    }
+}
