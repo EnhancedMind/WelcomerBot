@@ -7,6 +7,7 @@ module.exports = new Event('messageCreate', async (client, message) => {
 
     if(message.author.bot) return;
     if(!message.content.startsWith(prefix)) return;
+    if(message.content.startsWith(prefix) && message.content.endsWith(prefix)) return;
 
     let args = message.content.substring(prefix.length).split(/ +/);
     let cmd = args.shift().toLowerCase();

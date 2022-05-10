@@ -16,3 +16,4 @@ src/Commands/fun/
 src/Commands/minecraft
 .vscode/
 config/config.json
+config/*settings.json

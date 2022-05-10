@@ -1,3 +1,7 @@
+# Version 0.2.8
+Added server and user setting for individual enabling and disabling of bot  
+If prefix is * or anything similar the bot no longer says the command does not exist when the * was to make bold or italic text (although this is for first word only)  
+
 # Version 0.2.7
 Renamed the reset command to reload as it makes more sense  
 Added rld alias for the reload command  

@@ -4,9 +4,8 @@ const { createAudioPlayer, createAudioResource, joinVoiceChannel, AudioPlayerSta
 const { existsSync, appendFile } = require('fs');
 const { getPlayType } = require('../Data/data.js');
 const { voiceLogging, advancedLogging } = require('../Data/data.js');
-const { fileLog, consoleLog } = require('../Data/Log.js');
+const { consoleLog } = require('../Data/Log.js');
 
-let Continue = false;
 let State;
 let song;
 let delay;
@@ -21,19 +20,16 @@ module.exports = new Event('voiceStateUpdate', (client, oldState, newState) => {
         if(!getPlayType('join')) return;
         song = `./music/users/${newState.id}.mp3`;
         if (!existsSync(song)) song = './music/default.mp3';
-        Continue = true;
         State = newState;
         delay = 900;
     } 
     else if(!newState.channelId && oldState.channelId) {
         if(!getPlayType('leave')) return;
         song = `./music/leave${Math.round( Math.random() * (1-0) + 0 )}.mp3`;
-        Continue = true;
         State = oldState;
         delay = 150;
     }
-    
-    if(!Continue) return;
+    else return;
 
     if (voiceLogging == 'true') {
         let info = `MEMBER: ${State.member.user.tag} (${State.member.user.id}); SERVER: ${State.guild.name} (${State.guild.id}); CHANNEL: ${State.channel.name} (${State.channelId}); TIMESTAMP: ${Date()};\n`;
@@ -44,7 +40,19 @@ module.exports = new Event('voiceStateUpdate', (client, oldState, newState) => {
             }
         });
     }
-    
+
+    const settings = require(__dirname + '/../../config/settings.json');
+
+    if (settings.guild[`${State.guild.id}`]) {
+        if (settings.guild[`${State.guild.id}`].enabledJoin == false && State == newState) return;
+        if (settings.guild[`${State.guild.id}`].enabledLeave == false && State == oldState) return;
+    }
+    if (settings.user[`${State.member.id}`]) {
+        if (settings.user[`${State.member.id}`].enabledJoin == false && State == newState) return;
+        if (settings.user[`${State.member.id}`].enabledLeave == false && State == oldState) return;
+    }
+
+
     let player = createAudioPlayer();
     let resource = createAudioResource(song);
     let connection = joinVoiceChannel({
@@ -66,8 +74,7 @@ module.exports = new Event('voiceStateUpdate', (client, oldState, newState) => {
         });
 
         player.on('error', (err) => {
-            fileLog(err);
-            console.log(err);
+            consoleLog(err);
         });
         
     }, delay);

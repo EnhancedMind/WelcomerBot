@@ -13,6 +13,7 @@ const pjson = require('../../package.json');
 const { token, enabledJoinDefault, enabledLeaveDefault, setPlayType } = require('../Data/data.js');
 const { readdirSync } = require('fs');
 const { initLog, fileLog } = require('../Data/Log.js');
+const { checkSettingsFiles } = require('../Data/settings.js');
 
 class Client extends Discord.Client {
 	constructor() {
@@ -28,6 +29,7 @@ class Client extends Discord.Client {
 		console.log(`This application comes from a GitHub project EnhancedMind/WelcomerBot (https://github.com/EnhancedMind/WelcomerBot).\nThe use is possible for free while keeping the credits.\nMade by EnhancedMind\nVersion ${pjson.version}\n`);
 
 		initLog();
+		checkSettingsFiles();
 
 		readdirSync('./src/Commands')
 			.forEach(dirs => {
