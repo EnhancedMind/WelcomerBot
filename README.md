@@ -16,7 +16,7 @@ DEL_LOG = true
 STATUS = online
 GAME = made by EnhancedMind ❤️
 ```
-Basic configuration
+Basic configuration **OUTDATED** New place is in config/config.json - yet not documented, you can dowload older version from releases page
 - `DISCORD_TOKEN` the token of your discord bot you can get from [Discord Developers page](https://discord.com/developers/applications)
 - `PREFIX` the prefix which will be used for your bot's commands
 - `OWNER_ID` your discord user id you can get by right clicking user on discord after enabling developer mode

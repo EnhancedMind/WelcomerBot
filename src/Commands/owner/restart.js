@@ -1,24 +1,31 @@
 const Command = require('../../Structures/Command.js');
 
 const { consoleLog } = require('../../Data/Log.js');
-const { token, owner } = require('../../Data/data.js');
+const { bot: { token, owner }, emoji: { success, error, loading }, response: { invalidPermissions } } = require('../../../config/config.json');
+
 
 module.exports = new Command({
 	name: 'restart',
 	aliases: [ 'reboot' ],
 	description: "Restarts the bot's client",
 	async run(message, args, client) {
-		if (message.author.id != owner) return message.channel.send('Invalid permission!');
+		if (message.author.id != owner) return message.channel.send(`${error} ${invalidPermissions}`);
+
 		consoleLog('[INFO] Restarting...');
-		message.channel.send('Restarting...')
-		.then(() => client.destroy())
-		.then(() => client.login(token))
-		.then(() => { 
-			consoleLog(`[INFO] ${client.user.username} is online and ready on ${client.guilds.cache.size} servers!`);
-			message.channel.messages.fetch({limit: 1}).then(result => {
-				message.channel.bulkDelete(result);
-			});
-			message.channel.send('Done!')
-		});
+
+		await message.channel.send(`${loading} Restarting...`);
+
+		client.destroy();
+		await client.login(token);
+		
+		consoleLog(`[INFO] ${client.user.username} is online and ready on ${client.guilds.cache.size} servers!`);
+		
+		const response = await message.channel.messages.fetch({ limit: 1 });
+		try {
+			response.first().edit(`${success} Restarted!`);
+		}
+		catch (error) {
+			consoleLog(`[WARN] Restart response edit error`, error);
+		}
 	}
 });

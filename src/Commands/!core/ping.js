@@ -1,11 +1,13 @@
-const Command = require('../../Structures/Command.js');
+const Command = require('../../Structures/Command');
+
+const { emoji: { success } } = require('../../../config/config.json');
 
 module.exports = new Command({
 	name: 'ping',
 	aliases: [ 'pong' ],
 	description: 'Shows the ping of the bot',
 	async run(message, args, client) {
-		const msg = await message.channel.send(`Pong!... :smile:  The ping is ${client.ws.ping} ms.`);
-		msg.edit(`Pong!... :smile:  The ping is ${client.ws.ping} ms.\nMessage Ping: ${msg.createdTimestamp - message.createdTimestamp} ms.`);
+		const response = await message.channel.send(`${success} Pong!... :smile:  The ping is ${client.ws.ping} ms.`);
+		response.edit(`${success} Pong!... :smile:  The ping is ${client.ws.ping} ms.\nMessage Ping: ${response.createdTimestamp - message.createdTimestamp} ms.`);
 	}
 });

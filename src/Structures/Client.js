@@ -1,19 +1,21 @@
 const Discord = require('discord.js');
-const Command = require('./Command.js');
-const Event = require('./Event.js');
+const Command = require('./Command');
+const Event = require('./Event');
 
 const intents = new Discord.Intents([
 	Discord.Intents.FLAGS.GUILDS,
+	Discord.Intents.FLAGS.GUILD_VOICE_STATES,
     Discord.Intents.FLAGS.GUILD_MESSAGES,
-    Discord.Intents.FLAGS.GUILD_VOICE_STATES,
-	Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS ]);
+	Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS
+]);
 
-const pjson = require('../../package.json');
+const { version, homepage } = require('../../package.json');
 
-const { token, enabledJoinDefault, enabledLeaveDefault, setPlayType } = require('../Data/data.js');
 const { readdirSync } = require('fs');
-const { initLog, fileLog } = require('../Data/Log.js');
-const { checkSettingsFiles } = require('../Data/settings.js');
+const { initLog, fileLog, consoleLog } = require('../Data/Log');
+const checkSettingsFiles = require('../Data/settings');
+const { bot: { token } } = require('../../config/config.json');
+
 
 class Client extends Discord.Client {
 	constructor() {
@@ -26,7 +28,7 @@ class Client extends Discord.Client {
 	}
 
     start() {
-		console.log(`This application comes from a GitHub project EnhancedMind/WelcomerBot (https://github.com/EnhancedMind/WelcomerBot).\nThe use is possible for free while keeping the credits.\nMade by EnhancedMind\nVersion ${pjson.version}\n`);
+		consoleLog(`This application comes from a GitHub project ${homepage.substring(19, homepage.length - 7)} (${homepage}).\nThe use is possible for free while keeping the credits.\nMade by EnhancedMind\nVersion ${version}\n`);
 
 		initLog();
 		checkSettingsFiles();
@@ -55,9 +57,6 @@ class Client extends Discord.Client {
 				fileLog(`[INFO] Event ${event.event} loaded`)
 				this.on(event.event, event.run.bind(null, this));
 			});
-
-		setPlayType('join', enabledJoinDefault);
-    	setPlayType('leave', enabledLeaveDefault);
 
         this.login(token);
     }

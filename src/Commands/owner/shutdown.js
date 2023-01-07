@@ -1,18 +1,18 @@
-const Command = require('../../Structures/Command.js');
+const Command = require('../../Structures/Command');
 
-const { consoleLog } = require('../../Data/Log.js');
-const { owner } = require('../../Data/data.js');
+const { consoleLog } = require('../../Data/Log');
+const { bot: { owner }, emoji: { info, error }, response: { invalidPermissions } } = require('../../../config/config.json');
+
 
 module.exports = new Command({
 	name: 'shutdown',
     aliases: [ 'gosleep' ],
 	description: 'Safely shuts down the bot',
 	async run(message, args, client) {
-		if (message.author.id != owner) return message.channel.send('Invalid permission!');
+		if (message.author.id != owner) return message.channel.send(`${error} ${invalidPermissions}`);
         consoleLog('[INFO] Powering off...');
-        message.channel.send(':bulb: Shutting down...').then(() => {
-            client.destroy();
-            process.exit(0);
-        });
-	}
+        await message.channel.send(`${info} Shutting down...`);
+        client.destroy();
+        process.exit(0);
+}
 });

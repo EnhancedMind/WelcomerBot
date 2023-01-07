@@ -17,3 +17,4 @@ src/Commands/minecraft
 .vscode/
 config/config.json
 config/*settings.json
+*.old

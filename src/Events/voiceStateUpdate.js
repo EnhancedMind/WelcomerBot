@@ -1,81 +1,57 @@
 const Event = require('../Structures/Event.js');
 
-const { createAudioPlayer, createAudioResource, joinVoiceChannel, AudioPlayerStatus } = require('@discordjs/voice');
-const { existsSync, appendFile } = require('fs');
-const { getPlayType } = require('../Data/data.js');
-const { voiceLogging, advancedLogging } = require('../Data/data.js');
+const { createAudioPlayer, createAudioResource, joinVoiceChannel } = require('@discordjs/voice');
+const { existsSync } = require('fs');
 const { consoleLog } = require('../Data/Log.js');
+const { player: { selfDeaf, debug } } = require('../../config/config.json');
 
-let State;
-let song;
-let delay;
 
 module.exports = new Event('voiceStateUpdate', (client, oldState, newState) => {
-    if(oldState.member.user.bot || newState.member.user.bot) return; 
-    if(newState.channelId == newState.guild.afkChannelId) return;
+    if (oldState.member.user.bot || newState.member.user.bot) return; 
+    if (newState.channelId == newState.guild.afkChannelId) return;
 
-    Continue = false;
+    const settings = require('../../config/settings.json');
     
     if(newState.channelId && !oldState.channelId || oldState.channelId == oldState.guild.afkChannelId) {
-        if(!getPlayType('join')) return;
-        song = `./music/users/${newState.id}.mp3`;
+        if (settings.guild[newState.guild.id] && settings.guild[newState.guild.id].enabledJoin == false) return;
+        if (settings.user[newState.member.id] && settings.user[newState.member.id].enabledJoin == false) return;
+
+        const song = `./music/users/${newState.id}.mp3`;
         if (!existsSync(song)) song = './music/default.mp3';
-        State = newState;
-        delay = 900;
+
+        play(newState, song, 800);
     } 
     else if(!newState.channelId && oldState.channelId) {
-        if(!getPlayType('leave')) return;
-        song = `./music/leave${Math.round( Math.random() * (1-0) + 0 )}.mp3`;
-        State = oldState;
-        delay = 150;
+        if (settings.guild[oldState.guild.id] && settings.guild[oldState.guild.id].enabledLeave == false) return;
+        if (settings.user[oldState.member.id] && settings.user[oldState.member.id].enabledLeave == false) return;
+
+        const song = `./music/leave${Math.round( Math.random() * (1-0) + 0 )}.mp3`;
+        play(oldState, song, 150);
     }
-    else return;
 
-    if (voiceLogging == 'true') {
-        let info = `MEMBER: ${State.member.user.tag} (${State.member.user.id}); SERVER: ${State.guild.name} (${State.guild.id}); CHANNEL: ${State.channel.name} (${State.channelId}); TIMESTAMP: ${Date()};\n`;
-
-        appendFile('./logs/vocupdt.txt', info, function(err) {
-            if(err) {
-                return consoleLog(`[WARN] ${err}`);
-            }
+    const play = async (state, song, delay) => {
+        const player = createAudioPlayer();
+        const resource = createAudioResource(song);
+        const connection = joinVoiceChannel({
+            channelId: state.channelId,
+            guildId: state.guild.id,
+            adapterCreator: state.guild.voiceAdapterCreator,
+            selfDeaf: selfDeaf,
+            debug: debug,
         });
-    }
 
-    const settings = require(__dirname + '/../../config/settings.json');
-
-    if (settings.guild[`${State.guild.id}`]) {
-        if (settings.guild[`${State.guild.id}`].enabledJoin == false && State == newState) return;
-        if (settings.guild[`${State.guild.id}`].enabledLeave == false && State == oldState) return;
-    }
-    if (settings.user[`${State.member.id}`]) {
-        if (settings.user[`${State.member.id}`].enabledJoin == false && State == newState) return;
-        if (settings.user[`${State.member.id}`].enabledLeave == false && State == oldState) return;
-    }
-
-
-    let player = createAudioPlayer();
-    let resource = createAudioResource(song);
-    let connection = joinVoiceChannel({
-        channelId: State.channelId,
-        guildId: State.guild.id,
-        adapterCreator: State.guild.voiceAdapterCreator,
-        selfDeaf: false,
-        debug: advancedLogging,
-    });
-
-    setTimeout(() => {
+        await new Promise(resolve => setTimeout(resolve, delay));
+            
         player.play(resource);
         connection.subscribe(player);
 
-        player.on(AudioPlayerStatus.Idle, () => {
-            setTimeout(() => {
-                connection.destroy();
-            }, 150);
+        player.on('idle', async () => {
+            await new Promise(resolve => setTimeout(resolve, 150));
+            connection.destroy();
         });
 
         player.on('error', (err) => {
             consoleLog(err);
         });
-        
-    }, delay);
+    }
 });

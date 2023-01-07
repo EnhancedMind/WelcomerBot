@@ -1,15 +1,19 @@
-const Command = require('../../Structures/Command.js');
+const Command = require('../../Structures/Command');
 
-const { owner, status, game } = require('../../Data/data.js');
+const { bot: { owner }, status: { status, game }, emoji: { success, error }, response: { invalidPermissions } } = require('../../../config/config.json');
+
 
 module.exports = new Command({
 	name: 'reload',
 	aliases: [ 'rld' ],
 	description: 'Reloads the status and activity to default.',
 	async run(message, args, client) {
-        if (message.author.id != owner) return message.channel.send('Invalid permission!');
+        if (message.author.id != owner) return message.channel.send(`${error} ${invalidPermissions}`);
         client.user.setStatus(status);
-        client.user.setActivity(game, { type: 'PLAYING'});
-		message.channel.send('Reloaded!');
+        client.user.setActivity({
+			name: game,
+			type: 'PLAYING'
+		});
+		message.channel.send(`${success} Reloaded!`);
 	}
 });

@@ -1,5 +1,5 @@
-const Client = require('./Client.js');
 const Discord = require('discord.js');
+const Client = require('./Client');
 
 /**
  * @param {Discord.Message | Discord.Interaction} message
@@ -7,6 +7,7 @@ const Discord = require('discord.js');
  * @param {Client} client
  */
 function RunFunction(message, args, client) {}
+
 
 class Command {
 	/**

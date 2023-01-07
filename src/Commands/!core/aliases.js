@@ -1,19 +1,18 @@
-const Command = require('../../Structures/Command.js');
+const Command = require('../../Structures/Command');
 
 const { MessageEmbed } = require('discord.js');
 const { readdirSync } = require('fs');
-const paginator = require('../../Structures/Paginator.js');
+const paginator = require('../../Structures/Paginator');
+const { homepage } = require('../../../package.json');
 
 module.exports = new Command({
 	name: 'aliases',
-    aliases: ['alias'],
+    aliases: [ 'alias' ],
 	description: 'Shows the aliases for the commands',
 	async run(message, args, client) {
-        const author = {
-            name: client.user.username,
-            url: 'https://github.com/EnhancedMind/WelcomerBot',
-            iconURL: client.user.displayAvatarURL({ size: 1024, dynamic: true })
-        }
+        let page = 0;
+        // if args[0] is a number, set page to args[0]
+		if (args[0] && !isNaN(args[0])) page = args[0] - 1;
 
         let content = '';
         readdirSync('./src/Commands')
@@ -22,31 +21,34 @@ module.exports = new Command({
             });
         content = `\`Aliases\`, ${content.substring(17, content.length - 2)}`;
 
-        let page = [];
+        let pages = [];
         let i = 0;
         readdirSync('./src/Commands')
             .forEach(dirs => {
-                page[i] = new MessageEmbed()
+                pages[i] = new MessageEmbed()
                     .setColor(0x3399FF)
-                    .setAuthor(author)
+                    .setAuthor({
+                        name: client.user.username,
+                        url: homepage,
+                        iconURL: client.user.displayAvatarURL({ size: 1024, dynamic: true })
+                    })
                     .setTitle(`**${dirs[0].toUpperCase() + dirs.slice(1)} aliases!**`)
                     .addField('**Pages**', content)
 
                 if (i == 0) {
-                    page[0]
+                    pages[0]
                         .setTitle('**Aliases!**')
-                        //.setDescription('This bot comes from a GitHub project [EnhancedMind/WelcomerBot](https://github.com/EnhancedMind/WelcomerBot).\nThe use is possible for free while keeping the credits.\n Made by EnhancedMind :heart:')
                 }
 
                 readdirSync(`./src/Commands/${dirs}`)
                     .filter(file => file.endsWith('.js'))
                     .forEach(file => {
                         const data = client.commands.get(file.substring(0, file.lastIndexOf('.')))
-                        page[i].addField(`**${data.name[0].toUpperCase() + data.name.slice(1)}**`, `:wavy_dash:**\`${data.aliases.join('`**, **`')}\`**`);
+                        pages[i].addField(`**${data.name[0].toUpperCase() + data.name.slice(1)}**`, `:wavy_dash:**\`${data.aliases.join('`**, **`')}\`**`);
                     });
                 i++
             });
 
-        paginator(message, page);
+        paginator(message, pages, null, page);
 	}
 });

@@ -1,3 +1,12 @@
+# Version 0.3.0
+This update mainly polishes the code and focuses the bot where it should be
+Removed the .env as config option, now it is config/config.json  
+Removed the option to play music from youtube
+Removed the option to log deleted messages
+Removed the random command
+Removed the forcerestart command
+Added the about command  
+
 # Version 0.2.8
 Added server and user setting for individual enabling and disabling of bot  
 If prefix is * or anything similar the bot no longer says the command does not exist when the * was to make bold or italic text (although this is for first word only)  
