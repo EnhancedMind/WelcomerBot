@@ -1,6 +1,6 @@
 const Command = require('../../Structures/Command');
 
-const { bot: { owner }, status: { status, game }, emoji: { success, error }, response: { invalidPermissions } } = require('../../../config/config.json');
+const { bot: { ownerID }, status: { status, game }, emoji: { success, error }, response: { invalidPermissions } } = require('../../../config/config.json');
 
 
 module.exports = new Command({
@@ -8,7 +8,7 @@ module.exports = new Command({
 	aliases: [ 'rld' ],
 	description: 'Reloads the status and activity to default.',
 	async run(message, args, client) {
-        if (message.author.id != owner) return message.channel.send(`${error} ${invalidPermissions}`);
+        if (message.author.id != ownerID) return message.channel.send(`${error} ${invalidPermissions}`);
         client.user.setStatus(status);
         client.user.setActivity({
 			name: game,

@@ -1,12 +1,43 @@
 {
-    "terminateOnUncaughtException": false,
+    "terminateOnUncaughtException": true,
     "bot": {
         "token": "put your bot token here",
         "prefix": "*",
-        "owner_id": "put your discord id here"
+        "ignoreMessageEndingWithPrefix": false,
+        "ownerID": "put your discord id here"
     },
     "status": {
         "status": "online",
         "game": "made by EnhancedMind ❤️"
+    },
+    "emoji": {
+        "success": ":notes:",
+        "info": ":bulb:",
+        "warning": ":warning:",
+        "error": ":no_entry_sign:",
+        "loading": ":watch:",
+        "searching": ":mag_right:"
+    },
+    "response": {
+        "notValidCommand": false,
+        "missingArguments": "Missing arguments. Please use `{prefix}help` for more information.",
+        "invalidPermissions": "You do not have the permission to use this command.",
+        "invalidNumber": "Please provide a valid number.",
+        "noChannel": "You must be in a voice channel.",
+        "wrongChannel": "You must be in the same voice channel as I am.",
+        "afkChannel": "You can't be in a AFK voice channel.",
+        "noMusic": "No music is playing on this server."
+    },
+    "player": {
+        "maxTime": 15,
+        "playIntoEmptyChannel": false,
+        "selfDeaf": false,
+        "debug": false,
+        "allowedExtensions": ["mp3", "wav", "ogg", "flac", "m4a", "aac", "webm", "opus", "aiff", "wma", "ac3"]
+    },
+    "logs": {
+        "resetLogOnStart": true,
+        "logToFile": false,
+        "timeFormat": "en-US"
     }
 }

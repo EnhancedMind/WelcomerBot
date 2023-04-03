@@ -1,6 +1,6 @@
 const Command = require('../../Structures/Command');
 
-const { bot: { owner }, status: { game }, emoji: { success, error }, response: { invalidPermissions } } = require('../../../config/config.json');
+const { bot: { ownerID }, status: { game }, emoji: { success, error }, response: { invalidPermissions } } = require('../../../config/config.json');
 
 
 module.exports = new Command({
@@ -9,7 +9,7 @@ module.exports = new Command({
 	syntax: 'setgame [game]',
 	description: 'Sets the game the bot is playing',
 	async run(message, args, client) {
-		if (message.author.id != owner) return message.channel.send(`${error} ${invalidPermissions}`);
+		if (message.author.id != ownerID) return message.channel.send(`${error} ${invalidPermissions}`);
         if (!args[0]) {
 			client.user.setActivity({
 				name: game,

@@ -1,12 +1,12 @@
-const Event = require('../Structures/Event.js');
+const Event = require('../Structures/Event');
 
-const { bot: { prefix }, response: { notValidCommand } } = require('../../config/config.json');
+const { bot: { prefix, ignoreMessageEndingWithPrefix }, response: { notValidCommand } } = require('../../config/config.json');
 
 
 module.exports = new Event('messageCreate', async (client, message) => {
     if (message.author.bot) return;
     if (!message.content.startsWith(prefix)) return;
-    if (message.content.startsWith(prefix) && message.content.endsWith(prefix)) return;
+    if (message.content.endsWith(prefix) && ignoreMessageEndingWithPrefix) return;
 
     const args = message.content.substring(prefix.length).split(/ +/);
     const cmd = args.shift().toLowerCase();

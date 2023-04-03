@@ -1,10 +1,36 @@
+# Version 0.4.0
+The bot can now use other than mp3 files for music and the file can have comments in the name, it just needs to start with the id  
+Added the setsong command  
+Added the prune command which deletes only the messages from the bot and the messages used to invoke the bot  
+Added the playable command which lists all the playable files  
+Updated the play command to support new file formats and comments in the name  
+Changed the old clear command to forceprune as it is more descriptive  
+Updated the debug command so only the start of the filename is needed in argument  
+Changed the required permission for the guild command  
+Changed the required permission for the user command from administrator to owner of the bot as the user setting is global and not per guild  
+Fixed the user command so you can set the settings for other users  
+The user command now displays the current settings when no arguments are passed  
+Added poweroff alias to shutdown command  
+Polished the text in about command  
+The bot now logs when error and warn events are emitted by Discord  
+Removed the options for pkg inside the package.json  
+Updated dependencies to newer versions  
+Added new config option, if the user leaves channel and it is now empty, the leave sound will not play  
+Changed owner (owner_id?) to ownerID in the config file  
+Changed rstLogOnStart to resetLogOnStart in the config file  
+Added new config option to only log to console and ignore sessionLog file  
+Added new config option to set other time format  
+Added new config option to ignore messages ending with the prefix, which was forced previously  
+Polished the grammar  
+Updated the README.md for new configuration options  
+
 # Version 0.3.0
-This update mainly polishes the code and focuses the bot where it should be
+This update mainly polishes the code and focuses the bot where it should be  
 Removed the .env as config option, now it is config/config.json  
-Removed the option to play music from youtube
-Removed the option to log deleted messages
-Removed the random command
-Removed the forcerestart command
+Removed the option to play music from youtube  
+Removed the option to log deleted messages  
+Removed the random command  
+Removed the forcerestart command  
 Added the about command  
 
 # Version 0.2.8
@@ -30,7 +56,6 @@ Added credits at the start
 # Version 0.2.5
 The audio player now log errors  
 Fixed the wrong formation in .md files  
-Started work on minecraft command, however, it is not going to go public yet  
 Fixed reaction in ping command ( ikd how it got there ;) )  
 Cleaned the code a little in src/Commands/owner/setstatus.js  
 

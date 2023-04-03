@@ -4,7 +4,6 @@ logs/*
 node_modules/
 .gitattributes
 .gitnore
-env.example
 howto.md
 changelog.md
 LICENSE
@@ -13,7 +12,6 @@ run.bat
 run.sh
 test.js
 src/notes.md
-
 music/
 logs/
 .env

@@ -1,6 +1,7 @@
 const Command = require('../../Structures/Command');
 
-const { emoji: { warning }, response: { missingArguments } } = require('../../../config/config.json')
+const { emoji: { warning }, response: { missingArguments } } = require('../../../config/config.json');
+
 
 module.exports = new Command({
 	name: 'say',

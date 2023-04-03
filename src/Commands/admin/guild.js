@@ -10,9 +10,9 @@ module.exports = new Command({
 	name: 'guild',
     aliases: [ ' ' ],
     syntax: 'guild <action> <optionaltype> <optionaltype>',
-	description: 'Sets whether the bot is enabled in the guild or not',
+	description: 'Sets whether the bot is enabled in the guild or not. Requires Manage Server permission.',
 	async run(message, args, client) {
-		if (!message.member.permissions.has(Permissions.FLAGS.ADMINISTRATOR)) return message.channel.send(`${error} ${invalidPermissions}`);
+		if (!message.member.permissions.has(Permissions.FLAGS.MANAGE_GUILD)) return message.channel.send(`${error} ${invalidPermissions} (Manage Server)`);
 
         if (!args[0]) return message.channel.send(`${warning} ${missingArguments}`);
         

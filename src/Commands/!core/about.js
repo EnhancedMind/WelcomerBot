@@ -1,8 +1,9 @@
 const Command = require('../../Structures/Command');
 
 const { MessageEmbed } = require('discord.js');
-const { bot: { prefix, owner } } = require('../../../config/config.json');
+const { bot: { prefix, ownerID } } = require('../../../config/config.json');
 const { version, homepage, developerpage } = require('../../../package.json');
+
 
 module.exports = new Command({
 	name: 'about',
@@ -17,12 +18,12 @@ module.exports = new Command({
 				iconURL: client.user.displayAvatarURL({ size: 1024, dynamic: true })
 			})
 			.setDescription(`Hello! I am **${client.user.username}**, an awesomely annoying bot that is [easy to host yourself!](${homepage}) (v${version})
-			I am owned by **${(await client.users.fetch(owner)).username}** and I am developed by [**EnhancedMind**](${developerpage}).
+			I am owned by **${(await client.users.fetch(ownerID)).username}** and I am developed by [**EnhancedMind**](${developerpage}).
 			I run in **Node.js** using **Discord.js** libraries.
 			Type \`${prefix}help\` to see my commands!
 			
 			Some of my features include:
-			\`\`\`🎶 High-quality music playback.\n🎶 Easy to host yourself.\`\`\``)
+			\`\`\`🎶 High-quality sound playback.\n🎶 Easy to host yourself.\`\`\``)
 			.setFooter({
 				text: `Last restart: ${new Date(client.readyAt).toLocaleString()}`
 			});

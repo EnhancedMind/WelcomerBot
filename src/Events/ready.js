@@ -1,6 +1,6 @@
-const Event = require('../Structures/Event.js');
+const Event = require('../Structures/Event');
 
-const { consoleLog } = require('../Data/Log.js');
+const { consoleLog } = require('../Data/Log');
 const { status: { status, game } } = require('../../config/config.json');
 
 

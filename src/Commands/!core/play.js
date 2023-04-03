@@ -1,28 +1,27 @@
 const Command = require('../../Structures/Command.js');
 
 const { createAudioPlayer, createAudioResource, joinVoiceChannel, getVoiceConnection } = require('@discordjs/voice');
-const { existsSync } = require('fs');
+const { readdirSync } = require('fs');
 const { consoleLog } = require('../../Data/Log.js');
-const { emoji: { success, warning, error, loading }, response: { missingArguments, noChannel, wrongChannel, afkChannel }, player: { selfDeaf, debug } } = require('../../../config/config.json');
+const { emoji: { success, warning, error, loading }, response: { missingArguments, noChannel, wrongChannel, afkChannel }, player: { selfDeaf, debug, allowedExtensions } } = require('../../../config/config.json');
 
 
 module.exports = new Command({
 	name: 'play',
     aliases: [ 'p' ],
-    syntax: 'play <file name>',
-	description: "Plays a song.",
+    syntax: 'play <file>',
+	description: "Plays a song from local storage.",
 	async run(message, args, client) {
+        if (!args[0]) return message.channel.send(`${warning} ${missingArguments}`);
         if (!message.member.voice.channel) return message.channel.send(`${warning} ${noChannel}`);
         if (message.member.voice.channel.id == message.guild.afkChannelId) return message.channel.send(`${warning} ${afkChannel}`);
 
         const currentConnection = getVoiceConnection(message.guild.id);
         if (currentConnection && currentConnection.joinConfig.channelId != message.member.voice.channel.id) return message.channel.send(`${warning} ${wrongChannel}`);
 
-		if (!args[0]) return message.channel.send(`${warning} ${missingArguments}`);
-
         const fileName = args[0].replace(/[<@!>]/g, '');
 
-        let response = await message.channel.send(`${loading} Loading \`[${fileName}.mp3]\``);
+        const response = await message.channel.send(`${loading} Loading \`[${fileName}...]\``);
 
         const play = async (song) => {
             const player = createAudioPlayer();
@@ -49,9 +48,23 @@ module.exports = new Command({
             });
         }
 
-        if (existsSync(`./music/${fileName}.mp3`)) play(`./music/${fileName}.mp3`);
-        else if (existsSync(`./music/users/${fileName}.mp3`)) play(`./music/users/${fileName}.mp3`);
-        else return response.edit(`${error} ${fileName}.mp3 doesn't exist.`);
-        response.edit(`${success} Playing **${fileName}.mp3**`);
+        const genericFiles = readdirSync('./music');
+        for (const file of genericFiles) {
+            if (file.startsWith(args[0]) && allowedExtensions.some(ext => file.endsWith(ext))) {
+                play(`./music/${file}`);
+                response.edit(`${success} Playing **${file}**`);
+                return;
+            }
+        }
+        const userFiles = readdirSync('./music/users');
+        for (const file of userFiles) {
+            if (file.startsWith(args[0]) && allowedExtensions.some(ext => file.endsWith(ext))) {
+                play(`./music/users/${file}`);
+                response.edit(`${success} Playing **${file}**`);
+                return;
+            }
+        }
+
+        return response.edit(`${error} ${fileName}... doesn't exist.`);
 	}
 });
