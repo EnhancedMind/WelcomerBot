@@ -1,3 +1,8 @@
+# Version 0.5.1
+Version 0.5.0 has 0.4.1 in package.json, this sets it to 0.5.1 anyway  
+
+
+
 # Version 0.5.0
 The process is now ran with --trace-warnings --trace-deprecation flags if it is started with npm start  
 The commands requiring elevated permissions can now be used by bot owner even without the elevated permissions  
@@ -15,7 +20,6 @@ The debug command can now send both logs and config files
 The setsong command now creates the temp folder if it doesn't exist  
 The stop command now checks for manage channels permission or if the user is the owner of the bot  
 Fixed the ```<arg>``` and [arg] syntax in the help menu  
-
 
 # Version 0.4.0
 The bot can now use other than mp3 files for music and the file can have comments in the name, it just needs to start with the id  

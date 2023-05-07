@@ -95,6 +95,18 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
 - `logs.timeFormat`: the time format that will be used for the logs - [en-US](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/DateTimeFormat)  
 <br><br>
 
+## Adding sounds
+To add sounds you will need to add them to the `music` folder.  
+<br>
+
+In the sounds folder there are 3 files and a users folder.
+- `default.mp3` is the sound that will be played when a user joins a voice channel.
+- `leave0.mp3` and `leave1.mp3` are the sounds that will be played when a user leaves a voice channel. One of them will be randomly selected based on 50% chance.
+<br>
+
+- `users` folder is where you can add custom join sounds for users. To add user a custom sound, simply put a music file named 'USERID_optionalcomment.extention' You can get the userid in discord after enabling developer mode by right clicking the user and selecting 'copy ID'. The allowed extensions are the same as in the config file. I strongly advise against changing the allowedExtensions in the config if you don't know what you are doing.
+
+
 ## Instalation
 To use the project you will need:  
 [Node JS v16.11 or newer](https://nodejs.org/en/)  
