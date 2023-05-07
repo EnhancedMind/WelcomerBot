@@ -1,7 +1,7 @@
 const Command = require('../../Structures/Command.js');
 
 const { Permissions } = require('discord.js');
-const { bot: { prefix }, emoji: { success, warning }, response: { missingArguments, invalidPermissions, invalidNumber } } = require('../../../config/config.json');
+const { bot: { prefix, ownerID }, emoji: { success, warning }, response: { missingArguments, invalidPermissions, invalidNumber } } = require('../../../config/config.json');
 
 module.exports = new Command({
 	name: 'prune',
@@ -9,7 +9,7 @@ module.exports = new Command({
     syntax: 'prune <amount>',
 	description: 'Deletes the amount of messages send by the bot and the commands used to invoke the bot. Requires Manage Messages permission.',
 	async run(message, args, client) {
-		if (!message.member.permissions.has(Permissions.FLAGS.MANAGE_MESSAGES)) return message.channel.send(`${warning} ${invalidPermissions} (Manage Messages)`);
+		if (!message.member.permissions.has(Permissions.FLAGS.MANAGE_MESSAGES) && message.author.id != ownerID) return message.channel.send(`${warning} ${invalidPermissions} (Manage Messages)`);
         if (!args[0]) return message.channel.send(`${warning} ${missingArguments}`);
         if (isNaN(args[0])) return message.channel.send(`${warning} ${invalidNumber}`);
         if (args[0] > 100 || args[0] < 1) return message.channel.send(`${warning} Outside of number range!`);
@@ -32,7 +32,7 @@ module.exports = new Command({
             if (messagesDeleted >= args[0]) break;
         }
 
-        const response = await message.channel.send(`${success} Clearing ${args[0]} messages`)
+        const response = await message.channel.send(`${success} Deleting ${args[0]} messages`)
         setTimeout(() => {
             response.delete();
             message.delete();

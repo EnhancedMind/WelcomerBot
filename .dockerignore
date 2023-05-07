@@ -15,3 +15,4 @@ src/notes.md
 music/
 logs/
 .env
+*.removedfromdocker

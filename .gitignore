@@ -8,10 +8,12 @@ howto.md
 .gitattributes
 src/notes.md
 logs/
-test.js
+test*
 src/Events/resume.js
-src/Commands/fun/
+src/Commands/4_fun/
 .vscode/
 config/
 !config/*.example
 *.old
+.VSCodeCounter
+src/Events/voiceStateUpdate_2.js

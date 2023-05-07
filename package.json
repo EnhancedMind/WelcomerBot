@@ -1,6 +1,6 @@
 {
   "name": "welcomerbot",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Discord bot that plays sounds or music when somebody joins or leaves a voice channel",
   "main": "src/main.js",
   "author": "EnhancedMind",
@@ -15,7 +15,7 @@
     "url": "https://github.com/EnhancedMind/WelcomerBot/issues"
   },
   "scripts": {
-    "start": "node src/main.js",
+    "start": "node src/main.js --trace-warnings --trace-deprecation",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

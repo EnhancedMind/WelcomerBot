@@ -9,7 +9,6 @@ const { bot: { ownerID }, emoji: { success, error }, response: { invalidPermissi
 module.exports = new Command({
 	name: 'user',
     aliases: [ ' ' ],
-    //syntax: 'user <action> <optionaltype> <optionaltype> <userIDAdminOnly>',
     syntax: 'user <action> <optionalType> <optionalType> <userIDOwnerOnly>',
 	description: 'Sets whether the bot is enabled for the user or not',
 	async run(message, args, client) {
@@ -18,7 +17,6 @@ module.exports = new Command({
             const modifiedArg = arg.replace(/[<@!>]/g, '');
             if (!isNaN(modifiedArg) && modifiedArg.length == 18) {
                 member = modifiedArg;
-                //if (args.length > 1 && !message.member.permissions.has(Permissions.FLAGS.ADMINISTRATOR)) return message.channel.send(`${error} ${invalidPermissions}`);
                 if (args.length > 1 && message.author.id != ownerID) return message.channel.send(`${error} ${invalidPermissions} (Bot owner)`);
                 break;
             }

@@ -2,7 +2,7 @@ const Command = require('../../Structures/Command');
 
 const { emoji: { success, warning }, response: { missingArguments }, player: { maxTime, allowedExtensions } } = require('../../../config/config.json')
 const https = require('https');
-const { readdirSync, existsSync, renameSync, createWriteStream, unlink, writeFile } = require('fs');
+const { readdirSync, existsSync, renameSync, mkdirSync, createWriteStream, rmSync, writeFile } = require('fs');
 const { spawn } = require('child_process');
 const ffprobe = require('ffprobe-static');
 const { consoleLog } = require('../../Data/Log.js');
@@ -20,6 +20,7 @@ module.exports = new Command({
 
 		const filePath = `./music/users/${message.author.id}_${message.author.username}${args[0] ? `_${args[0]}` : ''}${message.attachments.first().name.slice(message.attachments.first().name.lastIndexOf('.'))}`;
 		const tempPath = `./music/users/temp/${message.attachments.first().name}`;
+		if (!existsSync('./music/users/temp')) mkdirSync('./music/users/temp', { recursive: true });
 		await new Promise((resolve) => https.get(message.attachments.first().url, (res) => res.pipe(createWriteStream(tempPath)).on('finish', () => resolve())));
 
 		const ffprobeProcess = spawn(`${ffprobe.path}`,
@@ -33,9 +34,7 @@ module.exports = new Command({
 		ffprobeProcess.stdout.on('data', (data) => {
 			const duration = parseFloat(data);
 			if (duration > maxTime) {
-				unlink(tempPath, (err) => {
-					if (err) consoleLog(err);
-				});
+				rmSync(tempPath, { force: true });
 				return message.channel.send(`${warning} The song is too long! Max length: ${maxTime} seconds`);
 			}
 			const files = readdirSync('./music/users');
@@ -53,11 +52,12 @@ module.exports = new Command({
         	const settings = require(settingsFile);
 			if (settings.user[message.author.id] && !settings.user[message.author.id].enabledJoin) {
 				settings.user[message.author.id].enabledJoin = true;
-				message.channel.send(`${success} Your join sound has been enabled!`);
-
+				
 				writeFile(settingsFile, JSON.stringify(settings, null, 4), (err) => {
 					if (err) consoleLog(err);
 				});
+				
+				message.channel.send(`${success} Your join sound has been enabled!`);
 			}
 		});
 	}

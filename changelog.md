@@ -1,6 +1,25 @@
+# Version 0.5.0
+The process is now ran with --trace-warnings --trace-deprecation flags if it is started with npm start  
+The commands requiring elevated permissions can now be used by bot owner even without the elevated permissions  
+The guild command now displays the current settings when no arguments are passed  
+Changed unlink to rmSync in the setsong command  
+Added the option to use more files each with its own probability of being played  
+Added the option to only play the file once and never again  
+The commands used to control the sounds are now in the sound category  
+Command category folders now start with number and they are sorted by that number  
+The prune commands now say Deleting messages instead of Clearing messages  
+There is now new guild setting to disable the default join sound  
+The guild command now supports disabling and enabling the default join sound  
+The settings file checker converts old settings to new ones so it is hassle free  
+The debug command can now send both logs and config files  
+The setsong command now creates the temp folder if it doesn't exist  
+The stop command now checks for manage channels permission or if the user is the owner of the bot  
+Fixed the ```<arg>``` and [arg] syntax in the help menu  
+
+
 # Version 0.4.0
 The bot can now use other than mp3 files for music and the file can have comments in the name, it just needs to start with the id  
-Added the setsong command  
+Added the setsong command which allows you to set the song you want to play when you join the voice channel as a message attachment  
 Added the prune command which deletes only the messages from the bot and the messages used to invoke the bot  
 Added the playable command which lists all the playable files  
 Updated the play command to support new file formats and comments in the name  

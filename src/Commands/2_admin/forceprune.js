@@ -1,7 +1,7 @@
 const Command = require('../../Structures/Command.js');
 
 const { Permissions, ReactionCollector } = require('discord.js');
-const { emoji: { success, warning }, response: { missingArguments, invalidPermissions, invalidNumber } } = require('../../../config/config.json');
+const { bot: { ownerID }, emoji: { success, warning }, response: { missingArguments, invalidPermissions, invalidNumber } } = require('../../../config/config.json');
 
 
 const emojiList = [ '✅', '❌' ];
@@ -12,7 +12,7 @@ module.exports = new Command({
     syntax: 'forceprune <amount> <confirm>',
 	description: 'Deletes the amount of messages **!ALL MESSAGES!** Requires Administrator permission.',
 	async run(message, args, client) {
-		if (!message.member.permissions.has(Permissions.FLAGS.ADMINISTRATOR)) return message.channel.send(`${warning} ${invalidPermissions} (Administrator)`);
+		if (!message.member.permissions.has(Permissions.FLAGS.ADMINISTRATOR) && message.author.id != ownerID) return message.channel.send(`${warning} ${invalidPermissions} (Administrator)`);
         if (!args[0]) return message.channel.send(`${warning} ${missingArguments}`);
         if (isNaN(args[0])) return message.channel.send(`${warning} ${invalidNumber}`);
         if (args[0] > 99 || args[0] < 1) return message.channel.send(`${warning} Outside of number range!`);
@@ -41,7 +41,7 @@ module.exports = new Command({
                     result.delete(result.firstKey());  //remove the response message from the bulk delete
                     message.channel.bulkDelete(result);
 
-                    if (response.editable) response.edit(`${success} Clearing ${args[0]} messages`);
+                    if (response.editable) response.edit(`${success} Deleting ${args[0]} messages`);
                     setTimeout(() => response.delete(), 3750);
 
                     collector.stop();

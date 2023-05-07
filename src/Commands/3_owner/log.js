@@ -8,7 +8,7 @@ const { bot: { ownerID }, emoji: { success, error }, response: { invalidPermissi
 module.exports = new Command({
 	name: 'log',
 	aliases: [ ' ' ],
-    syntax: 'log [data]',
+    syntax: 'log <data>',
 	description: 'Manually log into file',
 	async run(message, args, client) {
         if (message.author.id != ownerID) return message.channel.send(`${error} ${invalidPermissions}`);

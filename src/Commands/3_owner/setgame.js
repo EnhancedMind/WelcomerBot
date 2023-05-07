@@ -6,7 +6,7 @@ const { bot: { ownerID }, status: { game }, emoji: { success, error }, response:
 module.exports = new Command({
 	name: 'setgame',
 	aliases: [ ' ' ],
-	syntax: 'setgame [game]',
+	syntax: 'setgame <game>',
 	description: 'Sets the game the bot is playing',
 	async run(message, args, client) {
 		if (message.author.id != ownerID) return message.channel.send(`${error} ${invalidPermissions}`);

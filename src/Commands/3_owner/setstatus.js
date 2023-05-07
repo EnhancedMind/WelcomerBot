@@ -6,7 +6,7 @@ const { bot: { ownerID }, status: { status }, emoji: { success, error }, respons
 module.exports = new Command({
 	name: 'setstatus',
 	aliases: [ ' ' ],
-	syntax: 'setstatus <status>',
+	syntax: 'setstatus [ online | idle | dnd | invisible ]',
 	description: 'Sets the status the bot displays',
 	async run(message, args, client) {
 		if (message.author.id != ownerID) return message.channel.send(`${error} ${invalidPermissions}`);
