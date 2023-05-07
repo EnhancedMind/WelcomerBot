@@ -35,7 +35,7 @@ module.exports = new Event('voiceStateUpdate', async (client, oldState, newState
 
         if (files.length == 0) {
             if (settings.guild[newState.guild.id] && settings.guild[newState.guild.id].enabledDefaultJoin == false) return;
-            return play(newState, './music/default2.mp3', 800); //play default sound if no suitable files are found
+            return play(newState, './music/default.mp3', 800); //play default sound if no suitable files are found
         }
          
 
