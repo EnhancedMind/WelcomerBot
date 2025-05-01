@@ -1,6 +1,6 @@
 const Command = require('../../Structures/Command');
 
-const { MessageEmbed } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 const { readdirSync } = require('fs');
 const paginator = require('../../Structures/Paginator');
 const { homepage } = require('../../../package.json');
@@ -26,7 +26,7 @@ module.exports = new Command({
         let pages = [];
         let i = 0;
         cmdDir.forEach(dirs => {
-            pages[i] = new MessageEmbed()
+            pages[i] = new EmbedBuilder()
                 .setColor(0x3399FF)
                 .setAuthor({
                     name: client.user.username,
@@ -34,7 +34,7 @@ module.exports = new Command({
                     iconURL: client.user.displayAvatarURL({ size: 1024, dynamic: true })
                 })
                 .setTitle(`**${dirs[2].toUpperCase() + dirs.slice(3)} aliases!**`)
-                .addField('**Pages**', content)
+                .addFields( [ { name: '**Pages**', value: content, inline: false } ] )
 
             if (i == 0) {
                 pages[0]
@@ -45,7 +45,7 @@ module.exports = new Command({
                 .filter(file => file.endsWith('.js'))
                 .forEach(file => {
                     const data = client.commands.get(file.substring(0, file.lastIndexOf('.')))
-                    pages[i].addField(`**${data.name[0].toUpperCase() + data.name.slice(1)}**`, `:wavy_dash:**\`${data.aliases.join('`**, **`')}\`**`);
+                    pages[i].addFields( [ { name: `**${data.name[0].toUpperCase() + data.name.slice(1)}**`, value: `:wavy_dash:**\`${data.aliases.join('`**, **`')}\`**`, inline: false } ] );
                 });
             i++
         });

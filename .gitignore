@@ -16,4 +16,6 @@ config/
 !config/*.example
 *.old*
 .VSCodeCounter
-src/Events/voiceStateUpdate_2.js
+nodemon.json
+musicold/
+*.eol

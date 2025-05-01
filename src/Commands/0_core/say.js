@@ -11,7 +11,7 @@ module.exports = new Command({
 	async run(message, args, client) {
 		if (!args[0]) return message.channel.send(`${warning} ${missingArguments}`);
 		
-        await message.delete();
+        if ( (await message.channel.messages.fetch({ limit: 1, cache: false, around: message.id })).has(message.id) ) await message.delete();
         message.channel.send(args.slice(0).join(' '));
 	}
 });

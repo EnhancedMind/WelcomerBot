@@ -1,6 +1,6 @@
 const Command = require('../../Structures/Command');
 
-const { MessageEmbed } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 const { readdirSync } = require('fs');
 const paginator = require('../../Structures/Paginator');
 const { bot: { prefix } } = require('../../../config/config.json');
@@ -27,7 +27,7 @@ module.exports = new Command({
         let pages = [];
         let i = 0;
         cmdDir.forEach(dirs => {
-            pages[i] = new MessageEmbed()
+            pages[i] = new EmbedBuilder()
                 .setColor(0x3399FF)
                 .setAuthor({
                     name: client.user.username,
@@ -35,21 +35,21 @@ module.exports = new Command({
                     iconURL: client.user.displayAvatarURL({ size: 1024, dynamic: true })
                 })
                 .setTitle(`**${dirs[2].toUpperCase() + dirs.slice(3)} help is here!**`)
-                .addField('**Pages**', content)
+                .addFields( [ { name: '**Pages**', value: content, inline: false } ] )
 
             if (i == 0) {
                 pages[0]
                     .setTitle('**Help is here!**')
                     .setDescription(`This bot comes from a GitHub project [${homepage.substring(19, homepage.length - 7)}](${homepage}).\nThe use is possible for free while keeping the credits.\n Made by EnhancedMind :heart:`)
-                    .addField('**Prefix**' , `:wavy_dash:The prefix is:   **${prefix}**`)
+                    .addFields( [ { name: '**Prefix**', value: `:wavy_dash:The prefix is:   **${prefix}**`, inline: false } ] )
             }
 
             readdirSync(`./src/Commands/${dirs}`)
                 .filter(file => file.endsWith('.js'))
                 .forEach(file => {
                     const data = client.commands.get(file.substring(0, file.lastIndexOf('.')));
-                    if (data.syntax) pages[i].addField(`**${data.syntax[0].toUpperCase() + data.syntax.slice(1)}**`, `:wavy_dash:${data.description}`);
-                    else pages[i].addField(`**${data.name[0].toUpperCase() + data.name.slice(1)}**`, `:wavy_dash:${data.description}`);
+                    if (data.syntax) pages[i].addFields( [ { name: `**${data.syntax[0].toUpperCase() + data.syntax.slice(1)}**`, value: `:wavy_dash:${data.description}`, inline: false } ] );
+                    else pages[i].addFields( [ { name: `**${data.name[0].toUpperCase() + data.name.slice(1)}**`, value: `:wavy_dash:${data.description}`, inline: false } ] );
                 });
             i++
         });

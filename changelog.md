@@ -1,7 +1,31 @@
-# Version 0.5.1
-Version 0.5.0 has 0.4.1 in package.json, this sets it to 0.5.1 anyway  
-
-
+# Version 0.6.0
+Changed the music folder hierarchy. The new structure is in README.md  
+The bot can now also be mentioned in the command so prefix doesn't have to be used and remembered  
+Added 'Adding sound' to README.md  
+Updated the installation instructions in README.md  
+Updated the code to support discord.js v14  
+Updated paginator so buttons are not sent when there is only one page  
+Updated the reaction collector so they don't crash when the message is deleted (discord.js v14 changed stuff)  
+Fixed response edits and deletions so they don't crash when the message is deleted  
+Fixed removing reactions so they don't crash when the message is deleted  
+Removed the setsong command as it was replaced  
+Added the addsong command which allows you to add sounds to the bot  
+Added the removesong command which allows you to remove sounds from the bot  
+Remade the settings so that they now actually work reliably and get saved when the bot is restarted 
+The setting now support seperately defaultJoin and defaultLeave settings   
+Updated the guild and user commands to use the new settings system  
+Added alias 'server' to the guild command as it can make more sense for people unfimiliar with discord APIs  
+Updated the playable command to use the new sound management system and to also list paths to the files  
+Updated the play command to accept paths from the playable command or accept a user tag and select a random sound for the user as if he would join the channel  
+Added the sync command which updates the sound database with the files in the music folder  
+The prune command was updated to work with discord.js v14  
+About command now displays the discord.js version  
+The debug and log command were removed  
+Updated discord.js to version 14.19.1  
+Updated discord.js/voice to version 0.18.0  
+Updated discord.js/opus to version 0.10.0  
+Updated libsodium-wrappers to version 0.7.15  
+Updated ffmpeg-static to version 5.2.0  
 
 # Version 0.5.0
 The process is now ran with --trace-warnings --trace-deprecation flags if it is started with npm start  

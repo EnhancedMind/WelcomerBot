@@ -5,10 +5,14 @@ const { bot: { prefix, ignoreMessageEndingWithPrefix }, response: { notValidComm
 
 module.exports = new Event('messageCreate', async (client, message) => {
     if (message.author.bot) return;
-    if (!message.content.startsWith(prefix)) return;
     if (message.content.endsWith(prefix) && ignoreMessageEndingWithPrefix) return;
 
-    const args = message.content.substring(prefix.length).split(/ +/);
+
+    let args;
+    if (message.content.startsWith(prefix)) args = message.content.substring(prefix.length).split(/ +/);
+    else if (message.content.startsWith(`<@${client.user.id}> `)) args = message.content.substring(client.user.id.length + 4).split(/ +/);
+    else return;
+
     const cmd = args.shift().toLowerCase();
     const command = client.commands.get(cmd) || client.commands.find(a => a.aliases && a.aliases.includes(cmd));
     if (!notValidCommand && !command) return;

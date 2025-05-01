@@ -1,53 +1,61 @@
 const Command = require('../../Structures/Command');
 
-const { MessageEmbed } = require('discord.js');
-const { readdirSync } = require('fs');
+const { EmbedBuilder } = require('discord.js');
 
-const { player: { allowedExtensions } } = require('../../../config/config.json');
+const paginator = require('../../Structures/Paginator.js');
 const { homepage } = require('../../../package.json');
 
 module.exports = new Command({
 	name: 'playable',
-	aliases: [ 'lp', 'pls' ],
+	aliases: [ 'pl', 'pls' ],
 	description: 'Lists all the files that can be played.',
 	async run(message, args, client) {
-		const genericFiles = readdirSync('./music');
-		const userFiles = readdirSync('./music/users');
-		let numberGeneric = 0;
-		let numberUser = 0;
+		const genericFiles = [];
+		const userFiles = [];
 
-		const embed = new MessageEmbed()
-			.setColor(0x3399FF)
-			.setAuthor({
-				name: `All playable files!`,
-				url: homepage,
-				iconURL: client.user.displayAvatarURL({ size: 1024, dynamic: true })
-			})
+		client.soundFiles.forEach((value, key) => {
+			value.forEach((file) => {
+				if (key != 'default' && key != 'everyone') {
+					userFiles.push({
+						name: file.filename,
+						path: file.path
+					});
+				}
+				else {
+					genericFiles.push({
+						name: file.filename,
+						path: file.path
+					});
+				}
+			});
+		});
 
+		const files = [ ...genericFiles, ...userFiles ];
+		const embeds = [];
 
-		for (const file of genericFiles) {
-			if (allowedExtensions.some(ext => file.endsWith(ext))) {
-				embed.addFields({
-					name: `${file}`,
-					value: ' '
-				});
-				numberGeneric++;
+		let j = -1;
+		for (let i = 0; i < files.length; i++) {
+			if (i % 15 == 0) {
+				j++;
+				embeds[j] = new EmbedBuilder()
+					.setColor(0x3399FF)
+					.setAuthor({
+						name: `All playable files!`,
+						url: homepage,
+						iconURL: client.user.displayAvatarURL({ size: 1024, dynamic: true })
+					});
 			}
+			embeds[j].addFields({
+				name: `\`${files[i].name}\``,
+				value: `\`${files[i].path}\``,
+			});
 		}
-		for (const file of userFiles) {
-			if (allowedExtensions.some(ext => file.endsWith(ext))) {
-				embed.addFields({
-					name: `${file}`,
-					value: ' '
-				});
-				numberUser++;
-			}
-		}
-		
-		embed.setDescription(`**Here are all the files that can be played by the bot:**
-			\`\`\`🎶 Generic files: ${numberGeneric}
-🎶 User files: ${numberUser}\`\`\``);  // due to stupid discord formatting, this is the way to do this
 
-		message.channel.send({ embeds: [ embed ] });		
+		embeds[0].setDescription(`**Here are all the files that can be played by the bot:**\n\`\`\`🎶 Generic files: ${genericFiles.length}\n🎶 User files: ${userFiles.length}\`\`\``);
+
+		let page = 0;
+		if (args[0] && !isNaN(args[0])) page = args[0] - 1;
+
+		paginator(message, embeds, null, page);	
 	}
 });
