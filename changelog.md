@@ -1,3 +1,6 @@
+# Version 0.6.1
+Fixed the bot selecting only from everyone sound when the user had no custom sound in that mode (join/leave) instead of selecting from default and everyone sounds  
+
 # Version 0.6.0
 Changed the music folder hierarchy. The new structure is in README.md  
 The bot can now also be mentioned in the command so prefix doesn't have to be used and remembered  

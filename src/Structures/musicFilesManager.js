@@ -113,7 +113,7 @@ const getSoundFile = (client, userId, type) => {
                 if (type == 'join') return item.join && item.valid;
                 if (type == 'leave') return item.leave && item.valid;
             });
-            if (userFiles.length != 0 || true) { // if no custom sound files for join/leave are found, eg. userFiles.length == 0, revert to default and everyone files by leaving the selectionArray.length at 0, the other one will take care of it
+            if (userFiles.length != 0) { // if no custom sound files for join/leave are found, eg. userFiles.length == 0, revert to default and everyone files by leaving the selectionArray.length at 0, the other one will take care of it
                 const everyoneFiles = client.soundFiles.get('everyone').filter(item => {
                     if (type == 'join') return item.join && item.valid;
                     if (type == 'leave') return item.leave && item.valid;

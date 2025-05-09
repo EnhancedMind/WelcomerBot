@@ -1,6 +1,7 @@
 node_modules/
 music/music.mp3
 music/users/*
+music/everyone/*
 !music/users/*.example
 !music/users/addUser.md
 package-lock.json
