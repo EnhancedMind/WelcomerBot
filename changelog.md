@@ -1,3 +1,13 @@
+# Version 0.6.2
+The everyone sound directory can now have subdirectories with defined chance, join, leave and once settings, change is divided among the files inside the subdirectory, more in README.md  
+Added aptional argument 'json' to playable command to get the sound files database as JSON file attachment  
+Added docker-compose.yml.example as an example of how to set up the container and its volumes  
+Added better description to README.md about what the bot does  
+Changed the order of flags --trace-warnings and --trace-deprecation in npm start so they work properly  
+Updated discord.js to version 14.24.2  
+Updated discord.js/voice to version 0.19.0  
+Installed @snazzah/davey version 0.1.7 for voice connection encryption support for @discordjs/voice v0.19.0 on more platforms  
+
 # Version 0.6.1
 Fixed the bot selecting only from everyone sound when the user had no custom sound in that mode (join/leave) instead of selecting from default and everyone sounds  
 

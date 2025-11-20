@@ -61,18 +61,40 @@ const syncSoundFiles = (client) => {
         const everyoneFilesDir = readdirSync('./music/everyone');
         client.soundFiles.set('everyone', []);
         for (const file of everyoneFilesDir) {
-            if (!allowedExtensions.some(ext => file.endsWith(ext))) continue; // Check if the file has a valid extension
-            client.soundFiles.get('everyone').push(
-                {
-                    path: path.join('./music/everyone', file),
-                    filename: file,
-                    chance: file.includes('$ch=') ? parseFloat(file.split('ch=')[1]) : undefined,
-                    join: file.includes('$join') || !file.includes('$leave'),
-                    leave: file.includes('$leave'),
-                    once: file.includes('$once'),
-                    valid: !file.includes('$used')
+            if(statSync(path.join('./music/everyone', file)).isDirectory()) {  // 'file' is the folder here
+                const everyoneFilesDir2 = readdirSync(path.join('./music/everyone', file));
+                if (!everyoneFilesDir2.length) continue; // skip empty folders
+                const fileChance = file.includes('$ch=') ? (parseFloat(file.split('ch=')[1])/everyoneFilesDir2.length) : undefined;  // chance set for the folder divided by number of files inside
+                for (const file2 of everyoneFilesDir2) {
+                    if (!allowedExtensions.some(ext => file2.endsWith(ext))) continue; // Check if the file has a valid extension
+                    client.soundFiles.get('everyone').push(
+                        {
+                            path: path.join('./music/everyone', file, file2),
+                            filename: file2,
+                            chance: file2.includes('$ch=') ? parseFloat(file2.split('ch=')[1]) : fileChance,
+                            join: file.includes('$join') || !file.includes('$leave') || file2.includes('$join'),  // file is the folder here
+                            leave: file.includes('$leave') || file2.includes('$leave'),
+                            once: file.includes('$once') || file2.includes('$once'),
+                            valid: !file2.includes('$used')
+                        }
+                    );
                 }
-            );
+            }
+
+            if(!statSync(path.join('./music/everyone', file)).isDirectory()) {
+                if (!allowedExtensions.some(ext => file.endsWith(ext))) continue; // Check if the file has a valid extension
+                client.soundFiles.get('everyone').push(
+                    {
+                        path: path.join('./music/everyone', file),
+                        filename: file,
+                        chance: file.includes('$ch=') ? parseFloat(file.split('ch=')[1]) : undefined,
+                        join: file.includes('$join') || !file.includes('$leave'),
+                        leave: file.includes('$leave'),
+                        once: file.includes('$once'),
+                        valid: !file.includes('$used')
+                    }
+                );
+            }
         }
 
         const defaultFilesDir = readdirSync('./music/default');
@@ -91,7 +113,7 @@ const syncSoundFiles = (client) => {
                 }
             );
         }
-        
+
         resolve();
     });
 }
@@ -106,8 +128,8 @@ const syncSoundFiles = (client) => {
 const getSoundFile = (client, userId, type) => {
     return new Promise(async (resolve, reject) => {
 
-        let selectionArray = [];
-        let defaultType = false;
+        let selectionArray = [];  // array of sound files to choose from
+        let defaultType = false;  // whether the user has his own sound files or if just default/everyone ones are used, returned as second value to voiceStateUpdate to check with settings
         if ( client.soundFiles.has(userId) ) { // if userId has his own sound files
             const userFiles = client.soundFiles.get(userId).filter(item => {
                 if (type == 'join') return item.join && item.valid;
@@ -129,7 +151,7 @@ const getSoundFile = (client, userId, type) => {
             defaultType = true;
         }
         if (selectionArray.length == 0) { // if no sound files are found, return null
-            resolve( [null, defaultType]);
+            resolve([null, defaultType]);
             return;
         }
 
@@ -144,7 +166,7 @@ const getSoundFile = (client, userId, type) => {
         }
         if (defaultProbability < 0) defaultProbability = 0;
 
-        // Find all indexes of undefined in probabilities array and replace them with defaultProbability / indexes.length
+        // Find all indexes of undefined in probabilities array and replace them with defaultProbability / indexes.length, indexes are of sound with no set chance
         const indexes = [];
         probabilities.forEach((item, index) => {
             if (item === undefined) indexes.push(index);
@@ -153,20 +175,20 @@ const getSoundFile = (client, userId, type) => {
             probabilities[indexes[i]] = defaultProbability / indexes.length;
         }
 
-        // Choose a random item from the array based on probabilities
+        // Choose a random item from the array based on probabilities, this number is between 0 and the sum of all probabilities, so scaled accordingly
         const randomNumber = Math.random() * probabilities.reduce((acc, probability) => acc + probability, 0);
         // Iterate through the probabilities and keep track of the running sum
         let runningSum = 0; // running sum of probabilities, each iteration adds the current probability to the running sum
 
         for (let i = 0; i < probabilities.length; i++) {
             // If the random number is less than the running sum + current probability, choose the current item 
-            if (randomNumber < (runningSum += probabilities[i])) {
+            if (randomNumber < (runningSum += probabilities[i])) { //check and add to running sum at the same time
                 // Return the chosen item
                 if (existsSync(selectionArray[i].path)) {
                     resolve( [selectionArray[i], defaultType] );
                     return;
                 }
-                await syncSoundFiles(client);
+                await syncSoundFiles(client); // if the file does not exist, for example it was deleted manually, resync the sound files and try again
                 resolve( await getSoundFile(client, userId, type) );
                 return;
             }

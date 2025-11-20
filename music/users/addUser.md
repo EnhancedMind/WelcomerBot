@@ -1,6 +1,6 @@
 To add user a custom sound, simply put a .mp3 file named 'USERID.mp3'  
 You can get the user ID in discord after enabling developer mode by right clicking the user and selecting 'copy ID'  
-you can add thags to the file name, but it needs to start with the user ID  
+you can add tags to the file name, but it needs to start with the user ID  
 the tags are:  
 - $join - play when the user joins the voice channel  
 - $leave - play when the user leaves the voice channel  

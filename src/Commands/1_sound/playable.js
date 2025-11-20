@@ -1,15 +1,26 @@
 const Command = require('../../Structures/Command');
 
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 
 const paginator = require('../../Structures/Paginator.js');
+const { bot: { prefix } } = require('../../../config/config.json');
 const { homepage } = require('../../../package.json');
 
 module.exports = new Command({
 	name: 'playable',
 	aliases: [ 'pl', 'pls' ],
-	description: 'Lists all the files that can be played.',
+	description: `Lists all the files that can be played. Use \`${prefix}playable json\` to get the output as JSON data.`,
 	async run(message, args, client) {
+		if (args[0] == 'json') {
+			const jsonString = JSON.stringify(Object.fromEntries(client.soundFiles), null, 2);
+			const buffer = Buffer.from(jsonString, 'utf-8');
+
+			const attachment = new AttachmentBuilder(buffer, { name: 'soundFiles.json' });
+
+			message.channel.send({ content: 'Here is the JSON data:', files: [attachment] });
+			return;
+		}
+		// else
 		const genericFiles = [];
 		const userFiles = [];
 

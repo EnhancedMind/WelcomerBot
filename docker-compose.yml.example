@@ -1,0 +1,11 @@
+services:
+  welcomerbot:
+    image: 'your image goes here'
+    container_name: welcomerbot
+    environment:
+      - TZ=Europe/Prague # set your timezone here, used for timestamping logs and responses to commands
+    volumes:   # these 3 volumes have to be mapped inside the container, theoretically logs are optional. (host:container)
+      - ~/docker/welcomerbot/config/:/app/config/
+      - ~/docker/welcomerbot/logs/:/app/logs/
+      - ~/docker/welcomerbot/music/:/app/music/
+    restart: unless-stopped
