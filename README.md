@@ -5,9 +5,9 @@ A complete code to download for a Welcomer Bot
 <br>
 
 ## Description and Features
-- Play sounds when users join or leave voice channels  
-- Custom join and leave sounds per user  
-- Global join and leave sounds for everyone  
+- Play sounds when users join or leave voice channels
+- Custom join and leave sounds per user
+- Global join and leave sounds for everyone
 - Default join and leave sounds when no custom sound is set  
 - Chance-based sound selection for varied playback  
 - Option to play sounds only once  
