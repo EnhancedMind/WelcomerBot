@@ -10,7 +10,7 @@ jobs:
       version: ${{ steps.package-version.outputs.current-version }} # Passes the version number down to the build job
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0 # Important: Tells GitHub to fetch all history to generate accurate release notes
 
