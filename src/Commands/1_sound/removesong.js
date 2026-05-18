@@ -10,6 +10,7 @@ module.exports = new Command({
 	aliases: [ '' ],
 	syntax: 'removesong <filepath>',
 	description: `Marks the song from the first argument as used. Send the whole path from \`${prefix}playable\` as an argument. Does not remove the song completely from the server, for that contact the owner of the bot.`,
+	help: helpText,
 	async run(message, args, client) {
 		const channel = message.channel;
 		const senderId = message.author.id;
@@ -28,3 +29,11 @@ module.exports = new Command({
 		channel.send(`${success} Successfully invalidated (removed) the file!`);
 	}
 });
+
+
+const helpText = `
+This command allows you to mark a song as used. This means the song will not play again.
+To use this command, send the file path of the song you want to remove from the list. You can get the file path from the \`${prefix}playable\` command.
+Keep in mind that this command does not remove the file from the server, it only marks it as used. The only way to fully remove the file is to contact the owner of the bot.
+Example usage: \`${prefix}removesong music${path.sep}users${path.sep}${message.author.id}${path.sep}mysong.mp3\`
+`;
