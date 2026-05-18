@@ -19,22 +19,22 @@ module.exports = new Command({
 		}
 
 		if(userFlagIndex) {
-			if (valueAfterFlag && !valueAfterFlag.startsWith('-')) {
-        targetUser = valueAfterFlag;
-    }
+			// if (valueAfterFlag && !valueAfterFlag.startsWith('-')) {
+			// 	targetUser = valueAfterFlag;
+			// }
 		}
 
-		if (targetUser) {
-			// Matches and extracts just the 18-19 digit number inside the mention
-			const mentionMatch = targetUser.match(/^<@!?([0-9]{18,19})>$/);
+		// if (targetUser) {
+		// 	// Matches and extracts just the 18-19 digit number inside the mention
+		// 	const mentionMatch = targetUser.match(/^<@!?([0-9]{18,19})>$/);
 			
-			if (mentionMatch) {
-				const cleanUserId = mentionMatch[1]; // This is just the raw ID string
-				console.log(`Targeting User ID: ${cleanUserId}`);
-			} else {
-				// Handle case where they passed a plain ID or username instead of a mention
-			}
-		}
+		// 	if (mentionMatch) {
+		// 		const cleanUserId = mentionMatch[1]; // This is just the raw ID string
+		// 		console.log(`Targeting User ID: ${cleanUserId}`);
+		// 	} else {
+		// 		// Handle case where they passed a plain ID or username instead of a mention
+		// 	}
+		// }
 
 		if (args[0] == '--json') {
 			const jsonString = JSON.stringify(Object.fromEntries(client.soundFiles), null, 2);
