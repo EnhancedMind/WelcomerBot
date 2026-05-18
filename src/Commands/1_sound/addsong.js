@@ -11,7 +11,6 @@ const {
 const https = require('https');
 const { existsSync, readdirSync, statSync, renameSync, mkdirSync, createWriteStream, rmSync, readdir } = require('fs');
 const { spawn } = require('child_process');
-const ffprobe = require('ffprobe-static');
 const path = require('path');
 const { PermissionsBitField } = require('discord.js');
 const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/settingsManager.js');
@@ -124,7 +123,7 @@ async function addSongCore(message, client, targetDir) {
 		if (!existsSync(`${tempMusicDir}`)) mkdirSync(`${tempMusicDir}`, { recursive: true });
 		await new Promise((resolve) => https.get(attachment.url, (res) => res.pipe(createWriteStream(tempPath)).on('finish', () => resolve())));
 
-		const ffprobeProcess = spawn(`${ffprobe.path}`,
+		const ffprobeProcess = spawn(`ffprobe`,
 			[ '-i', tempPath, //input file
 			'-show_entries', 'format=duration', //only show duration
 			'-v', 'quiet', //prevent output spam
