@@ -12,29 +12,29 @@ module.exports = new Command({
 	aliases: [ 'pl', 'pls' ],
 	description: `Lists all the files that can be played. Use \`${prefix}playable --json\` to get the output as JSON data.`,
 	async run(message, args, client) {
-		const jsonFlag = args.some(arg => arg == '--json')
-		let userFlagIndex = args.indexOf('--user');
-		if (userFlagIndex === -1) {
-			userFlagIndex = args.indexOf('-u'); // Fallback to shorthand if longhand wasn't used
-		}
+		// const jsonFlag = args.some(arg => arg == '--json')
+		// let userFlagIndex = args.indexOf('--user');
+		// if (userFlagIndex === -1) {
+		// 	userFlagIndex = args.indexOf('-u'); // Fallback to shorthand if longhand wasn't used
+		// }
 
-		if(userFlagIndex) {
-			if (valueAfterFlag && !valueAfterFlag.startsWith('-')) {
-        targetUser = valueAfterFlag;
-    }
-		}
+		// if(userFlagIndex) {
+		// 	if (valueAfterFlag && !valueAfterFlag.startsWith('-')) {
+		// 		targetUser = valueAfterFlag;
+		// 	}
+		// }
 
-		if (targetUser) {
-			// Matches and extracts just the 18-19 digit number inside the mention
-			const mentionMatch = targetUser.match(/^<@!?([0-9]{18,19})>$/);
+		// if (targetUser) {
+		// 	// Matches and extracts just the 18-19 digit number inside the mention
+		// 	const mentionMatch = targetUser.match(/^<@!?([0-9]{18,19})>$/);
 			
-			if (mentionMatch) {
-				const cleanUserId = mentionMatch[1]; // This is just the raw ID string
-				console.log(`Targeting User ID: ${cleanUserId}`);
-			} else {
-				// Handle case where they passed a plain ID or username instead of a mention
-			}
-		}
+		// 	if (mentionMatch) {
+		// 		const cleanUserId = mentionMatch[1]; // This is just the raw ID string
+		// 		console.log(`Targeting User ID: ${cleanUserId}`);
+		// 	} else {
+		// 		// Handle case where they passed a plain ID or username instead of a mention
+		// 	}
+		// }
 
 		if (args[0] == '--json') {
 			const jsonString = JSON.stringify(Object.fromEntries(client.soundFiles), null, 2);

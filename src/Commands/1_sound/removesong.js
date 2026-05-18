@@ -1,7 +1,8 @@
 const Command = require('../../Structures/Command');
 
-const { bot: { prefix, ownerID }, emoji: { success, warning }, response: { missingArguments } } = require('../../../config/config.json')
-const { existsSync } = require('fs');
+const { bot: { prefix, ownerID , devIDs}, emoji: { success, warning }, response: { missingArguments } } = require('../../../config/config.json')
+const { existsSync} = require('fs');
+const path = require('path');
 const { invalidateSoundFile } = require('../../Structures/musicFilesManager.js');
 
 module.exports = new Command({
@@ -13,12 +14,17 @@ module.exports = new Command({
 		const channel = message.channel;
 		const senderId = message.author.id;
 
+		const permissionFail = senderId != ownerID && !devIDs.includes(senderId);
 		if (!args[0]) return channel.send(`${warning} ${missingArguments}`);
-		if (!args[0].startsWith(senderId) && senderId != ownerID) return message.channel.send(`${warning} You can only remove your sounds \`${message.author.id}...\``);
-		if (!existsSync(`./${args[0]}`)) return message.channel.send(`${warning} The file does not exist!`);
+
+		const splitPath = args[0].split(path.sep);
+		if(splitPath.length <= 2) return channel.send(`${warning} The file does not exist!`);
+
+		if (!splitPath[2].startsWith(senderId) && permissionFail) return channel.send(`${warning} You can only remove your songs \`music${path.sep}users${path.sep}${message.author.id}...\``);
+		if (!existsSync(`./${args[0]}`)) return channel.send(`${warning} The file does not exist!`);
 
 		invalidateSoundFile(client, args[0]);
 
-		message.channel.send(`${success} Successfully invalidated (removed) the file!`);
+		channel.send(`${success} Successfully invalidated (removed) the file!`);
 	}
 });

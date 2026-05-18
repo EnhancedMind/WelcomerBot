@@ -1,7 +1,7 @@
 const Command = require('../../Structures/Command.js');
 
 const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/settingsManager.js');
-const { bot: { ownerID }, emoji: { success, error }, response: { invalidPermissions } } = require('../../../config/config.json');
+const { bot: { ownerID, devIDs }, emoji: { success, error }, response: { invalidPermissions } } = require('../../../config/config.json');
 
 
 module.exports = new Command({
@@ -15,60 +15,43 @@ module.exports = new Command({
             const modifiedArg = arg.replace(/[<@!>]/g, '');
             if (!isNaN(modifiedArg) && (modifiedArg.length == 18 || modifiedArg.length == 19)) {
                 member = modifiedArg;
-                if (args.length > 1 && message.author.id != ownerID) return message.channel.send(`${error} ${invalidPermissions} (Bot owner)`);
+                if (args.length > 1 && message.author.id != ownerID && !devIDs.includes(message.author.id)) return message.channel.send(`${error} ${invalidPermissions} (Bot owner)`);
                 break;
             }
         }
 
 
         if ( (args.length > 0 && member == message.author.id) || (args.length > 1 && member != message.author.id) ) { //only execute if there is at least one argument (args[0]) and the user is not tagged OR there is only a tagged user in args[0] 
-            if ([ 'enable', 'en' ].includes(args[0])) {
-                if (args.includes('join')) {
-                    setSetting(client, 'user', member, 'enabledJoin', true);
-                }
-                if (args.includes('leave')) {
-                    setSetting(client, 'user', member, 'enabledLeave', true);
-                }
-                if (args.includes('defaultJoin') || args.includes('defaultjoin')) {
-                    setSetting(client, 'user', member, 'enabledDefaultJoin', true);
-                }
-                if (args.includes('defaultLeave') || args.includes('defaultleave')) {
-                    setSetting(client, 'user', member, 'enabledDefaultLeave', true);
-                }
-                if (!args[1] || args.includes('all') || member != message.author.id) { // member != author is true if the user is tagged in args[1]
-                    setSetting(client, 'user', member, 'enabledJoin', true);
-                    setSetting(client, 'user', member, 'enabledLeave', true);
-                    setSetting(client, 'user', member, 'enabledDefaultJoin', true);
-                    setSetting(client, 'user', member, 'enabledDefaultLeave', true);
-                }
+            if ([ 'reset', 'r' ].includes(args[0])) {
+                setSetting(client, 'guild', member, 'enabledJoin', true);
+                setSetting(client, 'guild', member, 'enabledLeave', true);
+                setSetting(client, 'guild', member, 'enabledDefaultJoin', true);
+                setSetting(client, 'guild', member, 'enabledDefaultLeave', true);
             }
-            else if ([ 'disable', 'dis' ].includes(args[0])) {
-                if (args.includes('join')) {
-                    setSetting(client, 'user', member, 'enabledJoin', false);
-                }
-                if (args.includes('leave')) {
-                    setSetting(client, 'user', member, 'enabledLeave', false);
-                }
-                if (args.includes('defaultJoin') || args.includes('defaultjoin')) {
-                    setSetting(client, 'user', member, 'enabledDefaultJoin', false);
-                }
-                if (args.includes('defaultLeave') || args.includes('defaultleave')) {
-                    setSetting(client, 'user', member, 'enabledDefaultLeave', false);
-                }
-                if (!args[1] || args.includes('all') || member != message.author.id) {
-                    setSetting(client, 'user', member, 'enabledJoin', false);
-                    setSetting(client, 'user', member, 'enabledLeave', false);
-                    setSetting(client, 'user', member, 'enabledDefaultJoin', false);
-                    setSetting(client, 'user', member, 'enabledDefaultLeave', false);
-                }
-            }
-            else if ([ 'reset', 'r' ].includes(args[0])) {
-                setSetting(client, 'user', member, 'enabledJoin', true);
-                setSetting(client, 'user', member, 'enabledLeave', true);
-                setSetting(client, 'user', member, 'enabledDefaultJoin', true);
-                setSetting(client, 'user', member, 'enabledDefaultLeave', true);
-            }
+            else if (['enable', 'en', 'disable', 'dis' ].includes(args[0])) {} // skip invalid value
+            else {
+                let setting = true;
 
+                if ([ 'enable', 'en' ].includes(args[0])) {
+                    setting = true;
+                }
+                else if ([ 'disable', 'dis' ].includes(args[0])) {
+                    setting = false;
+                }
+
+                if (args.includes('join') || args.includes('all')) {
+                    setSetting(client, 'guild', member, 'enabledJoin', setting);
+                }
+                if (args.includes('leave') || args.includes('all')) {
+                    setSetting(client, 'guild', member, 'enabledLeave', setting);
+                }
+                if (args.includes('defaultJoin') || args.includes('defaultjoin') || args.includes('all')) {
+                    setSetting(client, 'guild', member, 'enabledDefaultJoin', setting);
+                }
+                if (args.includes('defaultLeave') || args.includes('defaultleave') || args.includes('all')) {
+                    setSetting(client, 'guild', member, 'enabledDefaultLeave', setting);
+                }
+            }
 
             writeSettingsFile(client).catch(err => {
                 message.channel.send(`${error} An error occured while writing the settings file, the settings are only applied until the bot restarts!`);

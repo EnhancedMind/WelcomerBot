@@ -2,11 +2,7 @@ const { readdirSync, existsSync, renameSync, statSync } = require('fs');
 const path = require('path');
 
 const Client = require('./Client.js');
-const { player: { allowedExtensions } } = require('../../config/config.json');
-
-const usersDir = './music/users';
-const everyoneDir = './music/everyone';
-const defaultDir = './music/default';
+const { player: { allowedExtensions }, directories: {userMusicDir, everyoneMusicDir, defaultMusicDir} } = require('../../config/config.json');
 
 /**
  * Syncs the sound files from the music directory to the client instance database.
@@ -17,50 +13,50 @@ const syncSoundFiles = (client) => {
     return new Promise((resolve, reject) => {
         client.soundFiles.clear();
 
-        const userDirReader = readdirSync(usersDir);
+        const userDirReader = readdirSync(userMusicDir);
         for (const dirOrFile of userDirReader) {
             if(!/^[0-9]{18,19}/.test(dirOrFile)) continue; //Check if dirOrFile matches the user ID pattern
             const userId = dirOrFile.match(/^([0-9]{18,19})/)[0]; // Extract the user ID from the directory name
 
-            if (statSync(path.join(usersDir, dirOrFile)).isDirectory()) { // Check if the dirOrfile is a directory
-                const userFileReader = readdirSync(path.join(usersDir, dirOrFile));
+            if (statSync(path.join(userMusicDir, dirOrFile)).isDirectory()) { // Check if the dirOrfile is a directory
+                const userFileReader = readdirSync(path.join(userMusicDir, dirOrFile));
 
                 for (const file of userFileReader) {
-                    const filePath = path.join(usersDir, dirOrFile, file);
+                    const filePath = path.join(userMusicDir, dirOrFile, file);
                     addUserSoundToList(client, userId, filePath, file);
                 }
             }
             else { // Clearly dirOrfile is not a directory
-                const filePath = path.join(usersDir, dirOrFile);
+                const filePath = path.join(userMusicDir, dirOrFile);
                 addUserSoundToList(client, userId, filePath, dirOrFile);
             }
         }
 
-        const everyoneDirReader = readdirSync(everyoneDir);
+        const everyoneDirReader = readdirSync(everyoneMusicDir);
         client.soundFiles.set('everyone', []);
         for (const dirOrFile of everyoneDirReader) {
-            if(statSync(path.join(everyoneDir, dirOrFile)).isDirectory()) {  // Check if the dirOrfile is a directory
-                const everyoneFileReader = readdirSync(path.join(everyoneDir, dirOrFile));
+            if(statSync(path.join(everyoneMusicDir, dirOrFile)).isDirectory()) {  // Check if the dirOrfile is a directory
+                const everyoneFileReader = readdirSync(path.join(everyoneMusicDir, dirOrFile));
                 if (!everyoneFileReader.length) continue; // skip empty folders
                 const fileChance = dirOrFile.includes('$ch=') ? (parseFloat(dirOrFile.split('ch=')[1]/everyoneFileReader.length)) : undefined;  // chance set for the folder divided by number of files inside
                 for (const file of everyoneFileReader) {
                     const targetList = client.soundFiles.get('everyone');
-                    const filePath = path.join(everyoneDir, dirOrFile, file);
+                    const filePath = path.join(everyoneMusicDir, dirOrFile, file);
                     addSoundToList(targetList, filePath, file, fileChance);
                 }
             }
             else {
                 const targetList = client.soundFiles.get('everyone');
-                const filePath = path.join(everyoneDir, dirOrFile);
+                const filePath = path.join(everyoneMusicDir, dirOrFile);
                 addSoundToList(targetList, filePath, dirOrFile);
             }
         }
 
-        const defaultFileReader = readdirSync(defaultDir);
+        const defaultFileReader = readdirSync(defaultMusicDir);
         client.soundFiles.set('default', []);
         for (const file of defaultFileReader) {
             const targetList = client.soundFiles.get('default');
-            const filePath = path.join(defaultDir, file);
+            const filePath = path.join(defaultMusicDir, file);
             addSoundToList(targetList, filePath, file);
         }
 
@@ -172,39 +168,49 @@ const getUserSoundFile = (client, userId, type) => {
             const chance = selectionArray[i].chance; 
             if (isNaN(chance)) {
                 undefCount++;
+                console.log("undef");
                 continue;
             }
+            console.log("def", chance);
             probabilities[i] = chance;
             undefProbability -= Math.abs(chance); // Negative chance would force play the user's first sound
         }
 
+        console.log(undefProbability);
+
+
+
         const probabilitySum = (undefProbability < 0) ? 1 - undefProbability : 1;
+
+        console.log(probabilitySum);
         if (undefProbability < 0) undefProbability = 0;
 
         for (let i = 0; i < probabilities.length; i++) {
             if(isNaN(selectionArray[i].chance)) {
                 probabilities[i] = undefProbability / undefCount;
             }
-            probabilities[i] = selectionArray[i].chance;
-            defaultProbability -= selectionArray[i].chance;
         }
 
-        
         // Choose a random item from the array based on probabilities,
         // this number is between 0 and the sum of all probabilities so scaled accordingly
         const randomNumber = Math.random() * probabilitySum;
 
         // Iterate through the probabilities and keep track of the running sum
         let runningSum = 0; // running sum of probabilities, each iteration adds the current probability to the running sum
+        console.log(randomNumber);
 
         for (let i = 0; i < probabilities.length; i++) {
+            console.log(runningSum);
             // If the random number is less than the running sum + current probability, choose the current item 
             if (randomNumber < (runningSum += probabilities[i])) { //check and add to running sum at the same time
                 // Return the chosen item
+                console.log("21");
                 if (existsSync(selectionArray[i].path)) {
                     resolve( [selectionArray[i], defaultType] );
+                    console.log("34");
                     return;
                 }
+                console.log("55");
                 await syncSoundFiles(client); // if the file does not exist, for example it was deleted manually, resync the sound files and try again
                 resolve( await getUserSoundFile(client, userId, type) );
                 return;

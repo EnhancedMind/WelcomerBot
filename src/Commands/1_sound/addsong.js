@@ -1,11 +1,19 @@
 const Command = require('../../Structures/Command');
 
-const { bot: { prefix, ownerID }, emoji: { success, warning }, response: { missingArguments }, player: { maxTime, allowedExtensions } } = require('../../../config/config.json')
+const { 
+	bot: { prefix, ownerID, devIDs }, 
+	emoji: { success, warning }, 
+	response: { missingArguments }, 
+	player: { maxTime, allowedExtensions }, 
+	directories: {userMusicDir, everyoneMusicDir, defaultMusicDir, tempMusicDir}
+} = require('../../../config/config.json')
+
 const https = require('https');
-const { existsSync, renameSync, mkdirSync, createWriteStream, rmSync } = require('fs');
+const { existsSync, readdirSync, statSync, renameSync, mkdirSync, createWriteStream, rmSync, readdir } = require('fs');
 const { spawn } = require('child_process');
 const ffprobe = require('ffprobe-static');
 const path = require('path');
+const { PermissionsBitField } = require('discord.js');
 const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/settingsManager.js');
 
 module.exports = new Command({
@@ -14,44 +22,104 @@ module.exports = new Command({
 	syntax: 'addsong [send attachment file]',
 	description: `Adds the song sent in the attachment as your join song. For more info type \`${prefix}addsong -help\``,
 	async run(message, args, client) {
-		const allAttachments = message.attachments;
 		const channel = message.channel;
 		const senderId = message.author.id;
 
 		if (args[0] == '--help' || args[0] == '-h') return channel.send(
-`This command allows you to add a song for you in the database.
+`This command allows you to add a song to your library in the database.
 The song must be under ${maxTime} seconds and must be a music file. The supported file types are: \`${allowedExtensions.join(', ')}\`
-To use this, send the file you want to add as an attachment in the message. 
+To use this, send the file you want to add as an attachment in the message.
 The file must be named in a specific way: 
-It must start with your user ID, in case you don't know it, it is: \`${senderId}\`
-Then you can add a comment, which is optional. It must be separated by an underscore. It can be for example your display name.
-You can also add various tags that will affect the behavior, they must also be separated by an underscore. The tags are:
+You can also add various tags seperated by underscores that will affect the behavior. The tags are:
 - \`$join\` - This will make the sound play when you join a voice channel. This is the default behavior even if you don't add this tag.
 - \`$leave\` - This will make the sound play when you leave a voice channel.
 - \`$once\` - This will make the sound play only once. After that, it will be marked as used and will not play again.
 - \`$ch=0.5\` - This will set the chance of the sound playing to 50%. You can set this to any value between 0 and 1. If you don't set this, the chance will be divided between all the sounds you have minus the files that have a chance set.
-An example file name would be: \`${senderId}_myname_$join_$leave_$once_$ch=0.5.mp3\` or \`${senderId}_myname_$ch=0.3.mp3\` or even just \`${senderId}.mp3\`.
+An example file name would be: \`myname_$join_$leave_$once_$ch=0.5.mp3\` or \`myname_$ch=0.3.mp3\` or even just \`myname.mp3\`.
 Keep in mind that any file send will be kept on the server, even after using removesound, as that will only mark it as used. The only way to fully remove the sound is to contact the owner of the bot.
+
+This command supports the following arguments for administrators:
+- \`--default\` or \`-d\` - Adds song to the default library
+- \`--everyone\` or \`-e\` - Adds song to the everyone library
+- \`--user [tagged_user]\` or \`-u [tagged_user]\` - Adds song to \`[tagged_user]\`'s library
 `);
+		if (!message.attachments.size) return channel.send(`${warning} ${missingArguments} (No attachment found)`);
+		const permissionFail = senderId != ownerID && !devIDs.includes(senderId);
 
-		if (!allAttachments.size) return channel.send(`${warning} ${missingArguments} (No attachment found)`);
-		if (allAttachments.size > 1) return channel.send(`${warning} Too many attachments!`);
+		if (args[0] == '--default' || args[0] == '-d') {
+			if (permissionFail) return channel.send(`${warning} You do not have the permission to add songs to default! (Administrator)`);
+			addSongCore(message, client, defaultMusicDir);
+		}
+		else if (args[0] == '--everyone' || args[0] == '-e') {
+			if (permissionFail) return channel.send(`${warning} You do not have the permission to add songs to everyone! (Administrator)`);
+			addSongCore(message, client, everyoneMusicDir);
+		}
+		else if (args[0] == '--user' || args[0] == '-u') {
+			if (permissionFail) return channel.send(`${warning} You do not have the permission to add songs to other users! (Administrator)`);
 
-		const attachment = allAttachments.first();
+			var userId;
+			if (args[1].startsWith('<@') && args[1].endsWith('>')) {
+				userId = args[1].replace(/[<@!>]/g, '');
+				addUserSong(message, client, userId)
+			}
+			else {
+				return channel.send(`${warning} user ${args[0]} does not exist.`);
+			}
+		}
+		else { // typical user file
+			addUserSong(message, client, senderId)
+		}
+	}
+});
+
+async function addUserSong(message, client, targetId) {
+	const userDirReader = readdirSync(userMusicDir);
+	let fileOrDir = undefined;
+	for(fileOrDir of userDirReader) {
+		if(!fileOrDir.startsWith(targetId)) { //Check if fileOrDir matches the user ID pattern
+			fileOrDir = undefined;
+			continue;
+		} 
+		if(statSync(path.join(userMusicDir, fileOrDir)).isDirectory()) { //User's directory found
+			console.log(`Found user's directory: ${fileOrDir}`);
+			break;
+		}
+		fileOrDir = undefined;
+	}
+
+	const dirTag = (await client.users.fetch(targetId)).globalName;
+	const userDirName = (fileOrDir !== undefined) ? fileOrDir : [targetId, dirTag].join('_');
+	const userDirPath = path.join(`${userMusicDir}`, `${userDirName}`);
+
+	console.log(await (client.users.fetch(targetId)), fileOrDir, dirTag, userDirName, userDirPath);
+	
+	if(fileOrDir === undefined) {
+		mkdirSync(`${userDirPath}`, { recursive: true });
+	}
+	
+	addSongCore(message, client, userDirPath);
+}
+
+async function addSongCore(message, client, targetDir) {
+	const allAttachments = message.attachments;
+	const channel = message.channel;
+	const senderId = message.author.id;
+
+	for(const [_,attachment] of allAttachments) {
 		const fileName = attachment.title ? `${attachment.title}${path.extname(attachment.name)}` : attachment.name;
 
 		if (!allowedExtensions.some(ext => fileName.endsWith(ext))) return channel.send(`${warning} Invalid file type! Supported types: ${allowedExtensions.join(', ')}`);
-		if (!fileName.startsWith(senderId) && senderId != ownerID) return channel.send(`${warning} Invalid file name! It must start with your user ID: \`${senderId}\``); 
 
 		console.log(attachment.name);
 		console.log(attachment.title);
 		console.log(path.extname(attachment.name));
 		console.log(fileName);
 
-		const filePath = `./music/users/${fileName}`;
+		const filePath = path.join(targetDir,fileName);
+		console.log(filePath);
 		if (existsSync(filePath)) return channel.send(`${warning} A file with that name already exists! Please rename the file and try again.`);
-		const tempPath = `./music/users/temp/${fileName}`;
-		if (!existsSync('./music/users/temp')) mkdirSync('./music/users/temp', { recursive: true });
+		const tempPath = path.join(tempMusicDir,fileName);
+		if (!existsSync(`${tempMusicDir}`)) mkdirSync(`${tempMusicDir}`, { recursive: true });
 		await new Promise((resolve) => https.get(attachment.url, (res) => res.pipe(createWriteStream(tempPath)).on('finish', () => resolve())));
 
 		const ffprobeProcess = spawn(`${ffprobe.path}`,
@@ -91,4 +159,6 @@ Keep in mind that any file send will be kept on the server, even after using rem
 			if (settingModified) channel.send(`${success} Your settings have been updated to play the sound!`);
 		});
 	}
-});
+
+	
+}
