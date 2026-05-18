@@ -13,13 +13,14 @@ module.exports = new Command({
     syntax: 'play <file>',
 	description: `Plays a song from local storage. Tag a person to select their sound like if they were to join or place the path from the \`${prefix}playable\` command`,
 	async run(message, args, client) {
+        const senderVoiceChannel = message.member.voice.channel;
+
         if (!args[0]) return message.channel.send(`${warning} ${missingArguments}`);
-        if (!message.member.voice.channel) return message.channel.send(`${warning} ${noChannel}`);
-        if (message.member.voice.channel.id == message.guild.afkChannelId) return message.channel.send(`${warning} ${afkChannel}`);
+        if (!senderVoiceChannel) return message.channel.send(`${warning} ${noChannel}`);
+        if (senderVoiceChannel.id == message.guild.afkChannelId) return message.channel.send(`${warning} ${afkChannel}`);
 
         const currentConnection = getVoiceConnection(message.guild.id);
-        if (currentConnection && currentConnection.joinConfig.channelId != message.member.voice.channel.id) return message.channel.send(`${warning} ${wrongChannel}`);
-
+        if (currentConnection && currentConnection.joinConfig.channelId != senderVoiceChannel.id) return message.channel.send(`${warning} ${wrongChannel}`);
 
         const response = await message.channel.send(`${loading} Loading \`[${args[0]}]\``);
 
@@ -27,7 +28,7 @@ module.exports = new Command({
             const player = createAudioPlayer();
             const resource = createAudioResource(song);
             const connection = joinVoiceChannel({
-                channelId: message.member.voice.channel.id,
+                channelId: senderVoiceChannel.id,
                 guildId: message.guild.id,
                 adapterCreator: message.guild.voiceAdapterCreator,
                 selfDeaf: selfDeaf,
@@ -57,15 +58,21 @@ module.exports = new Command({
             const userId = args[0].replace(/[<@!>]/g, '');
             const [file, _] = await getSoundFile(client, userId, 'join');
             if (!file) {
-                if ( (await response.channel.messages.fetch({ limit: 1, cache: false, around: response.id })).has(response.id) ) response.edit(`${error} \`${args[0]}\` doesn't exist.`);
+                if ( (await response.channel.messages.fetch({ limit: 1, cache: false, around: response.id })).has(response.id) ) {
+                    response.edit(`${error} \`${args[0]}\` doesn't exist.`);
+                }
                 return;
             }
             play(file.path);
-            if ( (await response.channel.messages.fetch({ limit: 1, cache: false, around: response.id })).has(response.id) ) response.edit(`${success} Playing sound for **${(await client.users.fetch(userId)).globalName} - \`${file.filename}\`**`);
+            if ( (await response.channel.messages.fetch({ limit: 1, cache: false, around: response.id })).has(response.id) ) {
+                response.edit(`${success} Playing sound for **${(await client.users.fetch(userId)).globalName} - \`${file.filename}\`**`);
+            }
             return;
         }
 
-        if ( (await response.channel.messages.fetch({ limit: 1, cache: false, around: response.id })).has(response.id) ) response.edit(`${error} \`${args[0]}\` doesn't exist.`);
+        if ( (await response.channel.messages.fetch({ limit: 1, cache: false, around: response.id })).has(response.id) ) {
+            response.edit(`${error} \`${args[0]}\` doesn't exist.`);
+        }
         return;
 	}
 });

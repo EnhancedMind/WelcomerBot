@@ -158,12 +158,16 @@ const getSoundFile = (client, userId, type) => {
 
         const probabilities = new Array(selectionArray.length).fill(undefined);
         let defaultProbability = 1;
+        var undefSum = 0;
         for (let i = 0; i < selectionArray.length; i++) {
-            if (!isNaN(selectionArray[i].chance)) {
-                probabilities[i] = selectionArray[i].chance;
-                defaultProbability -= selectionArray[i].chance;
+            if (isNaN(selectionArray[i].chance)) {
+                undefSum++;
+                return;
             }
+            probabilities[i] = selectionArray[i].chance;
+            defaultProbability -= selectionArray[i].chance;
         }
+        const probSum = defaultProbability;
         if (defaultProbability < 0) defaultProbability = 0;
 
         // Find all indexes of undefined in probabilities array and replace them with defaultProbability / indexes.length, indexes are of sound with no set chance
@@ -171,12 +175,13 @@ const getSoundFile = (client, userId, type) => {
         probabilities.forEach((item, index) => {
             if (item === undefined) indexes.push(index);
         });
-        for (let i = 0; i < indexes.length; i++) {
-            probabilities[indexes[i]] = defaultProbability / indexes.length;
+        for (let i = 0; i < selectionArray.length; i++) {
+            if(!isNaN(selectionArray[i].chance)) return;
+            probabilities[i] = defaultProbability / undefSum;
         }
 
         // Choose a random item from the array based on probabilities, this number is between 0 and the sum of all probabilities, so scaled accordingly
-        const randomNumber = Math.random() * probabilities.reduce((acc, probability) => acc + probability, 0);
+        const randomNumber = Math.random() * (probSum < 0) ? 1 - probSum : 1;
         // Iterate through the probabilities and keep track of the running sum
         let runningSum = 0; // running sum of probabilities, each iteration adds the current probability to the running sum
 
