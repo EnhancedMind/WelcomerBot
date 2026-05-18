@@ -1,0 +1,82 @@
+name: Build and Push Docker Image
+
+on:
+  workflow_dispatch: # Allows you to run a standalone build manually from the Actions tab
+  workflow_call:      # Allows the release workflow to trigger this build automatically
+    inputs:
+      version:
+        required: false # Changed to false so standalone runs don't require an input
+        type: string
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1. Grab the version from package.json if no version input was passed down
+      - name: Get version from package.json
+        if: "${{ inputs.version == '' }}"
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@v1.3.1
+
+      # 2. Extract just the repository name (e.g., "WelcomerBot" from "EnhancedMind/WelcomerBot")
+      - name: Get short repository name
+        id: repo-name
+        run: |
+          SHORT_NAME="${GITHUB_REPOSITORY##*/}"
+          echo "IMAGE_NAME=$SHORT_NAME" >> $GITHUB_OUTPUT
+
+      # 3. Force the repository name to lowercase because Docker registries forbid capital letters
+      - name: Lowercase image name
+        id: string
+        run: |
+          echo "IMAGE_NAME_LOWER=${IMAGE_NAME,,}" >> $GITHUB_OUTPUT
+        env:
+          IMAGE_NAME: ${{ steps.repo-name.outputs.IMAGE_NAME }}
+
+      # 4. Determine the exact Docker tags based on how this workflow was triggered
+      - name: Set dynamic tags
+        id: docker-tags
+        run: |
+          IMAGE_PATH="ghcr.io/${{ github.repository_owner }}/${{ steps.string.outputs.IMAGE_NAME_LOWER }}"
+          
+          if [ -z "${{ inputs.version }}" ]; then
+            # Standalone build fallback tags
+            VERSION_NUM="${{ steps.package-version.outputs.current-version }}"
+            echo "TAG_PRIMARY=${IMAGE_PATH}:latest-dev" >> $GITHUB_OUTPUT
+            echo "TAG_SECONDARY=${IMAGE_PATH}:v${VERSION_NUM}-latest-dev" >> $GITHUB_OUTPUT
+          else
+            # Official Release tags passed from release.yml
+            VERSION_NUM="${{ inputs.version }}"
+            echo "TAG_PRIMARY=${IMAGE_PATH}:latest" >> $GITHUB_OUTPUT
+            echo "TAG_SECONDARY=${IMAGE_PATH}:v${VERSION_NUM}" >> $GITHUB_OUTPUT
+          fi
+
+      # 5. Set up hardware emulation (QEMU) for Raspberry Pi (ARM) compilation
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # 6. Set up Docker Buildx for multi-architecture building
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 7. Log in to GitHub Container Registry (GHCR) using the organization/owner account
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 8. Build the image for standard PC and Raspberry Pi 4, then push to GHCR using the calculated tags
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64, linux/arm64
+          tags: |
+            ${{ steps.docker-tags.outputs.TAG_PRIMARY }}
+            ${{ steps.docker-tags.outputs.TAG_SECONDARY }}
