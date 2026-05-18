@@ -14,7 +14,7 @@ module.exports = new Command({
 	syntax: 'addsong [send attachment file]',
 	description: `Adds the song sent in the attachment as your join song. For more info type \`${prefix}addsong -help\``,
 	async run(message, args, client) {
-		if (args[0] == '-help') return message.channel.send(
+		if (args[0] == '--help' || args[0] == '-h') return message.channel.send(
 `This command allows you to add a song for you in the database.
 The song must be under ${maxTime} seconds and must be a music file. The supported file types are: \`${allowedExtensions.join(', ')}\`
 To use this, send the file you want to add as an attachment in the message. 

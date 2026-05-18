@@ -3,7 +3,7 @@ const Command = require('../../Structures/Command.js');
 const { createAudioPlayer, createAudioResource, joinVoiceChannel, getVoiceConnection } = require('@discordjs/voice');
 const { existsSync } = require('fs');
 const { consoleLog } = require('../../Data/Log.js');
-const { getSoundFile } = require('../../Structures/musicFilesManager.js');
+const { getUserSoundFile } = require('../../Structures/musicFilesManager.js');
 const { bot: { prefix }, emoji: { success, warning, error, loading }, response: { missingArguments, noChannel, wrongChannel, afkChannel }, player: { selfDeaf, debug, allowedExtensions } } = require('../../../config/config.json');
 
 
@@ -55,7 +55,7 @@ module.exports = new Command({
         }
         else if (args[0].startsWith('<@') && args[0].endsWith('>')) {
             const userId = args[0].replace(/[<@!>]/g, '');
-            const [file, _] = await getSoundFile(client, userId, 'join');
+            const [file, _] = await getUserSoundFile(client, userId, 'join');
             if (!file) {
                 if ( (await response.channel.messages.fetch({ limit: 1, cache: false, around: response.id })).has(response.id) ) response.edit(`${error} \`${args[0]}\` doesn't exist.`);
                 return;
