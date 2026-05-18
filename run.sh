@@ -1,5 +1,6 @@
 #!/bin/bash
 
+git pull
 node .
 
 # if you have armv6l cpu on your server and are getting error that armv6l is not supported,
