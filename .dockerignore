@@ -1,9 +1,10 @@
 .vscode/
+.github/
 .git/
 logs/*
 node_modules/
 .gitattributes
-.gitnore
+.gitignore
 howto.md
 changelog.md
 LICENSE

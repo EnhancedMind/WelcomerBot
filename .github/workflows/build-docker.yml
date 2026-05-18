@@ -39,7 +39,7 @@ jobs:
             # Standalone build fallback tags (e.g., ghcr.io/enhancedmind/welcomerbot:latest-dev)
             VERSION_NUM="${{ steps.package-version.outputs.current-version }}"
             echo "TAG_PRIMARY=${IMAGE_PATH}:latest-dev" >> $GITHUB_OUTPUT
-            echo "TAG_SECONDARY=${IMAGE_PATH}:v${VERSION_NUM}-latest-dev" >> $GITHUB_OUTPUT
+            echo "TAG_SECONDARY=${IMAGE_PATH}:v${VERSION_NUM}-dev" >> $GITHUB_OUTPUT
           else
             # Official Release tags passed from release.yml (e.g., ghcr.io/enhancedmind/welcomerbot:latest)
             VERSION_NUM="${{ inputs.version }}"
