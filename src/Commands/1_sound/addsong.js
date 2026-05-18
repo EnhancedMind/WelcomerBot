@@ -16,6 +16,25 @@ const path = require('path');
 const { PermissionsBitField } = require('discord.js');
 const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/settingsManager.js');
 
+const helpText = 
+`This command allows you to add a song to your library in the database.
+The song must be under ${maxTime} seconds and must be a music file. The supported file types are: \`${allowedExtensions.join(', ')}\`
+To use this, send the file you want to add as an attachment in the message.
+ 
+You can also add various tags in the filenameseperated by underscores that will affect the behavior. The tags are:
+- \`$join\` - This will make the sound play when you join a voice channel. This is the default behavior even if you don't add this tag.
+- \`$leave\` - This will make the sound play when you leave a voice channel.
+- \`$once\` - This will make the sound play only once. After that, it will be marked as used and will not play again.
+- \`$ch=0.5\` - This will set the chance of the sound playing to 50%. You can set this to any value between 0 and 1. If you don't set this, the chance will be divided between all the sounds you have minus the files that have a chance set.
+An example file name would be: \`myname_$join_$leave_$once_$ch=0.5.mp3\` or \`myname_$ch=0.3.mp3\` or even just \`myname.mp3\`.
+Keep in mind that any file sent will be kept on the server, even after using removesound, as that will only mark it as used. The only way to fully remove the sound is to contact the owner of the bot.
+
+This command supports the following arguments for administrators:
+- \`--default\` or \`-d\` - Adds song to the default library
+- \`--everyone\` or \`-e\` - Adds song to the everyone library
+- \`--user [tagged_user]\` or \`-u [tagged_user]\` - Adds song to \`[tagged_user]\`'s library
+`;
+
 module.exports = new Command({
 	name: 'addsong',
 	aliases: [ 'setsong' ],
@@ -143,23 +162,3 @@ async function addSongCore(message, client, targetDir) {
 		});
 	}
 }
-
-
-const helpText = 
-`This command allows you to add a song to your library in the database.
-The song must be under ${maxTime} seconds and must be a music file. The supported file types are: \`${allowedExtensions.join(', ')}\`
-To use this, send the file you want to add as an attachment in the message.
- 
-You can also add various tags in the filenameseperated by underscores that will affect the behavior. The tags are:
-- \`$join\` - This will make the sound play when you join a voice channel. This is the default behavior even if you don't add this tag.
-- \`$leave\` - This will make the sound play when you leave a voice channel.
-- \`$once\` - This will make the sound play only once. After that, it will be marked as used and will not play again.
-- \`$ch=0.5\` - This will set the chance of the sound playing to 50%. You can set this to any value between 0 and 1. If you don't set this, the chance will be divided between all the sounds you have minus the files that have a chance set.
-An example file name would be: \`myname_$join_$leave_$once_$ch=0.5.mp3\` or \`myname_$ch=0.3.mp3\` or even just \`myname.mp3\`.
-Keep in mind that any file sent will be kept on the server, even after using removesound, as that will only mark it as used. The only way to fully remove the sound is to contact the owner of the bot.
-
-This command supports the following arguments for administrators:
-- \`--default\` or \`-d\` - Adds song to the default library
-- \`--everyone\` or \`-e\` - Adds song to the everyone library
-- \`--user [tagged_user]\` or \`-u [tagged_user]\` - Adds song to \`[tagged_user]\`'s library
-`
