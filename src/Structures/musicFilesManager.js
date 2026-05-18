@@ -43,20 +43,16 @@ const syncSoundFiles = (client) => {
                 const everyoneFileReader = readdirSync(path.join(everyoneDir, dirOrFile));
                 if (!everyoneFileReader.length) continue; // skip empty folders
                 const fileChance = dirOrFile.includes('$ch=') ? (parseFloat(dirOrFile.split('ch=')[1]/everyoneFileReader.length)) : undefined;  // chance set for the folder divided by number of files inside
-                //TODO: unclear what to do with a folder
-                
-                //TODO: unclear what to do with a folder
                 for (const file of everyoneFileReader) {
                     const targetList = client.soundFiles.get('everyone');
                     const filePath = path.join(everyoneDir, dirOrFile, file);
-                    addSoundToList(targetList, filePath, file);
+                    addSoundToList(targetList, filePath, file, fileChance);
                 }
             }
             else {
-                const fileChance = dirOrFile.includes('$ch=') ? (parseFloat(dirOrFile.split('ch=')[1])) : undefined;  // chance set for the folder divided by number of files inside
                 const targetList = client.soundFiles.get('everyone');
                 const filePath = path.join(everyoneDir, dirOrFile);
-                addSoundToList(targetList, filePath, dirOrFile, fileChance);
+                addSoundToList(targetList, filePath, dirOrFile);
             }
         }
 
@@ -82,12 +78,13 @@ const syncSoundFiles = (client) => {
  */
 function addUserSoundToList(client, userId, filePath, fileName) {
     if (!allowedExtensions.some(ext => fileName.endsWith(ext))) return; // Check if the file has a valid extension
+
     if ( !client.soundFiles.has(userId) ) {
         client.soundFiles.set(userId, []);
     }
 
     const targetList = client.soundFiles.get(userId);
-    addSoundToList(targetList, filePath, fileName);
+    addSoundToList(targetList, filePath, fileName, undefined, false);
 }
 
 /**
@@ -95,19 +92,14 @@ function addUserSoundToList(client, userId, filePath, fileName) {
  * @param targetList - List to which the item
  * @param {string} filePath - Path from base to file
  * @param {string} fileName - If the above is a dir, here is the file
- * @returns {void}
  * @param {number|null} [chanceOverride] - Optional manual float override for the playback chance.
+ * @param {boolean} checkExtension - Whether to check extension
+ * @returns {void}
  */
-function addSoundToList(targetList, filePath, fileName, chanceOverride = undefined) {
+function addSoundToList(targetList, filePath, fileName, chanceOverride = undefined, checkExtension = true) {
     if (!allowedExtensions.some(ext => fileName.endsWith(ext))) return; // Check if the file has a valid extension
 
-    var finalChance;
-    if (chanceOverride !== undefined) {
-        finalChance = chanceOverride; // Can be a float (e.g., 0.25) or explicitly null
-    } else {
-        finalChance = fileName.includes('$ch=') ? parseFloat(fileName.split('ch=')[1]) : undefined;
-    }
-
+    const finalChance = fileName.includes('$ch=') ? parseFloat(fileName.split('ch=')[1]) : chanceOverride;
     const soundFileData = {
         path: filePath,
         filename: fileName,
