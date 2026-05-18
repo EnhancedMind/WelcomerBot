@@ -1,11 +1,20 @@
 FROM node:lts
 
+ENV NODE_ENV=production
+
+LABEL   org.opencontainers.image.source=https://github.com/EnhancedMind/WelcomerBot \
+        org.opencontainers.image.description="Discord bot that plays sounds or music when somebody joins or leaves a voice channel." \
+        org.opencontainers.image.licenses="GPL-3.0-or-later" \
+        org.opencontainers.image.documentation="https://github.com/EnhancedMind/WelcomerBot#readme"
+
 WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm i
+RUN npm ci
 
-COPY . .
+COPY --chown=node:node . .
 
-CMD [ "npm", "start" ]
+USER node
+
+CMD [ "node", "src/main.js" ]

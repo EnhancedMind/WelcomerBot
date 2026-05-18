@@ -1,0 +1,38 @@
+name: Create Release and Build
+
+on:
+  workflow_dispatch: # No inputs needed anymore! GitHub handles the notes automatically.
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.package-version.outputs.current-version }} # Passes the version number down to the build job
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Important: Tells GitHub to fetch all history to generate accurate release notes
+
+      # 1. Grab the version string from your package.json
+      - name: Get version from package.json
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@v1.3.1
+
+      # 2. Automatically create the GitHub Release & generate notes from commits
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: version_${{ steps.package-version.outputs.current-version }}
+          name: WelcomerBot ${{ steps.package-version.outputs.current-version }}
+          generate_release_notes: true # This makes the automatic bulleted list!
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 3. Instead of duplicating the Docker steps, reuse the build-docker.yml file
+  trigger-docker-build:
+    needs: create-release # Wait for the release to finish successfully first
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      version: ${{ needs.create-release.outputs.version }} # Passes the version grabbed in step 1 to the builder script
+    secrets: inherit # Pass through the GITHUB_TOKEN automatically for registry authentication

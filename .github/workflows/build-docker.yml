@@ -1,0 +1,75 @@
+name: Build and Push Docker Image
+
+on:
+  workflow_dispatch: # Allows you to run a standalone build manually from the Actions tab
+  workflow_call:      # Allows the release workflow to trigger this build automatically
+    inputs:
+      version:
+        required: false # Standalone runs don't require an input
+        type: string
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1. Grab the version from package.json if no version input was passed down
+      - name: Get version from package.json
+        if: "${{ inputs.version == '' }}"
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@v1.3.1
+
+      # 2. Force the entire repository path (Owner/Repo) to lowercase for Docker compliance
+      - name: Lowercase repository path
+        id: string
+        run: |
+          echo "REPO_LOWER=${RAW_REPO,,}" >> $GITHUB_OUTPUT
+        env:
+          RAW_REPO: ${{ github.repository }}
+
+      # 3. Determine the exact Docker tags based on how this workflow was triggered
+      - name: Set dynamic tags
+        id: docker-tags
+        run: |
+          IMAGE_PATH="ghcr.io/${{ steps.string.outputs.REPO_LOWER }}"
+          
+          if [ -z "${{ inputs.version }}" ]; then
+            # Standalone build fallback tags (e.g., ghcr.io/enhancedmind/welcomerbot:latest-dev)
+            VERSION_NUM="${{ steps.package-version.outputs.current-version }}"
+            echo "TAG_PRIMARY=${IMAGE_PATH}:latest-dev" >> $GITHUB_OUTPUT
+            echo "TAG_SECONDARY=${IMAGE_PATH}:v${VERSION_NUM}-dev" >> $GITHUB_OUTPUT
+          else
+            # Official Release tags passed from release.yml (e.g., ghcr.io/enhancedmind/welcomerbot:latest)
+            VERSION_NUM="${{ inputs.version }}"
+            echo "TAG_PRIMARY=${IMAGE_PATH}:latest" >> $GITHUB_OUTPUT
+            echo "TAG_SECONDARY=${IMAGE_PATH}:v${VERSION_NUM}" >> $GITHUB_OUTPUT
+          fi
+
+      # 4. Set up hardware emulation (QEMU) for Raspberry Pi (ARM) compilation
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # 5. Set up Docker Buildx for multi-architecture building
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 6. Log in to GitHub Container Registry (GHCR)
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 7. Build the image for standard PC and Raspberry Pi 4, then push to GHCR using the calculated tags
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64, linux/arm64
+          tags: |
+            ${{ steps.docker-tags.outputs.TAG_PRIMARY }}
+            ${{ steps.docker-tags.outputs.TAG_SECONDARY }}

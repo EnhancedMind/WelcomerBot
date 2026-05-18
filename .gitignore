@@ -4,7 +4,6 @@ music/users/*
 music/everyone/*
 !music/users/*.example
 !music/users/addUser.md
-package-lock.json
 howto.md
 .gitattributes
 src/notes.md
