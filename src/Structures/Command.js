@@ -19,6 +19,7 @@ class Command {
 		this.aliases = options.aliases;
 		this.syntax = options.syntax;
 		this.description = options.description;
+		this.help = options.help;
 		this.run = options.run;
 	}
 }
