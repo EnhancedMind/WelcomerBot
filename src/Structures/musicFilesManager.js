@@ -27,12 +27,12 @@ const syncSoundFiles = (client) => {
 
                 for (const file of userFileReader) {
                     const filePath = path.join(usersDir, dirOrFile, file);
-                    addUserSoundToList(client, userId, file, filePath);
+                    addUserSoundToList(client, userId, filePath, file);
                 }
             }
             else { // Clearly dirOrfile is not a directory
                 const filePath = path.join(usersDir, dirOrFile);
-                addUserSoundToList(client, userId, file, filePath);
+                addUserSoundToList(client, userId, filePath, dirOrFile);
             }
         }
 
@@ -42,19 +42,21 @@ const syncSoundFiles = (client) => {
             if(statSync(path.join(everyoneDir, dirOrFile)).isDirectory()) {  // Check if the dirOrfile is a directory
                 const everyoneFileReader = readdirSync(path.join(everyoneDir, dirOrFile));
                 if (!everyoneFileReader.length) continue; // skip empty folders
-                const fileChance = dirOrFile.includes('$ch=') ? (parseFloat(dirOrFile.split('ch=')[1])/everyoneFileReader.length) : undefined;  // chance set for the folder divided by number of files inside
+                const fileChance = dirOrFile.includes('$ch=') ? (parseFloat(dirOrFile.split('ch=')[1]/everyoneFileReader.length)) : undefined;  // chance set for the folder divided by number of files inside
+                //TODO: unclear what to do with a folder
                 
+                //TODO: unclear what to do with a folder
                 for (const file of everyoneFileReader) {
                     const targetList = client.soundFiles.get('everyone');
                     const filePath = path.join(everyoneDir, dirOrFile, file);
-                    addSoundToList(targetList, filePath, file, fileChance);
+                    addSoundToList(targetList, filePath, file);
                 }
             }
-
-            if(!statSync(path.join(everyoneDir, dirOrFile)).isDirectory()) {
+            else {
+                const fileChance = dirOrFile.includes('$ch=') ? (parseFloat(dirOrFile.split('ch=')[1])) : undefined;  // chance set for the folder divided by number of files inside
                 const targetList = client.soundFiles.get('everyone');
                 const filePath = path.join(everyoneDir, dirOrFile);
-                addSoundToList(targetList, filePath, dirOrFile);
+                addSoundToList(targetList, filePath, dirOrFile, fileChance);
             }
         }
 
@@ -78,14 +80,14 @@ const syncSoundFiles = (client) => {
  * @param {string} fileName - If the above is a dir, here is the file
  * @returns {void}
  */
-function addUserSoundToList(client, userId, fileName, filePath) {
+function addUserSoundToList(client, userId, filePath, fileName) {
     if (!allowedExtensions.some(ext => fileName.endsWith(ext))) return; // Check if the file has a valid extension
     if ( !client.soundFiles.has(userId) ) {
         client.soundFiles.set(userId, []);
     }
 
     const targetList = client.soundFiles.get(userId);
-    addSoundFileToList(targetList, filePath, fileName);
+    addSoundToList(targetList, filePath, fileName);
 }
 
 /**
@@ -97,19 +99,19 @@ function addUserSoundToList(client, userId, fileName, filePath) {
  * @param {number|null} [chanceOverride] - Optional manual float override for the playback chance.
  */
 function addSoundToList(targetList, filePath, fileName, chanceOverride = undefined) {
-    if (!allowedExtensions.some(ext => file.endsWith(ext))) return; // Check if the file has a valid extension
+    if (!allowedExtensions.some(ext => fileName.endsWith(ext))) return; // Check if the file has a valid extension
 
     var finalChance;
     if (chanceOverride !== undefined) {
         finalChance = chanceOverride; // Can be a float (e.g., 0.25) or explicitly null
     } else {
-        finalChance = file.includes('$ch=') ? parseFloat(file.split('ch=')[1]) : undefined;
+        finalChance = fileName.includes('$ch=') ? parseFloat(fileName.split('ch=')[1]) : undefined;
     }
 
     const soundFileData = {
         path: filePath,
         filename: fileName,
-        chance: fileName.includes('$ch=') ? parseFloat(fileName.split('ch=')[1]) : undefined,
+        chance: finalChance,
         join: fileName.includes('$join') || !fileName.includes('$leave'),
         leave: fileName.includes('$leave'),
         once: fileName.includes('$once'),
@@ -123,7 +125,7 @@ function addSoundToList(targetList, filePath, fileName, chanceOverride = undefin
  * Gets a list of all sounds played for the user.
  * @param {Client} client - The client instance.
  * @param {string} userId - The ID of the user.
- * @returns {Promise<[object[], boolean]>} - A promise that resolves to an array containing the sound file object array and a boolean indicating if it is a default sound file.
+ * @returns {[object[], boolean]} - A promise that resolves to an array containing the sound file object array and a boolean indicating if it is a default sound file.
  */
 function getUserSoundArray(client, userId) {
     let array = [];  // array of sound files to choose from
@@ -132,17 +134,17 @@ function getUserSoundArray(client, userId) {
     if ( client.soundFiles.has(userId) ) { // if userId has his own sound files
         const userFiles = client.soundFiles.get(userId);
         
-        if (userFiles.length != 0) { // if no custom sound files for join/leave are found, eg. userFiles.length == 0, revert to default and everyone files by leaving the selectionArray.length at 0, the other one will take care of it
+        if (userFiles.length !== 0) { // if no custom sound files for join/leave are found, eg. userFiles.length == 0, revert to default and everyone files by leaving the selectionArray.length at 0, the other one will take care of it
             const everyoneFiles = client.soundFiles.get('everyone');
-            selectionArray = [...userFiles, ...everyoneFiles]; // combine user files and everyone files
+            array = [...userFiles, ...everyoneFiles]; // combine user files and everyone files
         }
     }
     
-    if (selectionArray.length == 0 ) { // if userId does not have his own sound files
-        selectionArray = [...client.soundFiles.get('default'), ...client.soundFiles.get('everyone')];
+    if (array.length === 0 ) { // if userId does not have his own sound files
+        array = [...client.soundFiles.get('default'), ...client.soundFiles.get('everyone')];
         defaultType = true;
 
-        if (selectionArray.length == 0) { // if no sound files :D
+        if (array.length === 0) { // if no sound files :D
             return [null, defaultType];
         }
     }
@@ -159,7 +161,13 @@ function getUserSoundArray(client, userId) {
  */
 const getUserSoundFile = (client, userId, type) => {
     return new Promise(async (resolve, reject) => {
-        let [userSoundArray, _] = getUserSoundArray(client, userId)
+        let [userSoundArray, defaultType] = getUserSoundArray(client, userId)
+
+        if(userSoundArray.length === 0) {
+            resolve([null, defaultType]);
+            return;
+        }
+
         const selectionArray = userSoundArray.filter(item => {
             if (type == 'join') return item.join && item.valid;
             if (type == 'leave') return item.leave && item.valid;
@@ -169,12 +177,13 @@ const getUserSoundFile = (client, userId, type) => {
         let undefProbability = 1;
         let undefCount = 0;
         for (let i = 0; i < selectionArray.length; i++) {
-            if (isNaN(selectionArray[i].chance)) {
+            const chance = selectionArray[i].chance; 
+            if (isNaN(chance)) {
                 undefCount++;
                 continue;
             }
-            probabilities[i] = selectionArray[i].chance;
-            undefProbability -= Math.abs(selectionArray[i].chance); // Negative chance would force play the user's first sound
+            probabilities[i] = chance;
+            undefProbability -= Math.abs(chance); // Negative chance would force play the user's first sound
         }
 
         const probabilitySum = (undefProbability < 0) ? 1 - undefProbability : 1;
@@ -203,7 +212,7 @@ const getUserSoundFile = (client, userId, type) => {
                     return;
                 }
                 await syncSoundFiles(client); // if the file does not exist, for example it was deleted manually, resync the sound files and try again
-                resolve( await getUserSoundArray(client, userId, type) );
+                resolve( await getUserSoundFile(client, userId, type) );
                 return;
             }
         }
