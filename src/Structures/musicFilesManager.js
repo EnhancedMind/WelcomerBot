@@ -118,16 +118,16 @@ function addSoundToList(targetList, filePath, fileName, chanceOverride = undefin
 function getUserSoundArray(client, userId) {
     let array = [];  // array of sound files to choose from
     let defaultType = false;  // whether the user has his own sound files or if just default/everyone ones are used, returned as second value to voiceStateUpdate to check with settings
-    
+
     if ( client.soundFiles.has(userId) ) { // if userId has his own sound files
         const userFiles = client.soundFiles.get(userId);
-        
+
         if (userFiles.length !== 0) { // if no custom sound files for join/leave are found, eg. userFiles.length == 0, revert to default and everyone files by leaving the selectionArray.length at 0, the other one will take care of it
             const everyoneFiles = client.soundFiles.get('everyone');
             array = [...userFiles, ...everyoneFiles]; // combine user files and everyone files
         }
     }
-    
+
     if (array.length === 0 ) { // if userId does not have his own sound files
         array = [...client.soundFiles.get('default'), ...client.soundFiles.get('everyone')];
         defaultType = true;
@@ -168,21 +168,14 @@ const getUserSoundFile = (client, userId, type) => {
             const chance = selectionArray[i].chance; 
             if (isNaN(chance)) {
                 undefCount++;
-                console.log("undef");
                 continue;
             }
-            console.log("def", chance);
             probabilities[i] = chance;
             undefProbability -= Math.abs(chance); // Negative chance would force play the user's first sound
         }
 
-        console.log(undefProbability);
-
-
-
         const probabilitySum = (undefProbability < 0) ? 1 - undefProbability : 1;
 
-        console.log(probabilitySum);
         if (undefProbability < 0) undefProbability = 0;
 
         for (let i = 0; i < probabilities.length; i++) {
@@ -197,20 +190,15 @@ const getUserSoundFile = (client, userId, type) => {
 
         // Iterate through the probabilities and keep track of the running sum
         let runningSum = 0; // running sum of probabilities, each iteration adds the current probability to the running sum
-        console.log(randomNumber);
 
         for (let i = 0; i < probabilities.length; i++) {
-            console.log(runningSum);
             // If the random number is less than the running sum + current probability, choose the current item 
             if (randomNumber < (runningSum += probabilities[i])) { //check and add to running sum at the same time
                 // Return the chosen item
-                console.log("21");
                 if (existsSync(selectionArray[i].path)) {
                     resolve( [selectionArray[i], defaultType] );
-                    console.log("34");
                     return;
                 }
-                console.log("55");
                 await syncSoundFiles(client); // if the file does not exist, for example it was deleted manually, resync the sound files and try again
                 resolve( await getUserSoundFile(client, userId, type) );
                 return;

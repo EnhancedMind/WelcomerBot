@@ -81,18 +81,13 @@ async function addUserSong(message, client, targetId) {
 			fileOrDir = undefined;
 			continue;
 		} 
-		if(statSync(path.join(userMusicDir, fileOrDir)).isDirectory()) { //User's directory found
-			console.log(`Found user's directory: ${fileOrDir}`);
-			break;
-		}
+		if(statSync(path.join(userMusicDir, fileOrDir)).isDirectory()) break; //User's directory found
 		fileOrDir = undefined;
 	}
 
 	const dirTag = (await client.users.fetch(targetId)).globalName;
 	const userDirName = (fileOrDir !== undefined) ? fileOrDir : [targetId, dirTag].join('_');
 	const userDirPath = path.join(`${userMusicDir}`, `${userDirName}`);
-
-	console.log(await (client.users.fetch(targetId)), fileOrDir, dirTag, userDirName, userDirPath);
 
 	if(fileOrDir === undefined) {
 		mkdirSync(`${userDirPath}`, { recursive: true });
@@ -111,13 +106,7 @@ async function addSongCore(message, client, targetDir) {
 
 		if (!allowedExtensions.some(ext => fileName.endsWith(ext))) return channel.send(`${warning} Invalid file type! Supported types: ${allowedExtensions.join(', ')}`);
 
-		console.log(attachment.name);
-		console.log(attachment.title);
-		console.log(path.extname(attachment.name));
-		console.log(fileName);
-
 		const filePath = path.join(targetDir,fileName);
-		console.log(filePath);
 		if (existsSync(filePath)) return channel.send(`${warning} A file with that name already exists! Please rename the file and try again.`);
 		const tempPath = path.join(tempMusicDir,fileName);
 		if (!existsSync(`${tempMusicDir}`)) mkdirSync(`${tempMusicDir}`, { recursive: true });
