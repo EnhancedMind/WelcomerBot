@@ -1,7 +1,7 @@
 const Command = require('../../Structures/Command.js');
 
 const { PermissionsBitField, ReactionCollector } = require('discord.js');
-const { bot: { ownerID }, emoji: { success, warning }, response: { missingArguments, invalidPermissions, invalidNumber } } = require('../../../config/config.json');
+const { bot: { ownerID, devIDs }, emoji: { success, warning }, response: { missingArguments, invalidPermissions, invalidNumber } } = require('../../../config/config.json');
 
 
 const emojiList = [ '✅', '❌' ];
@@ -12,7 +12,9 @@ module.exports = new Command({
     syntax: 'forceprune <amount> <confirm>',
 	description: 'Deletes the amount of messages **!ALL MESSAGES!** Requires Administrator permission.',
 	async run(message, args, client) {
-		if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && message.author.id != ownerID) return message.channel.send(`${warning} ${invalidPermissions} (Administrator)`);
+        const senderId = message.author.id;
+        const permissionFail = senderId != ownerID && !devIDs.includes(senderId) && !message.member.permissions.has(PermissionsBitField.Flags.Administrator);
+		if (permissionFail) return message.channel.send(`${warning} ${invalidPermissions} (Administrator)`);
         if (!args[0]) return message.channel.send(`${warning} ${missingArguments}`);
         if (isNaN(args[0])) return message.channel.send(`${warning} ${invalidNumber}`);
         if (args[0] > 99 || args[0] < 1) return message.channel.send(`${warning} Outside of number range!`);

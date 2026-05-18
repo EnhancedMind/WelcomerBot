@@ -1,7 +1,7 @@
 const Command = require('../../Structures/Command');
 
 const { consoleLog } = require('../../Data/Log');
-const { bot: { token, ownerID }, emoji: { success, error, loading }, response: { invalidPermissions } } = require('../../../config/config.json');
+const { bot: { token, ownerID, devIDs }, emoji: { success, error, loading }, response: { invalidPermissions } } = require('../../../config/config.json');
 
 
 module.exports = new Command({
@@ -9,7 +9,8 @@ module.exports = new Command({
 	aliases: [ 'reboot' ],
 	description: "Restarts the bot's client",
 	async run(message, args, client) {
-		if (message.author.id != ownerID) return message.channel.send(`${error} ${invalidPermissions}`);
+		const senderId = message.author.id;
+        if (senderId != ownerID && !devIDs.includes(senderId)) return message.channel.send(`${error} ${invalidPermissions}`);
 
 		consoleLog('[INFO] Restarting...');
 

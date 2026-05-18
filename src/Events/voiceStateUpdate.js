@@ -3,7 +3,7 @@ const Event = require('../Structures/Event.js');
 const { createAudioPlayer, createAudioResource, joinVoiceChannel } = require('@discordjs/voice');
 const { consoleLog } = require('../Data/Log.js');
 const { player: { playIntoEmptyChannel, selfDeaf, debug } } = require('../../config/config.json');
-const { getSoundFile, invalidateSoundFile } = require('../Structures/musicFilesManager.js');
+const { getUserSoundFile, invalidateSoundFile } = require('../Structures/musicFilesManager.js');
 const { allowPlay } = require('../Structures/settingsManager.js');
 
 
@@ -11,9 +11,9 @@ module.exports = new Event('voiceStateUpdate', async (client, oldState, newState
     if (oldState.member.user.bot || newState.member.user.bot) return;
     if (newState.channelId == newState.guild.afkChannelId) return;
 
-
     if(newState.channelId && !oldState.channelId || oldState.channelId == oldState.guild.afkChannelId) {  //joining a channel or returning from afk
-        const [file, defaultType] = await getSoundFile(client, newState.member.id, 'join');
+        const [file, defaultType] = await getUserSoundFile(client, newState.member.id, 'join');
+        console.log([file, defaultType]);
         if (!file) return;
 
         if (!allowPlay(client, newState.guild.id, newState.member.id, defaultType ? 'defaultJoin' : 'join')) return;
@@ -24,7 +24,9 @@ module.exports = new Event('voiceStateUpdate', async (client, oldState, newState
     else if(!newState.channelId && oldState.channelId) { //leaving a channel
         if (oldState.channel.members.size == 0 && !playIntoEmptyChannel) return;
 
-        const [file, defaultType] = await getSoundFile(client, oldState.member.id, 'leave');
+        const [file, defaultType] = await getUserSoundFile(client, oldState.member.id, 'leave');
+        console.log([file, defaultType]);
+
         if (!file) return;
 
         if (!allowPlay(client, oldState.guild.id, oldState.member.id, defaultType ? 'defaultLeave' : 'leave')) return;
@@ -35,6 +37,7 @@ module.exports = new Event('voiceStateUpdate', async (client, oldState, newState
 
 const play = (client, state, file, delay) => {
     return new Promise(async (resolve) => {
+        console.log("here");
         const player = createAudioPlayer();
         const resource = createAudioResource(file.path);
         const connection = joinVoiceChannel({
