@@ -4,8 +4,7 @@ const {
 	bot: { prefix, ownerID, devIDs }, 
 	emoji: { success, warning }, 
 	response: { missingArguments }, 
-	player: { maxTime, allowedExtensions }, 
-	directories: {userMusicDir, everyoneMusicDir, defaultMusicDir, tempMusicDir}
+	player: { maxTime, allowedExtensions }
 } = require('../../../config/config.json')
 
 const https = require('https');
@@ -13,11 +12,14 @@ const { existsSync, statSync, renameSync } = require('fs');
 const path = require('path');
 const { PermissionsBitField } = require('discord.js');
 const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/settingsManager.js');
-const { syncSoundFiles, compareDefault, compareEveryone, compareUser } = require('../../Structures/musicFilesManager.js');
+const { syncSoundFiles, defaultDirComparison, everyoneDirComparison, userDirComparison, musicDirComparison } = require('../../Structures/musicFilesManager.js');
 
 const helpText = 
-`To rename your song, use write the following \`${prefix}renamesong <originPath> <destinationPath>\`.
-If you are unsure about the file path to your file, use \`${prefix}playable -p\`
+`To rename your song, use \`${prefix}renamesong <originalFileNameOrPath> <newFileNameOrPath>\`.
+If you are unsure about the file of your file, use \`${prefix}playable -p\`
+
+If you are a developer, rename/move music files with \`${prefix}renamesong <originalPath> <newPath>\`.
+This command only moves files, it does NOT create directories.
 `;
 
 module.exports = new Command({
@@ -33,11 +35,32 @@ module.exports = new Command({
 		if(args.length < 2) {
 			return channel.send(`${warning} ${missingArguments}`);
 		}
-		const origin = args[0];
-		const destination = args[1];
+		let origin = args[0];
+		let destination = args[1];
+
+		if(path.dirname(origin) === '.') {
+			const songs = client.soundFiles.get(senderId);
+			let foundPath = false;
+			for(const song of songs) { // Find the path to the song
+				if(song.filename === origin) {
+					origin = song.path;
+					foundPath = true;
+					break;
+				}
+			}
+
+			if(!foundPath) {
+				return channel.send(`${warning} file \`${origin}\` doesn't exist in your library!`);
+			}
+		}
+		if(path.dirname(destination) === '.') destination = path.join(path.dirname(origin), destination); // Make destination into a path from base
+
+		if(!origin.startsWith(musicDirComparison)) return channel.send(`${warning}${warning}${warning} you tried to make changes outside the music database${warning}${warning}${warning}\nAttempted move from: \`${origin}\``);
+		if(!destination.startsWith(musicDirComparison)) return channel.send(`${warning}${warning}${warning} you tried to make changes outside the music database${warning}${warning}${warning}\nAttempted move to: \`${destination}\``);
 
 		if (!existsSync(origin)) return channel.send(`${warning} file \`${origin}\` doesn't exist!`);
 		if (existsSync(destination)) return channel.send(`${warning} file \`${destination}\` already exists!`);
+
 		if (!existsSync(path.dirname(destination))) return channel.send(`${warning} directory \`${path.dirname(destination)}\` for destination doesn't exist!`);
 
 		const permissionFail = senderId != ownerID && !devIDs.includes(senderId);

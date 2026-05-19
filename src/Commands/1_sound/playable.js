@@ -5,7 +5,7 @@ const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const paginator = require('../../Structures/Paginator.js');
 const { bot: { prefix }, player: { allowedExtensions }, directories: {userMusicDir, everyoneMusicDir, defaultMusicDir} } = require('../../../config/config.json');
 const { homepage } = require('../../../package.json');
-const { getUserSoundArray, compareDefault, compareEveryone, compareUser } = require('../../Structures/musicFilesManager.js');
+const { getUserSoundArray, defaultDirComparison, everyoneDirComparison, userDirComparison } = require('../../Structures/musicFilesManager.js');
 const path = require('path');
 
 const helpText = 
@@ -32,16 +32,18 @@ module.exports = new Command({
 
 		if(array.length == 0 && taggedUser === undefined) { // User array failed
 			const defaultAndEveryone = [];
-			for(const [key, value] of client.soundFiles) { // Put everyone and default before user sounds
+			const users = [];
+
+			// Put everyone and default before user sounds
+			for(const [key, value] of client.soundFiles) { 
 				if(key == 'default' || key == 'everyone') {
 					defaultAndEveryone.push(...value);
 				}
 				else {
-					array.push(...value);
+					users.push(...value);
 				}
 			}
-
-			array.push(...defaultAndEveryone);
+			array.push(...defaultAndEveryone,...users);
 		}
 
 		if(jsonFlag) {
@@ -81,8 +83,8 @@ function resolveUserFlag(senderId, args, client) {
 		personalFlagIdx = args.indexOf('-p');
 	}
 
-	if(userFlagIdx === -1 && personalFlagIdx === -1) return [[],undefined, undefined];
-	if(userFlagIdx !== -1 && personalFlagIdx !== -1) {
+	if(userFlagIdx === -1 && personalFlagIdx === -1) return [[],undefined, undefined]; // No flags => [] to list everything
+	if(userFlagIdx !== -1 && personalFlagIdx !== -1) { // Use of both at the same time is invalid
 		message.channel.send({ content: `Both user and personal flags can't be triggered at the same time!`});
 		return [undefined, undefined, undefined];
 	}
@@ -108,7 +110,7 @@ function resolveUserFlag(senderId, args, client) {
 	const [userArray, _] = getUserSoundArray(client, taggedUser);
 	
 	// Just user flag was triggered
-	if(personalFlagIdx === -1) {
+	if(userFlagIdx !== -1) {
 		const validArray = userArray.filter(song => {return song.valid});
 		return [validArray, taggedUser, false];
 	}
@@ -119,9 +121,7 @@ function resolveUserFlag(senderId, args, client) {
 
 async function exportPlayableToJson(message, client, array, taggedUser) {
 	const jsonString = JSON.stringify(array, null, 2);
-
 	const buffer = Buffer.from(jsonString, 'utf-8');
-
 	const filePrefix = (taggedUser) ? `${(await client.users.fetch(taggedUser)).globalName}_` : ''; 
 	const attachment = new AttachmentBuilder(buffer, { name: `${filePrefix}soundFiles.json` });
 
@@ -141,17 +141,16 @@ async function printPlayable(message, client, array, taggedUser, personal, page)
 	}
 
 	let senderName = "DEBUG";
-	if(taggedUser) {
-		senderName = (await client.users.fetch(taggedUser)).globalName;
-	}
-	
 	const embeds = [];
-	let embedHeadline;
+	let embedHeadline;	
+	
 	if(personal) {
 		embedHeadline = `${senderName}'s personal files!`;
+		senderName = (await client.users.fetch(taggedUser)).globalName;
 	}
 	else if(taggedUser) {
 		embedHeadline = `${senderName}'s active files!`;
+		senderName = (await client.users.fetch(taggedUser)).globalName;
 	}
 	else {
 		embedHeadline = `All playable files!`;

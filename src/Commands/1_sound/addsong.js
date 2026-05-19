@@ -4,8 +4,7 @@ const {
 	bot: { prefix, ownerID, devIDs }, 
 	emoji: { success, warning }, 
 	response: { missingArguments }, 
-	player: { maxTime, allowedExtensions }, 
-	directories: {userMusicDir, everyoneMusicDir, defaultMusicDir, tempMusicDir}
+	player: { maxTime, allowedExtensions }
 } = require('../../../config/config.json')
 
 const https = require('https');
@@ -68,7 +67,7 @@ module.exports = new Command({
 				return channel.send(`${warning} user ${args[0]} does not exist.`);
 			}
 		}
-		else { // typical user file
+		else { // Typical user file
 			addUserSong(message, client, senderId)
 		}
 	}
@@ -76,13 +75,15 @@ module.exports = new Command({
 
 async function addUserSong(message, client, targetId) {
 	const userDirReader = readdirSync(userMusicDir);
+
+	// Attempting to find users directory
 	let fileOrDir = undefined;
 	for(fileOrDir of userDirReader) {
-		if(!fileOrDir.startsWith(targetId)) { //Check if fileOrDir matches the user ID pattern
+		if(!fileOrDir.startsWith(targetId)) { // Check if fileOrDir matches the user ID pattern
 			fileOrDir = undefined;
 			continue;
 		} 
-		if(statSync(path.join(userMusicDir, fileOrDir)).isDirectory()) break; //User's directory found
+		if(statSync(path.join(userMusicDir, fileOrDir)).isDirectory()) break; // User's directory found
 		fileOrDir = undefined;
 	}
 
@@ -129,9 +130,10 @@ async function addSongCore(message, client, targetDir) {
 			}
 
 			renameSync(tempPath, filePath);
-			channel.send(`${success} Successfully uploaded song!`);
-			syncSoundFiles(channel, client, filePath);
+			channel.send(`${success} Successfully uploaded \`${fileName}!\``);
+			syncSoundFiles(client);
 
+			// Modifying settings if audio is diabled
 			let settingModified = false;
 			const setting = getSetting(client, 'user', senderId);
 			if (!setting) return;

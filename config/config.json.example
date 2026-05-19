@@ -35,6 +35,13 @@
         "debug": false,
         "allowedExtensions": ["mp3", "wav", "ogg", "flac", "m4a", "aac", "webm", "opus", "aiff", "wma", "ac3"]
     },
+    "directories": {
+        "userMusicDir": "./music/users",
+        "everyoneMusicDir": "./music/everyone",
+        "defaultMusicDir": "./music/default",
+        "tempMusicDir": "./music/temp",
+        "topMusicDir": "./music"
+    },
     "logs": {
         "resetLogOnStart": true,
         "logToFile": false,

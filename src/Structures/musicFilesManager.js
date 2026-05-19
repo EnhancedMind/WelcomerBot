@@ -2,11 +2,12 @@ const { readdirSync, existsSync, renameSync, statSync } = require('fs');
 const path = require('path');
 
 const Client = require('./Client.js');
-const { bot: {prefix}, player: { allowedExtensions }, directories: {userMusicDir, everyoneMusicDir, defaultMusicDir} } = require('../../config/config.json');
+const { bot: {prefix}, player: { allowedExtensions }, directories: {userMusicDir, everyoneMusicDir, defaultMusicDir, topMusicDir} } = require('../../config/config.json');
 
-const compareUser = userMusicDir.split('/').join(path.sep).substring(2);
-const compareEveryone = everyoneMusicDir.split('/').join(path.sep).substring(2);
-const compareDefault = defaultMusicDir.split('/').join(path.sep).substring(2);
+const userDirComparison = userMusicDir.split('/').join(path.sep).substring(2);
+const everyoneDirComparison = everyoneMusicDir.split('/').join(path.sep).substring(2);
+const defaultDirComparison = defaultMusicDir.split('/').join(path.sep).substring(2);
+const musicDirComparison = topMusicDir.split('/').join(path.sep).substring(2);
 
 /**
  * Syncs the sound files from the music directory to the client instance database.
@@ -236,7 +237,8 @@ module.exports = {
     getUserSoundFile,
     getUserSoundArray,
     invalidateSoundFile,
-    compareDefault,
-    compareEveryone,
-    compareUser
+    defaultDirComparison,
+    everyoneDirComparison,
+    userDirComparison,
+    musicDirComparison
 }
