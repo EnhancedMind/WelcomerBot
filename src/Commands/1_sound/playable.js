@@ -135,9 +135,9 @@ async function printPlayable(message, client, array, taggedUser, personal, page)
 	let defaultCount = 0;
 	
 	for(const song of array) {
-		if(song.path.startsWith(compareUser)) userCount++;
-		if(song.path.startsWith(compareEveryone)) everyoneCount++;
-		if(song.path.startsWith(compareDefault)) defaultCount++;
+		if(song.path.startsWith(userDirComparison)) userCount++;
+		if(song.path.startsWith(everyoneDirComparison)) everyoneCount++;
+		if(song.path.startsWith(defaultDirComparison)) defaultCount++;
 	}
 
 	let senderName = "DEBUG";
