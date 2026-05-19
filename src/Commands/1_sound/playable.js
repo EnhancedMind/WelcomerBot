@@ -142,15 +142,15 @@ async function printPlayable(message, client, array, taggedUser, personal, page)
 
 	let senderName = "DEBUG";
 	const embeds = [];
-	let embedHeadline;	
+	let embedHeadline;
 	
 	if(personal) {
-		embedHeadline = `${senderName}'s personal files!`;
 		senderName = (await client.users.fetch(taggedUser)).globalName;
+		embedHeadline = `${senderName}'s personal files!`;
 	}
 	else if(taggedUser) {
-		embedHeadline = `${senderName}'s active files!`;
 		senderName = (await client.users.fetch(taggedUser)).globalName;
+		embedHeadline = `${senderName}'s active files!`;
 	}
 	else {
 		embedHeadline = `All playable files!`;

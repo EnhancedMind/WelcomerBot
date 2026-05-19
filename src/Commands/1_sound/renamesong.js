@@ -8,7 +8,7 @@ const {
 } = require('../../../config/config.json')
 
 const https = require('https');
-const { existsSync, statSync, renameSync } = require('fs');
+const { existsSync, renameSync } = require('fs');
 const path = require('path');
 const { PermissionsBitField } = require('discord.js');
 const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/settingsManager.js');
@@ -65,13 +65,13 @@ module.exports = new Command({
 
 		const permissionFail = senderId != ownerID && !devIDs.includes(senderId);
 		if (permissionFail) {
-			if (origin.startsWith(`${compareDefault}${path.sep}`) || destination.startsWith(`${compareDefault}${path.sep}`)) {
+			if (origin.startsWith(`${defaultDirComparison}${path.sep}`) || destination.startsWith(`${defaultDirComparison}${path.sep}`)) {
 				return channel.send(`${warning} You do not have the permission to change songs for default! (Developer)`);
 			}
-			else if (origin.startsWith(`${compareEveryone}${path.sep}`) || destination.startsWith(`${compareEveryone}${path.sep}`)) {
+			else if (origin.startsWith(`${everyoneDirComparison}${path.sep}`) || destination.startsWith(`${everyoneDirComparison}${path.sep}`)) {
 				return channel.send(`${warning} You do not have the permission to change songs for everyone! (Developer)`);
 			}
-			else if (!origin.startsWith(`${compareUser}${path.sep}${senderId}`)) {
+			else if (!origin.startsWith(`${userDirComparison}${path.sep}${senderId}`)) {
 				return channel.send(`${warning} You do not have the permission to change songs for other users! (Developer)`);
 			}
 		}
