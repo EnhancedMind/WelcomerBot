@@ -5,7 +5,7 @@ const {
 	emoji: { success, warning }, 
 	response: { missingArguments }, 
 	player: { maxTime, allowedExtensions },
-	directories: {userMusicDir, defaultMusicDir, everyoneMusicDir}
+	directories: {userMusicDir, defaultMusicDir, everyoneMusicDir, tempMusicDir}
 } = require('../../../config/config.json')
 
 const https = require('https');
@@ -104,13 +104,21 @@ async function addSongCore(message, client, targetDir) {
 	const channel = message.channel;
 	const senderId = message.author.id;
 
+	const channelResponse = [];
+
 	for(const [_, attachment] of allAttachments) {
 		const fileName = attachment.title ? `${attachment.title}${path.extname(attachment.name)}` : attachment.name;
 
-		if (!allowedExtensions.some(ext => fileName.endsWith(ext))) return channel.send(`${warning} Invalid file type! Supported types: ${allowedExtensions.join(', ')}`);
+		if (!allowedExtensions.some(ext => fileName.endsWith(ext))) {
+			channelResponse.push(`${warning} Invalid file type in \`${fileName}\`! Supported types: ${allowedExtensions.join(', ')}`);
+			continue;
+		}
 
 		const filePath = path.join(targetDir,fileName);
-		if (existsSync(filePath)) return channel.send(`${warning} A file with that name already exists! Please rename the file and try again.`);
+		if (existsSync(filePath))  {
+			channelResponse.push(`${warning} A file with the name \`${fileName}\` already exists! Please rename the file and try again.`);
+			continue;
+		}
 		const tempPath = path.join(tempMusicDir,fileName);
 		if (!existsSync(`${tempMusicDir}`)) mkdirSync(`${tempMusicDir}`, { recursive: true });
 		await new Promise((resolve) => https.get(attachment.url, (res) => res.pipe(createWriteStream(tempPath)).on('finish', () => resolve())));
@@ -127,11 +135,12 @@ async function addSongCore(message, client, targetDir) {
 			const duration = parseFloat(data);
 			if (duration > maxTime) {
 				rmSync(tempPath, { force: true });
-				return channel.send(`${warning} The song is too long! Max length: ${maxTime} seconds`);
+				channelResponse.push(`${warning} The song \`${fileName}\` is too long! Max length: ${maxTime} seconds`);
+				return;
 			}
 
 			renameSync(tempPath, filePath);
-			channel.send(`${success} Successfully uploaded \`${fileName}!\``);
+			channelResponse.push(`${success} Successfully uploaded \`${fileName}\`!`);
 			syncSoundFiles(client);
 
 			// Modifying settings if audio is diabled
@@ -148,10 +157,15 @@ async function addSongCore(message, client, targetDir) {
 			}
 
 			await writeSettingsFile(client).catch(err => {
-				return channel.send(`${warning} An error occurred while writing the settings file, your sound is activated only until the bot restarts!`);
+				channelResponse.push(`${warning} An error occurred while writing the settings file, your sound is activated only until the bot restarts!`);
+				return;
 			});
 
-			if (settingModified) channel.send(`${success} Your settings have been updated to play the sound!`);
+			if (settingModified) {
+				channelReponse.push(`${success} Your settings have been updated to play the sound!`);
+			}
 		});
 	}
+
+	channel.send(channelResponse.join('\n'));
 }
