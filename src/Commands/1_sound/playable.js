@@ -115,7 +115,7 @@ function resolveUserFlag(senderId, args, client) {
 		return [validArray, taggedUser, false];
 	}
 	//personal flag was triggered
-	const filteredArray = userArray.filter(song => {return song.path.startsWith(compareUser)});
+	const filteredArray = userArray.filter(song => {return song.path.startsWith(userDirComparison)});
 	return [filteredArray, taggedUser, true];
 }
 
