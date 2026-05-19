@@ -22,8 +22,8 @@ If you are unsure about the file path to your file, use \`${prefix}playable -p\`
 
 module.exports = new Command({
 	name: 'renamesong',
-	aliases: [ 'renamefile' ],
-	syntax: 'addsong <origin> <destination>',
+	aliases: [ 'renamefile', 'mv' ],
+	syntax: 'renamesong <origin> <destination>',
 	description: `This command allows you rename/move your songs`,
 	help: helpText,
 	async run(message, args, client) {
