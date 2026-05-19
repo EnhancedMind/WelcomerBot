@@ -49,15 +49,15 @@ module.exports = new Command({
 		const permissionFail = senderId != ownerID && !devIDs.includes(senderId);
 
 		if (args[0] == '--default' || args[0] == '-d') {
-			if (permissionFail) return channel.send(`${warning} You do not have the permission to add songs to default! (Administrator)`);
+			if (permissionFail) return channel.send(`${warning} You do not have the permission to add songs to default! (Developer)`);
 			addSongCore(message, client, defaultMusicDir);
 		}
 		else if (args[0] == '--everyone' || args[0] == '-e') {
-			if (permissionFail) return channel.send(`${warning} You do not have the permission to add songs to everyone! (Administrator)`);
+			if (permissionFail) return channel.send(`${warning} You do not have the permission to add songs to everyone! (Developer)`);
 			addSongCore(message, client, everyoneMusicDir);
 		}
 		else if (args[0] == '--user' || args[0] == '-u') {
-			if (permissionFail) return channel.send(`${warning} You do not have the permission to add songs to other users! (Administrator)`);
+			if (permissionFail) return channel.send(`${warning} You do not have the permission to add songs to other users! (Developer)`);
 
 			var userId;
 			if (args[1].startsWith('<@') && args[1].endsWith('>')) {

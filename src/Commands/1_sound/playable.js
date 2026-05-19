@@ -5,12 +5,8 @@ const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const paginator = require('../../Structures/Paginator.js');
 const { bot: { prefix }, player: { allowedExtensions }, directories: {userMusicDir, everyoneMusicDir, defaultMusicDir} } = require('../../../config/config.json');
 const { homepage } = require('../../../package.json');
-const { getUserSoundArray } = require('../../Structures/musicFilesManager.js');
+const { getUserSoundArray, compareDefault, compareEveryone, compareUser } = require('../../Structures/musicFilesManager.js');
 const path = require('path');
-
-const compareUser = userMusicDir.split('/').join(path.sep).substring(2);
-const compareEveryone = everyoneMusicDir.split('/').join(path.sep).substring(2);
-const compareDefault = defaultMusicDir.split('/').join(path.sep).substring(2);
 
 const helpText = 
 `This command allows you to list all the available song that can be played.
@@ -94,7 +90,7 @@ function resolveUserFlag(senderId, args, client) {
 	const flagIdx = (userFlagIdx !== -1) ? userFlagIdx : personalFlagIdx;
 	let taggedUser = undefined;
 
-	if (args.length > flagIdx) { // If the user tag has an argument
+	if (args.length > flagIdx+1) { // If the user tag has an argument
 		const nextVal = (args[flagIdx+1].startsWith('-')) ? `<@${senderId}>` : args[flagIdx+1]; // If no tag, use the sender
 		const mentionMatches = nextVal.match(/^<@([0-9]{18,19})>/); // Extract the user id
 

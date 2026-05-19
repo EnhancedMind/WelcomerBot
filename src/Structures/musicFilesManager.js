@@ -63,7 +63,6 @@ const syncSoundFiles = (client) => {
             const filePath = path.join(defaultMusicDir, file);
             addSoundToList(targetList, filePath, file);
         }
-
         resolve();
     });
 }
@@ -236,5 +235,8 @@ module.exports = {
     syncSoundFiles,
     getUserSoundFile,
     getUserSoundArray,
-    invalidateSoundFile
+    invalidateSoundFile,
+    compareDefault,
+    compareEveryone,
+    compareUser
 }
