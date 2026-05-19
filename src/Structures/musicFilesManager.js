@@ -4,7 +4,7 @@ const path = require('path');
 const Client = require('./Client.js');
 const { bot: {prefix}, player: { allowedExtensions }, directories: {userMusicDir, everyoneMusicDir, defaultMusicDir} } = require('../../config/config.json');
 
-const compareUser = userMusicDir.split('/').join(`path.seppath.sep`).substring(2);
+const compareUser = userMusicDir.split('/').join(path.sep).substring(2);
 const compareEveryone = everyoneMusicDir.split('/').join(path.sep).substring(2);
 const compareDefault = defaultMusicDir.split('/').join(path.sep).substring(2);
 
@@ -66,23 +66,6 @@ const syncSoundFiles = (client) => {
 
         resolve();
     });
-}
-
-/**
- * Syncs the specified sound file to the client instance database.
- * @param {Client} client - The client instance.
- * @param {File} filePath - The VALID file to sync.
- * @returns {Promise<void>} - A promise that resolves when the sound files are synced.
- */
-const runtimeSyncSoundFile = (channel, client, filePath) => {
-    const match = filePath.match(/([0-9]{18,19})/);
-    if(match) {
-        const userId = match[1]; // Extract the user ID from the directory name
-        addUserSoundToList(client, userId, filePath, path.basename(filePath))
-    }
-    else {
-        channel.send(`For immediate listening update the runtime database by ${prefix}sync`);
-    }
 }
 
 /**
@@ -251,7 +234,6 @@ const invalidateSoundFile = (client, path) => {
 
 module.exports = {
     syncSoundFiles,
-    runtimeSyncSoundFile,
     getUserSoundFile,
     getUserSoundArray,
     invalidateSoundFile

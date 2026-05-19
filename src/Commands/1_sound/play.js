@@ -6,7 +6,6 @@ const { consoleLog } = require('../../Data/Log.js');
 const { getUserSoundFile } = require('../../Structures/musicFilesManager.js');
 const { bot: { prefix }, emoji: { success, warning, error, loading }, response: { missingArguments, noChannel, wrongChannel, afkChannel }, player: { selfDeaf, debug, allowedExtensions } } = require('../../../config/config.json');
 
-
 module.exports = new Command({
 	name: 'play',
     aliases: [ 'p' ],
