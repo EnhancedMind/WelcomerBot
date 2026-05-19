@@ -4,7 +4,8 @@ const {
 	bot: { prefix, ownerID, devIDs }, 
 	emoji: { success, warning }, 
 	response: { missingArguments }, 
-	player: { maxTime, allowedExtensions }
+	player: { maxTime, allowedExtensions },
+	directories: {userMusicDir, defaultMusicDir, everyoneMusicDir}
 } = require('../../../config/config.json')
 
 const https = require('https');
