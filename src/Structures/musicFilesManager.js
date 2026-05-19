@@ -2,7 +2,11 @@ const { readdirSync, existsSync, renameSync, statSync } = require('fs');
 const path = require('path');
 
 const Client = require('./Client.js');
-const { player: { allowedExtensions }, directories: {userMusicDir, everyoneMusicDir, defaultMusicDir} } = require('../../config/config.json');
+const { bot: {prefix}, player: { allowedExtensions }, directories: {userMusicDir, everyoneMusicDir, defaultMusicDir} } = require('../../config/config.json');
+
+const compareUser = userMusicDir.split('/').join(`path.seppath.sep`).substring(2);
+const compareEveryone = everyoneMusicDir.split('/').join(path.sep).substring(2);
+const compareDefault = defaultMusicDir.split('/').join(path.sep).substring(2);
 
 /**
  * Syncs the sound files from the music directory to the client instance database.
@@ -38,7 +42,7 @@ const syncSoundFiles = (client) => {
             if(statSync(path.join(everyoneMusicDir, dirOrFile)).isDirectory()) {  // Check if the dirOrfile is a directory
                 const everyoneFileReader = readdirSync(path.join(everyoneMusicDir, dirOrFile));
                 if (!everyoneFileReader.length) continue; // skip empty folders
-                const fileChance = dirOrFile.includes('$ch=') ? (parseFloat(dirOrFile.split('ch=')[1]/everyoneFileReader.length)) : undefined;  // chance set for the folder divided by number of files inside
+                const fileChance = dirOrFile.includes('$ch=') ? (parseFloat(dirOrFile.split('ch=')[1])/everyoneFileReader.length) : undefined;  // chance set for the folder divided by number of files inside
                 for (const file of everyoneFileReader) {
                     const targetList = client.soundFiles.get('everyone');
                     const filePath = path.join(everyoneMusicDir, dirOrFile, file);
@@ -65,11 +69,28 @@ const syncSoundFiles = (client) => {
 }
 
 /**
+ * Syncs the specified sound file to the client instance database.
+ * @param {Client} client - The client instance.
+ * @param {File} filePath - The VALID file to sync.
+ * @returns {Promise<void>} - A promise that resolves when the sound files are synced.
+ */
+const runtimeSyncSoundFile = (channel, client, filePath) => {
+    const match = filePath.match(/([0-9]{18,19})/);
+    if(match) {
+        const userId = match[1]; // Extract the user ID from the directory name
+        addUserSoundToList(client, userId, filePath, path.basename(filePath))
+    }
+    else {
+        channel.send(`For immediate listening update the runtime database by ${prefix}sync`);
+    }
+}
+
+/**
  * Adds user sound to the client instance database
  * @param {Client} client - The client instance.
  * @param {string} userId - The ID of the user.
  * @param {string} filePath - Path from base to file
- * @param {string} fileName - If the above is a dir, here is the file
+ * @param {string} fileName - Name of the file
  * @returns {void}
  */
 function addUserSoundToList(client, userId, filePath, fileName) {
@@ -120,16 +141,11 @@ function getUserSoundArray(client, userId) {
     let defaultType = false;  // whether the user has his own sound files or if just default/everyone ones are used, returned as second value to voiceStateUpdate to check with settings
     
     if ( client.soundFiles.has(userId) ) { // if userId has his own sound files
-        const userFiles = client.soundFiles.get(userId);
-        
-        if (userFiles.length !== 0) { // if no custom sound files for join/leave are found, eg. userFiles.length == 0, revert to default and everyone files by leaving the selectionArray.length at 0, the other one will take care of it
-            const everyoneFiles = client.soundFiles.get('everyone');
-            array = [...userFiles, ...everyoneFiles]; // combine user files and everyone files
-        }
+        array = client.soundFiles.get(userId);
     }
     
     if (array.length === 0 ) { // if userId does not have his own sound files
-        array = [...client.soundFiles.get('default'), ...client.soundFiles.get('everyone')];
+        array = client.soundFiles.get('default');
         defaultType = true;
 
         if (array.length === 0) { // if no sound files :D
@@ -137,6 +153,7 @@ function getUserSoundArray(client, userId) {
         }
     }
 
+    array = [...array,...client.soundFiles.get('everyone')];
     return [array, defaultType];
 }
 
@@ -161,35 +178,7 @@ const getUserSoundFile = (client, userId, type) => {
             if (type == 'leave') return item.leave && item.valid;
         })
 
-        const probabilities = new Array(selectionArray.length).fill(undefined);
-        let undefProbability = 1;
-        let undefCount = 0;
-        for (let i = 0; i < selectionArray.length; i++) {
-            const chance = selectionArray[i].chance; 
-            if (isNaN(chance)) {
-                undefCount++;
-                console.log("undef");
-                continue;
-            }
-            console.log("def", chance);
-            probabilities[i] = chance;
-            undefProbability -= Math.abs(chance); // Negative chance would force play the user's first sound
-        }
-
-        console.log(undefProbability);
-
-
-
-        const probabilitySum = (undefProbability < 0) ? 1 - undefProbability : 1;
-
-        console.log(probabilitySum);
-        if (undefProbability < 0) undefProbability = 0;
-
-        for (let i = 0; i < probabilities.length; i++) {
-            if(isNaN(selectionArray[i].chance)) {
-                probabilities[i] = undefProbability / undefCount;
-            }
-        }
+        const [probabilities, probabilitySum] = findProbabilities(selectionArray);
 
         // Choose a random item from the array based on probabilities,
         // this number is between 0 and the sum of all probabilities so scaled accordingly
@@ -197,26 +186,52 @@ const getUserSoundFile = (client, userId, type) => {
 
         // Iterate through the probabilities and keep track of the running sum
         let runningSum = 0; // running sum of probabilities, each iteration adds the current probability to the running sum
-        console.log(randomNumber);
 
         for (let i = 0; i < probabilities.length; i++) {
-            console.log(runningSum);
             // If the random number is less than the running sum + current probability, choose the current item 
             if (randomNumber < (runningSum += probabilities[i])) { //check and add to running sum at the same time
                 // Return the chosen item
-                console.log("21");
                 if (existsSync(selectionArray[i].path)) {
                     resolve( [selectionArray[i], defaultType] );
-                    console.log("34");
                     return;
                 }
-                console.log("55");
                 await syncSoundFiles(client); // if the file does not exist, for example it was deleted manually, resync the sound files and try again
                 resolve( await getUserSoundFile(client, userId, type) );
                 return;
             }
         }
     });
+}
+
+/**
+ * Gets a sound file for the user based on the type (join or leave).
+ * @param {object[]} songs - The songs to be weighted
+ * @returns {[float[], float]} - Return an array of probabilities corresponding to each song and the sum of all probabilities
+ */
+function findProbabilities(songArray) {
+    const probabilities = new Array(songArray.length).fill(undefined);
+    let undefProbability = 1;
+    let undefCount = 0;
+    for (let i = 0; i < songArray.length; i++) {
+        const chance = songArray[i].chance; 
+        if (isNaN(chance)) {
+            undefCount++;
+            continue;
+        }
+        probabilities[i] = chance;
+        undefProbability -= Math.abs(chance); // Negative chance would force play the user's first sound
+    }
+
+    const probabilitySum = (undefProbability < 0) ? 1 - undefProbability : 1;
+    if (undefProbability < 0) undefProbability = 0;
+
+    for (let i = 0; i < probabilities.length; i++) {
+        if(isNaN(songArray[i].chance)) {
+            probabilities[i] = undefProbability / undefCount;
+        }
+    }
+
+    return [probabilities, probabilitySum];
 }
 
 /**
@@ -236,6 +251,7 @@ const invalidateSoundFile = (client, path) => {
 
 module.exports = {
     syncSoundFiles,
+    runtimeSyncSoundFile,
     getUserSoundFile,
     getUserSoundArray,
     invalidateSoundFile

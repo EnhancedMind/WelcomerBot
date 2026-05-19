@@ -17,7 +17,9 @@ const paginator = async (msg, pages, messageContent = null, page = 0, emojiList 
         throw new Error("Link buttons are not supported'");
     if (emojiList.length !== 3) throw new Error("Need three buttons.");
 
+    page = Math.round(page);
     if (page > pages.length - 1) page = pages.length - 1;
+    if (page < 0) page = 0;
 
     const curPage = await msg.channel.send({ content: messageContent, embeds: [pages[page].setFooter({ text: `Page ${page + 1} / ${pages.length}` })] });
     if (pages.length == 1) return;

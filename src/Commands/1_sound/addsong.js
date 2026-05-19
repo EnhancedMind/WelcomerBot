@@ -15,6 +15,7 @@ const ffprobe = require('ffprobe-static');
 const path = require('path');
 const { PermissionsBitField } = require('discord.js');
 const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/settingsManager.js');
+const { runtimeSyncSoundFile } = require('../../Structures/musicFilesManager.js')
 
 const helpText = 
 `This command allows you to add a song to your library in the database.
@@ -83,7 +84,6 @@ async function addUserSong(message, client, targetId) {
 			continue;
 		} 
 		if(statSync(path.join(userMusicDir, fileOrDir)).isDirectory()) { //User's directory found
-			console.log(`Found user's directory: ${fileOrDir}`);
 			break;
 		}
 		fileOrDir = undefined;
@@ -92,8 +92,6 @@ async function addUserSong(message, client, targetId) {
 	const dirTag = (await client.users.fetch(targetId)).globalName;
 	const userDirName = (fileOrDir !== undefined) ? fileOrDir : [targetId, dirTag].join('_');
 	const userDirPath = path.join(`${userMusicDir}`, `${userDirName}`);
-
-	console.log(await (client.users.fetch(targetId)), fileOrDir, dirTag, userDirName, userDirPath);
 
 	if(fileOrDir === undefined) {
 		mkdirSync(`${userDirPath}`, { recursive: true });
@@ -141,6 +139,7 @@ async function addSongCore(message, client, targetDir) {
 
 			renameSync(tempPath, filePath);
 			channel.send(`${success} Successfully uploaded song!`);
+			runtimeSyncSoundFile(channel, client, filePath);
 
 			let settingModified = false;
 			const setting = getSetting(client, 'user', senderId);
