@@ -11,7 +11,6 @@ const {
 const https = require('https');
 const { existsSync, readdirSync, statSync, renameSync, mkdirSync, createWriteStream, rmSync, readdir } = require('fs');
 const { spawn } = require('child_process');
-const ffprobe = require('ffprobe-static');
 const path = require('path');
 const { PermissionsBitField } = require('discord.js');
 const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/settingsManager.js');
@@ -83,9 +82,7 @@ async function addUserSong(message, client, targetId) {
 			fileOrDir = undefined;
 			continue;
 		} 
-		if(statSync(path.join(userMusicDir, fileOrDir)).isDirectory()) { //User's directory found
-			break;
-		}
+		if(statSync(path.join(userMusicDir, fileOrDir)).isDirectory()) break; //User's directory found
 		fileOrDir = undefined;
 	}
 
@@ -110,19 +107,13 @@ async function addSongCore(message, client, targetDir) {
 
 		if (!allowedExtensions.some(ext => fileName.endsWith(ext))) return channel.send(`${warning} Invalid file type! Supported types: ${allowedExtensions.join(', ')}`);
 
-		console.log(attachment.name);
-		console.log(attachment.title);
-		console.log(path.extname(attachment.name));
-		console.log(fileName);
-
 		const filePath = path.join(targetDir,fileName);
-		console.log(filePath);
 		if (existsSync(filePath)) return channel.send(`${warning} A file with that name already exists! Please rename the file and try again.`);
 		const tempPath = path.join(tempMusicDir,fileName);
 		if (!existsSync(`${tempMusicDir}`)) mkdirSync(`${tempMusicDir}`, { recursive: true });
 		await new Promise((resolve) => https.get(attachment.url, (res) => res.pipe(createWriteStream(tempPath)).on('finish', () => resolve())));
 
-		const ffprobeProcess = spawn(`${ffprobe.path}`,
+		const ffprobeProcess = spawn(`ffprobe`,
 			[ '-i', tempPath, //input file
 			'-show_entries', 'format=duration', //only show duration
 			'-v', 'quiet', //prevent output spam

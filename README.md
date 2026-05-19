@@ -156,7 +156,8 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
 
 ## Instalation
 To use the project you will need:  
-[Node JS v20.12.0 or newer](https://nodejs.org/en/)  
+[Node JS v20.12.0 or newer](https://nodejs.org/en/), but I recommend using the latest LTS version.  
+You will also need ffmpeg and ffprobe installed on your system and added to the PATH. You can download them from [ffmpeg official website](https://ffmpeg.org/download.html). They are already included in the docker image.  
 <br>
 
 Download the project either from main branch or from the [releases page](https://github.com/EnhancedMind/WelcomerBot/releases/latest).  
@@ -170,7 +171,7 @@ After that is done, you can start the bot using the following command:
 If you want to use the bot 24/7, you will need to host it somewhere. You can use some online hosting services or for example a Raspberry Pi (model 4 is plenty fast for this).  
 <br>
 
-### You can also use the attached Dockerfile to build a docker image and run it in a container.  
+### You can also use the attached Dockerfile to build a docker image or the provided image and run it in a container.  
 You can use the provided `docker-compose.yml.example` file as an example of how to set up the container and its volumes.  
 
 

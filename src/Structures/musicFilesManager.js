@@ -139,11 +139,11 @@ function addSoundToList(targetList, filePath, fileName, chanceOverride = undefin
 function getUserSoundArray(client, userId) {
     let array = [];  // array of sound files to choose from
     let defaultType = false;  // whether the user has his own sound files or if just default/everyone ones are used, returned as second value to voiceStateUpdate to check with settings
-    
+
     if ( client.soundFiles.has(userId) ) { // if userId has his own sound files
         array = client.soundFiles.get(userId);
     }
-    
+
     if (array.length === 0 ) { // if userId does not have his own sound files
         array = client.soundFiles.get('default');
         defaultType = true;

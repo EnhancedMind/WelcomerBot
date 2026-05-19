@@ -5,8 +5,8 @@ const { existsSync} = require('fs');
 const path = require('path');
 const { invalidateSoundFile } = require('../../Structures/musicFilesManager.js');
 
-const helpText = `
-This command allows you to mark a song as used. This means the song will not play again.
+const helpText = 
+`This command allows you to mark a song as used. This means the song will not play again.
 To use this command, send the file path of the song you want to remove from the list. You can get the file path from the \`${prefix}playable\` command.
 Keep in mind that this command does not remove the file from the server, it only marks it as used. The only way to fully remove the file is to contact the owner of the bot.
 Example usage: \`${prefix}removesong music${path.sep}users${path.sep}$yourID${path.sep}mysong.mp3\`

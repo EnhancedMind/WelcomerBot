@@ -13,7 +13,6 @@ module.exports = new Event('voiceStateUpdate', async (client, oldState, newState
 
     if(newState.channelId && !oldState.channelId || oldState.channelId == oldState.guild.afkChannelId) {  //joining a channel or returning from afk
         const [file, defaultType] = await getUserSoundFile(client, newState.member.id, 'join');
-        console.log([file, defaultType]);
         if (!file) return;
 
         if (!allowPlay(client, newState.guild.id, newState.member.id, defaultType ? 'defaultJoin' : 'join')) return;
@@ -25,8 +24,6 @@ module.exports = new Event('voiceStateUpdate', async (client, oldState, newState
         if (oldState.channel.members.size == 0 && !playIntoEmptyChannel) return;
 
         const [file, defaultType] = await getUserSoundFile(client, oldState.member.id, 'leave');
-        console.log([file, defaultType]);
-
         if (!file) return;
 
         if (!allowPlay(client, oldState.guild.id, oldState.member.id, defaultType ? 'defaultLeave' : 'leave')) return;
@@ -37,7 +34,6 @@ module.exports = new Event('voiceStateUpdate', async (client, oldState, newState
 
 const play = (client, state, file, delay) => {
     return new Promise(async (resolve) => {
-        console.log("here");
         const player = createAudioPlayer();
         const resource = createAudioResource(file.path);
         const connection = joinVoiceChannel({
