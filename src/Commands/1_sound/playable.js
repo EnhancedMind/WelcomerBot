@@ -12,10 +12,20 @@ const compareUser = userMusicDir.split('/').join(path.sep).substring(2);
 const compareEveryone = everyoneMusicDir.split('/').join(path.sep).substring(2);
 const compareDefault = defaultMusicDir.split('/').join(path.sep).substring(2);
 
+const helpText = 
+`This command allows you to list all the available song that can be played.
+
+You can use the following arguments to modify this behaviour:
+- \`--json\` - Puts the list into a json file and sends it as an attachent.
+- \`--user @user\` or \`-u @user\` - Lists all the songs that may be played for \`user\`.
+- \`--personal @user\` or \`-p @user\` - Lists all the songs in \`user\`'s library.
+`;
+
 module.exports = new Command({
 	name: 'playable',
 	aliases: [ 'pl', 'pls' ],
 	description: `Lists all the files that can be played. Use \`${prefix}playable --json\` to get the output as JSON data.`,
+	help: helpText,
 	async run(message, args, client) {
 		const jsonFlag = args.includes('--json')
 
@@ -26,7 +36,7 @@ module.exports = new Command({
 
 		if(array.length == 0 && taggedUser === undefined) { // User array failed
 			const defaultAndEveryone = [];
-			for(const [key, value] of client.soundFiles) {
+			for(const [key, value] of client.soundFiles) { // Put everyone and default before user sounds
 				if(key == 'default' || key == 'everyone') {
 					defaultAndEveryone.push(...value);
 				}
@@ -40,7 +50,6 @@ module.exports = new Command({
 
 		if(jsonFlag) {
 			exportPlayableToJson(message, client, array, taggedUser);
-			return;
 		}
 		else {
 			printPlayable(message, client, array, taggedUser, personalFlag, page);
@@ -113,11 +122,11 @@ function resolveUserFlag(senderId, args, client) {
 }
 
 async function exportPlayableToJson(message, client, array, taggedUser) {
-	const jsonString = JSON.stringify(Object.fromEntries(array), null, 2);
+	const jsonString = JSON.stringify(array, null, 2);
 
 	const buffer = Buffer.from(jsonString, 'utf-8');
 
-	const filePrefix = (taggedUser) ? `${(await client.users.get(taggedUser)).globalName}_` : ''; 
+	const filePrefix = (taggedUser) ? `${(await client.users.fetch(taggedUser)).globalName}_` : ''; 
 	const attachment = new AttachmentBuilder(buffer, { name: `${filePrefix}soundFiles.json` });
 
 	message.channel.send({ content: 'Here is the JSON data:', files: [attachment] });
