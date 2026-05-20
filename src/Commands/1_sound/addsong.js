@@ -4,8 +4,8 @@ const {
 	bot: { prefix, ownerID, devIDs }, 
 	emoji: { success, warning }, 
 	response: { missingArguments }, 
-	player: { maxTime, allowedExtensions }, 
-	directories: {userMusicDir, everyoneMusicDir, defaultMusicDir, tempMusicDir}
+	player: { maxTime, allowedExtensions },
+	directories: {userMusicDir, defaultMusicDir, everyoneMusicDir, tempMusicDir}
 } = require('../../../config/config.json')
 
 const https = require('https');
@@ -14,7 +14,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const { PermissionsBitField } = require('discord.js');
 const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/settingsManager.js');
-const { syncSoundFiles } = require('../../Structures/musicFilesManager.js')
+const { syncSoundFiles, defaultDirComparison, everyoneDirComparison } = require('../../Structures/musicFilesManager.js')
 
 const helpText = 
 `This command allows you to add a song to your library in the database.
@@ -30,9 +30,9 @@ An example file name would be: \`myname_$join_$leave_$once_$ch=0.5.mp3\` or \`my
 Keep in mind that any file sent will be kept on the server, even after using removesound, as that will only mark it as used. The only way to fully remove the sound is to contact the owner of the bot.
 
 This command supports the following arguments for developers:
-- \`--default\` or \`-d\` - Adds song to the default library
-- \`--everyone\` or \`-e\` - Adds song to the everyone library
-- \`--user @user\` or \`-u @user\` - Adds song to \`user\`'s library
+- \`--default\` or \`-d\` - Adds default song to \`${defaultDirComparison}\`
+- \`--everyone\` or \`-e\` - Adds song for everyone to \`${everyoneDirComparison}\`
+- \`--user @user\` or \`-u @user\` - Adds song to \`user\`'s personal library
 `;
 
 module.exports = new Command({
@@ -68,21 +68,30 @@ module.exports = new Command({
 				return channel.send(`${warning} user ${args[0]} does not exist.`);
 			}
 		}
-		else { // typical user file
+		else { // Typical user file
 			addUserSong(message, client, senderId)
 		}
 	}
 });
 
+/**
+ * Adds a song from message to the user with id targetId
+ * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
+ * @param {Client} client - The client instance.
+ * @param {string} targetId - The id of the user to add this file to.
+ * @returns {void}
+ */
 async function addUserSong(message, client, targetId) {
 	const userDirReader = readdirSync(userMusicDir);
+
+	// Attempting to find users directory
 	let fileOrDir = undefined;
 	for(fileOrDir of userDirReader) {
-		if(!fileOrDir.startsWith(targetId)) { //Check if fileOrDir matches the user ID pattern
+		if(!fileOrDir.startsWith(targetId)) { // Check if fileOrDir matches the user ID pattern
 			fileOrDir = undefined;
 			continue;
 		} 
-		if(statSync(path.join(userMusicDir, fileOrDir)).isDirectory()) break; //User's directory found
+		if(statSync(path.join(userMusicDir, fileOrDir)).isDirectory()) break; // User's directory found
 		fileOrDir = undefined;
 	}
 
@@ -97,18 +106,33 @@ async function addUserSong(message, client, targetId) {
 	addSongCore(message, client, userDirPath);
 }
 
+/**
+ * Adds a song from message to the target directory
+ * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
+ * @param {Client} client - The client instance.
+ * @param {string} targetDir - The target directory for the song file.
+ * @returns {void}
+ */
 async function addSongCore(message, client, targetDir) {
 	const allAttachments = message.attachments;
 	const channel = message.channel;
 	const senderId = message.author.id;
 
+	const channelResponse = [];
+
 	for(const [_, attachment] of allAttachments) {
 		const fileName = attachment.title ? `${attachment.title}${path.extname(attachment.name)}` : attachment.name;
 
-		if (!allowedExtensions.some(ext => fileName.endsWith(ext))) return channel.send(`${warning} Invalid file type! Supported types: ${allowedExtensions.join(', ')}`);
+		if (!allowedExtensions.some(ext => fileName.endsWith(ext))) {
+			channelResponse.push(`${warning} Invalid file type in \`${fileName}\`! Supported types: ${allowedExtensions.join(', ')}`);
+			continue;
+		}
 
 		const filePath = path.join(targetDir,fileName);
-		if (existsSync(filePath)) return channel.send(`${warning} A file with that name already exists! Please rename the file and try again.`);
+		if (existsSync(filePath))  {
+			channelResponse.push(`${warning} A file with the name \`${fileName}\` already exists! Please rename the file and try again.`);
+			continue;
+		}
 		const tempPath = path.join(tempMusicDir,fileName);
 		if (!existsSync(`${tempMusicDir}`)) mkdirSync(`${tempMusicDir}`, { recursive: true });
 		await new Promise((resolve) => https.get(attachment.url, (res) => res.pipe(createWriteStream(tempPath)).on('finish', () => resolve())));
@@ -125,13 +149,15 @@ async function addSongCore(message, client, targetDir) {
 			const duration = parseFloat(data);
 			if (duration > maxTime) {
 				rmSync(tempPath, { force: true });
-				return channel.send(`${warning} The song is too long! Max length: ${maxTime} seconds`);
+				channelResponse.push(`${warning} The song \`${fileName}\` is too long! Max length: ${maxTime} seconds`);
+				return;
 			}
 
 			renameSync(tempPath, filePath);
-			channel.send(`${success} Successfully uploaded song!`);
-			syncSoundFiles(channel, client, filePath);
+			channelResponse.push(`${success} Successfully uploaded \`${fileName}\`!`);
+			syncSoundFiles(client);
 
+			// Modifying settings if audio is diabled
 			let settingModified = false;
 			const setting = getSetting(client, 'user', senderId);
 			if (!setting) return;
@@ -145,10 +171,15 @@ async function addSongCore(message, client, targetDir) {
 			}
 
 			await writeSettingsFile(client).catch(err => {
-				return channel.send(`${warning} An error occurred while writing the settings file, your sound is activated only until the bot restarts!`);
+				channelResponse.push(`${warning} An error occurred while writing the settings file, your sound is activated only until the bot restarts!`);
+				return;
 			});
 
-			if (settingModified) channel.send(`${success} Your settings have been updated to play the sound!`);
+			if (settingModified) {
+				channelReponse.push(`${success} Your settings have been updated to play the sound!`);
+			}
 		});
 	}
+
+	channel.send(channelResponse.join('\n'));
 }

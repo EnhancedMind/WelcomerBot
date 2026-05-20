@@ -5,7 +5,7 @@ const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const paginator = require('../../Structures/Paginator.js');
 const { bot: { prefix }, player: { allowedExtensions }, directories: {userMusicDir, everyoneMusicDir, defaultMusicDir} } = require('../../../config/config.json');
 const { homepage } = require('../../../package.json');
-const { getUserSoundArray, compareDefault, compareEveryone, compareUser } = require('../../Structures/musicFilesManager.js');
+const { getUserSoundArray, defaultDirComparison, everyoneDirComparison, userDirComparison } = require('../../Structures/musicFilesManager.js');
 const path = require('path');
 
 const helpText = 
@@ -25,23 +25,25 @@ module.exports = new Command({
 	async run(message, args, client) {
 		const jsonFlag = args.includes('--json')
 
-		const page = resolvePageFlag(message, args);
+		const page = resolvePage(message, args);
 		const [array, taggedUser, personalFlag] = resolveUserFlag(message.author.id, args, client);
 
 		if(array === undefined) return; // Flag had an issue
 
 		if(array.length == 0 && taggedUser === undefined) { // User array failed
 			const defaultAndEveryone = [];
-			for(const [key, value] of client.soundFiles) { // Put everyone and default before user sounds
+			const users = [];
+
+			// Put everyone and default before user sounds
+			for(const [key, value] of client.soundFiles) { 
 				if(key == 'default' || key == 'everyone') {
 					defaultAndEveryone.push(...value);
 				}
 				else {
-					array.push(...value);
+					users.push(...value);
 				}
 			}
-
-			array.push(...defaultAndEveryone);
+			array.push(...defaultAndEveryone,...users);
 		}
 
 		if(jsonFlag) {
@@ -53,7 +55,13 @@ module.exports = new Command({
 	}
 });
 
-function resolvePageFlag(message, args) {
+/**
+ * Find the specified page number or set it to 0
+ * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
+ * @param {string[]} args - The command arguments.
+ * @returns {void}
+ */
+function resolvePage(message, args) {
 	let page = 0;
 	for(const arg of args) {
 		if(/^\d+$/.test(arg)) {
@@ -70,6 +78,12 @@ function resolvePageFlag(message, args) {
 	return page-1;
 }
 
+/**
+ * Find the specified page number or set it to 0
+ * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
+ * @param {string[]} args - The command arguments.
+ * @returns {[object[], Discord.user, boolean]} - [array with user's songs if flagged, the user, if the flag was 'personal']
+ */
 function resolveUserFlag(senderId, args, client) {
 	let userFlagIdx = args.indexOf('--user');
 	if (userFlagIdx === -1) {
@@ -81,8 +95,8 @@ function resolveUserFlag(senderId, args, client) {
 		personalFlagIdx = args.indexOf('-p');
 	}
 
-	if(userFlagIdx === -1 && personalFlagIdx === -1) return [[],undefined, undefined];
-	if(userFlagIdx !== -1 && personalFlagIdx !== -1) {
+	if(userFlagIdx === -1 && personalFlagIdx === -1) return [[],undefined, undefined]; // No flags => [] to list everything
+	if(userFlagIdx !== -1 && personalFlagIdx !== -1) { // Use of both at the same time is invalid
 		message.channel.send({ content: `Both user and personal flags can't be triggered at the same time!`});
 		return [undefined, undefined, undefined];
 	}
@@ -108,20 +122,26 @@ function resolveUserFlag(senderId, args, client) {
 	const [userArray, _] = getUserSoundArray(client, taggedUser);
 	
 	// Just user flag was triggered
-	if(personalFlagIdx === -1) {
+	if(userFlagIdx !== -1) {
 		const validArray = userArray.filter(song => {return song.valid});
 		return [validArray, taggedUser, false];
 	}
 	//personal flag was triggered
-	const filteredArray = userArray.filter(song => {return song.path.startsWith(compareUser)});
+	const filteredArray = userArray.filter(song => {return song.path.startsWith(userDirComparison)});
 	return [filteredArray, taggedUser, true];
 }
 
+/**
+ * Takes the array and makes it into a json file and attaches it to a message
+ * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
+ * @param {Client} client - The client instance.
+ * @param {object[]} array - The array to jsonify.
+ * @param {Discord.user|undefined} taggedUser - The user specified in the arguments (if any).
+ * @returns {null}
+ */
 async function exportPlayableToJson(message, client, array, taggedUser) {
 	const jsonString = JSON.stringify(array, null, 2);
-
 	const buffer = Buffer.from(jsonString, 'utf-8');
-
 	const filePrefix = (taggedUser) ? `${(await client.users.fetch(taggedUser)).globalName}_` : ''; 
 	const attachment = new AttachmentBuilder(buffer, { name: `${filePrefix}soundFiles.json` });
 
@@ -129,28 +149,37 @@ async function exportPlayableToJson(message, client, array, taggedUser) {
 	return;	
 }
 
+/**
+ * Takes the array and makes it into a json file and attaches it to a message
+ * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
+ * @param {Client} client - The client instance.
+ * @param {object[]} array - The array of files to print.
+ * @param {Discord.user|undefined} taggedUser - The user tagged in the arguments (if any).
+ * @param {boolean} personal - If the display is of personal files.
+ * @param {boolean} page - Page specified to display first.
+ * @returns {null}
+ */
 async function printPlayable(message, client, array, taggedUser, personal, page) {
 	let userCount = 0;
 	let everyoneCount = 0;
 	let defaultCount = 0;
 	
 	for(const song of array) {
-		if(song.path.startsWith(compareUser)) userCount++;
-		if(song.path.startsWith(compareEveryone)) everyoneCount++;
-		if(song.path.startsWith(compareDefault)) defaultCount++;
+		if(song.path.startsWith(userDirComparison)) userCount++;
+		if(song.path.startsWith(everyoneDirComparison)) everyoneCount++;
+		if(song.path.startsWith(defaultDirComparison)) defaultCount++;
 	}
 
 	let senderName = "DEBUG";
-	if(taggedUser) {
-		senderName = (await client.users.fetch(taggedUser)).globalName;
-	}
-	
 	const embeds = [];
 	let embedHeadline;
+	
 	if(personal) {
+		senderName = (await client.users.fetch(taggedUser)).globalName;
 		embedHeadline = `${senderName}'s personal files!`;
 	}
 	else if(taggedUser) {
+		senderName = (await client.users.fetch(taggedUser)).globalName;
 		embedHeadline = `${senderName}'s active files!`;
 	}
 	else {

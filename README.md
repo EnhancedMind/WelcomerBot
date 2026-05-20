@@ -27,7 +27,7 @@ Similar functionality was recently added to Discord Nitro, but it only works for
 <br><br>
 
 ## Adding sounds
-To add or change sounds you will need to add them to the `music` folder, or the user sounds can be managed with `addsong` and `removesong` commands.  
+To add or change sounds you will need to add them to the `music` folder, or the user sounds can be managed with `addsong`,`renamesong` and `removesong` commands.  
 <br>
 
 In the sounds folder there are 3 folders.  
@@ -37,14 +37,14 @@ Inside the `default` folder you can add the default sounds that will be played w
 These are the default sounds I have set up. You can put however many sounds you want in the folder or not any at all. The files don't require any strict naming, the system just looks for options like `$join`, `$ch=*` etc., more explained below.  
 <br>
 
-- `users` folder is where you can add custom join sounds for users. To add user a custom sound, simply put a music file named 'USERID_optionalcomment.extention'. You can get the userid in discord after enabling developer mode by right clicking the user and selecting 'copy ID'. The allowed extensions are the same as in the config file. I strongly advise against changing the allowedExtensions in the config if you don't know what you are doing.  
-You can also put a file into a folder inside the `users` folder, eg a subfolder. The folders name must start with the user id, then the file inside doesn't have to start with the user id. You can use this for better organization of the files.  
+- `users` folder is where you can add custom join sounds for users. To add user a custom sound, simply put a music file named 'USERID_optionalcomment.extention'. You can get the userid in discord after enabling developer mode by right clicking the user and selecting 'copy ID'. The allowed extensions are the same as in the config file. I strongly advise against changing the allowedExtensions in the config if you don't know what you are doing.
+You can also put a file into a folder inside the `users` folder, eg a subfolder. The folders name must start with the user id, then the file inside doesn't have to start with the user id. You can use this for better organization of the files.
 <br>
 
 - `everyone` folder is where you can add sounds that have a chance of being selected for everyone. They can also be considered 'global'. They have a chance of being selected whether the user has a custom sound set or not. The files don't require any special naming, the system just looks for options like `$join`, `$ch=*` etc.  
 You can also put a file into a folder inside the `everyone` folder, eg a subfolder. The folders name is not strict, but looks for options `$ch=*`, `$join`, `$leave` and `$once` in the folder name and applies them to files inside the folder. The chance set in the folder is divided among the files inside the folder. The `$once` will be used for files inside induvidually, not the whole folder. You can also specify options for each file inside the folder, where `$join`, `$leave` and `$once` will be ORed with the folder options and `$ch=*` will hard override the chance for that file, and will not affect the chance divided among the other files inside the folder. You can use this for better organization of the files.  
 
-The user can also set their own join sound by using the `addsong` command and then removing it with the `removesong` command. The owner can add or remove the sound for anyone. You can get more info on the command by using `addsong help`.  
+The user can also set their own join sound by using the `addsong` command, rename them using the `renamesong` command and then removing it with the `removesong` command. The owner can add or remove the sound for anyone. You can get more info on the command by using `addsong --help`.
 <br>
 
 The join sound can also have options. To use options, simply add them to the comment seperated with `_`. The available options are:
@@ -105,11 +105,11 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
         "allowedExtensions": ["mp3", "wav", "ogg", "flac", "m4a", "aac", "webm", "opus", "aiff", "wma", "ac3"]
     },
     "directories": {
-        "topMusicDir": "./music",
         "userMusicDir": "./music/users",
         "everyoneMusicDir": "./music/everyone",
         "defaultMusicDir": "./music/default",
-        "tempMusicDir": "./music/temp"
+        "tempMusicDir": "./music/temp",
+        "topMusicDir": "./music"
     },
     "logs": {
         "resetLogOnStart": true,
@@ -161,11 +161,11 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
 - `player.allowedExtensions`: the extensions that will be allowed to be played by the bot - **only for advanced users**  
 <br>
 
-- `directories.topMusicDir`: the top level directory where the music files are stored.  
-- `directories.userMusicDir`: the directory where the user music files are stored.  
-- `directories.everyoneMusicDir`: the directory where the everyone music files are stored.  
-- `directories.defaultMusicDir`: the directory where the default music files are stored.  
-- `directories.tempMusicDir`: the directory where the temporary music files are stored. This is used for the addsong command.  
+- `directories.userMusicDir`: directory used for user music
+- `directories.everyoneMusicDir`: directory used for music played for everyone  
+- `directories.defaultMusicDir`: directory used for users without custom music
+- `directories.tempMusicDir`: directory used for temporary music files  
+- `directories.topMusicDir`: the base directory for the above, limiting the scope of what song commands can change  
 <br>
 
 - `logs.resetLogOnStart`: whether to clear the session log on start or continue at the end of the file  
