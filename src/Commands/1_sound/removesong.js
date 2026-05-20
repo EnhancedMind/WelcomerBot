@@ -7,17 +7,19 @@ const { invalidateSoundFile } = require('../../Structures/musicFilesManager.js')
 const { syncSoundFiles, defaultDirComparison, everyoneDirComparison, userDirComparison, musicDirComparison } = require('../../Structures/musicFilesManager.js');
 
 const helpText = 
-`This command allows you to mark a song as used. This means the song will not play again.
-To use this command, send the file path of the song you want to remove from the list. You can get the file path from the \`${prefix}playable\` command.
-Keep in mind that this command does not remove the file from the server, it only marks it as used. The only way to fully remove the file is to contact the owner of the bot.
-Example usage: \`${prefix}removesong music${path.sep}users${path.sep}$yourID${path.sep}mysong.mp3\`
+`This command allows you to mark songs not be used or remove them completely.
+Removing a song requires specifying its file path or name in the following format: \`${prefix}renamesong <file_to_be_marked>\`.
+To find the names or paths, use the command \`${prefix}playable\` for all or \`${prefix}playable -p\` for your files.
+
+If you want to remove the file completely, use the tag \`-f\` or \`--force\` in the format \`${prefix}renamesong -f <file_to_be_removed>\`.
+Example usage: \`${prefix}removesong -f music${path.sep}users${path.sep}$yourID${path.sep}mysong.mp3\` or \`${prefix}removesong mysong.mp3\`
 `;
 
 module.exports = new Command({
 	name: 'removesong',
 	aliases: [ '' ],
-	syntax: 'removesong <filepath>',
-	description: `Marks the song from the first argument as used. Send the whole path from \`${prefix}playable\` as an argument. Does not remove the song completely from the server, for that contact the owner of the bot.`,
+	syntax: 'removesong [-f/--force] <filepath>',
+	description: `Marks the song from the first argument as used. Send the path from \`${prefix}playable\` as an argument. To remove the sound completely, use the tag \`-f\` or \`--force\`.`,
 	help: helpText,
 	async run(message, args, client) {
 		const channel = message.channel;

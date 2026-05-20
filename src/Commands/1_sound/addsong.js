@@ -74,6 +74,13 @@ module.exports = new Command({
 	}
 });
 
+/**
+ * Adds a song from message to the user with id targetId
+ * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
+ * @param {Client} client - The client instance.
+ * @param {string} targetId - The id of the user to add this file to.
+ * @returns {void}
+ */
 async function addUserSong(message, client, targetId) {
 	const userDirReader = readdirSync(userMusicDir);
 
@@ -99,6 +106,13 @@ async function addUserSong(message, client, targetId) {
 	addSongCore(message, client, userDirPath);
 }
 
+/**
+ * Adds a song from message to the target directory
+ * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
+ * @param {Client} client - The client instance.
+ * @param {string} targetDir - The target directory for the song file.
+ * @returns {void}
+ */
 async function addSongCore(message, client, targetDir) {
 	const allAttachments = message.attachments;
 	const channel = message.channel;

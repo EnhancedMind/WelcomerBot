@@ -25,7 +25,7 @@ module.exports = new Command({
 	async run(message, args, client) {
 		const jsonFlag = args.includes('--json')
 
-		const page = resolvePageFlag(message, args);
+		const page = resolvePage(message, args);
 		const [array, taggedUser, personalFlag] = resolveUserFlag(message.author.id, args, client);
 
 		if(array === undefined) return; // Flag had an issue
@@ -55,7 +55,13 @@ module.exports = new Command({
 	}
 });
 
-function resolvePageFlag(message, args) {
+/**
+ * Find the specified page number or set it to 0
+ * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
+ * @param {string[]} args - The command arguments.
+ * @returns {void}
+ */
+function resolvePage(message, args) {
 	let page = 0;
 	for(const arg of args) {
 		if(/^\d+$/.test(arg)) {
@@ -72,6 +78,12 @@ function resolvePageFlag(message, args) {
 	return page-1;
 }
 
+/**
+ * Find the specified page number or set it to 0
+ * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
+ * @param {string[]} args - The command arguments.
+ * @returns {[object[], Discord.user, boolean]} - [array with user's songs if flagged, the user, if the flag was 'personal']
+ */
 function resolveUserFlag(senderId, args, client) {
 	let userFlagIdx = args.indexOf('--user');
 	if (userFlagIdx === -1) {
@@ -119,6 +131,14 @@ function resolveUserFlag(senderId, args, client) {
 	return [filteredArray, taggedUser, true];
 }
 
+/**
+ * Takes the array and makes it into a json file and attaches it to a message
+ * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
+ * @param {Client} client - The client instance.
+ * @param {object[]} array - The array to jsonify.
+ * @param {Discord.user|undefined} taggedUser - The user specified in the arguments (if any).
+ * @returns {null}
+ */
 async function exportPlayableToJson(message, client, array, taggedUser) {
 	const jsonString = JSON.stringify(array, null, 2);
 	const buffer = Buffer.from(jsonString, 'utf-8');
@@ -129,6 +149,16 @@ async function exportPlayableToJson(message, client, array, taggedUser) {
 	return;	
 }
 
+/**
+ * Takes the array and makes it into a json file and attaches it to a message
+ * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
+ * @param {Client} client - The client instance.
+ * @param {object[]} array - The array of files to print.
+ * @param {Discord.user|undefined} taggedUser - The user tagged in the arguments (if any).
+ * @param {boolean} personal - If the display is of personal files.
+ * @param {boolean} page - Page specified to display first.
+ * @returns {null}
+ */
 async function printPlayable(message, client, array, taggedUser, personal, page) {
 	let userCount = 0;
 	let everyoneCount = 0;
