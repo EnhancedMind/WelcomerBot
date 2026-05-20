@@ -1,9 +1,9 @@
-const { Collection } = require('discord.js');
-const { createAudioPlayer, createAudioResource, joinVoiceChannel, AudioPlayerStatus, VoiceChannel, Client } = require('@discordjs/voice');
+const { Collection, VoiceChannel, Client } = require('discord.js');
+const { createAudioPlayer, createAudioResource, joinVoiceChannel, AudioPlayerStatus, VoiceConnectionStatus, entersState } = require('@discordjs/voice');
 const { spawn } = require('child_process');
 const path = require('path');
 
-const { player: { selfDeaf, debug, loudnessNormalization, bitrate } } = require('../../config/config.json');
+const { player: { playIntoEmptyChannel, selfDeaf, debug, loudnessNormalization, bitrate } } = require('../../config/config.json');
 const { consoleLog } = require('../Data/Log.js');
 const { invalidateSoundFile } = require('../Structures/musicFilesManager.js');
 
@@ -20,6 +20,16 @@ const activeConnections = new Collection();
 async function play(client, voiceChannel, file, delay = 0) {
     const guildId = voiceChannel.guild.id;
     let session = activeConnections.get(guildId);
+    
+    const me = voiceChannel.guild.members.me;
+    const currentChannelId = me?.voice?.channelId;
+
+    // if we have an active session but are not currently in a voice channel, eg the bot was manually disconnected or kicked
+    if (session && !currentChannelId) {
+        silentPurge(session);
+        activeConnections.delete(guildId);
+        session = null;
+    }
 
     // handle any existing session for the guild to prevent overlaps and ensure clean state
     if (session) {
@@ -27,8 +37,8 @@ async function play(client, voiceChannel, file, delay = 0) {
 
         // cancel active timers
         if (session.startupTimeout) clearTimeout(session.startupTimeout);
-        session.startupTimeout = null;
         if (session.disconnectTimeout) clearTimeout(session.disconnectTimeout);
+        session.startupTimeout = null;
         session.disconnectTimeout = null;
         
         // Obliterate the previous FFmpeg process immediately to avoid zombies, SIGKILL is used to ensure it dies even if it's waiting on I/O, SIGTERM can leave it hanging around
@@ -62,9 +72,18 @@ async function play(client, voiceChannel, file, delay = 0) {
             ffmpegProcess: null,
             startupTimeout: null,
             disconnectTimeout: null,
+            checkInterval: null,
             fileToInvalidate: null,
             isPreparing: true
         };
+
+        // periodically check if the bot is still in a voice channel and was not kicked, if not, clean up the session to prevent ghost sessions taking up memory
+        session.checkInterval = setInterval(() => {
+            const currentMe = voiceChannel.guild.members.me;
+            if (!currentMe?.voice?.channelId) {
+                disconnect(guildId);
+            }
+        }, 5000);
 
         activeConnections.set(guildId, session);
 
@@ -100,6 +119,13 @@ async function play(client, voiceChannel, file, delay = 0) {
         if (!currentSession) return;
 
         currentSession.startupTimeout = null;
+
+        const humanMembers = voiceChannel.members.filter(m => !m.user.bot);
+        if (humanMembers.size === 0 && !playIntoEmptyChannel) {
+            disconnect(guildId);
+            return;
+        }
+
         currentSession.isPreparing = false; // playing has begun, no longer in preparation phase, ready to disconnect on idle
 
         // tag once files to be invalidated after playback finishes
@@ -149,9 +175,7 @@ function disconnect(guildId) {
     if (!session) return;
 
     try {
-        if (session.startupTimeout) clearTimeout(session.startupTimeout);
-        if (session.disconnectTimeout) clearTimeout(session.disconnectTimeout);
-        if (session.ffmpegProcess) session.ffmpegProcess.kill('SIGKILL');
+        silentPurge(session);
 
         session.player.stop();
         session.connection.destroy();
@@ -161,6 +185,20 @@ function disconnect(guildId) {
     }
     finally {
         activeConnections.delete(guildId);
+    }
+}
+
+/**
+ * Clear timers, intervals, and processes without touching connection states.
+ * @param {Object} session The voice session configuration state object.
+ */
+function silentPurge(session) {
+    if (session.startupTimeout) clearTimeout(session.startupTimeout);
+    if (session.disconnectTimeout) clearTimeout(session.disconnectTimeout);
+    if (session.checkInterval) clearInterval(session.checkInterval);
+    
+    if (session.ffmpegProcess) {
+        session.ffmpegProcess.kill('SIGKILL');
     }
 }
 
