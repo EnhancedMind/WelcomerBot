@@ -15,7 +15,7 @@ module.exports = new Command({
 
 		if (( !message.member.voice.channel || connection.joinConfig.channelId != message.member.voice.channel.id ) && !message.member.permissions.has(PermissionsBitField.Flags.ManageChannels) && message.author.id != ownerID) return message.channel.send(`${warning} ${wrongChannel}`);
 
-		connection.destroy();
+		client.playerManager.disconnect(message.guild.id);
 		message.channel.send(`'${success} The player has stopped.`);
 	}
 });

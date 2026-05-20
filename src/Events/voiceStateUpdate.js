@@ -17,7 +17,7 @@ module.exports = new Event('voiceStateUpdate', async (client, oldState, newState
 
         if (!allowPlay(client, newState.guild.id, newState.member.id, defaultType ? 'defaultJoin' : 'join')) return;
 
-        play(client, newState, file, 800);
+        client.playerManager.play(client, newState.channel, file, 800);
     }
 
     else if(!newState.channelId && oldState.channelId) { //leaving a channel
@@ -28,33 +28,6 @@ module.exports = new Event('voiceStateUpdate', async (client, oldState, newState
 
         if (!allowPlay(client, oldState.guild.id, oldState.member.id, defaultType ? 'defaultLeave' : 'leave')) return;
 
-        play(client, oldState, file, 150);
+        client.playerManager.play(client, oldState.channel, file, 150);
     }
 });
-
-const play = (client, state, file, delay) => {
-    return new Promise(async (resolve) => {
-        const player = createAudioPlayer();
-        const resource = createAudioResource(file.path);
-        const connection = joinVoiceChannel({
-            channelId: state.channelId,
-            guildId: state.guild.id,
-            adapterCreator: state.guild.voiceAdapterCreator,
-            selfDeaf: selfDeaf,
-            debug: debug,
-        });
-        await new Promise(resolve => setTimeout(resolve, delay));
-
-        player.play(resource);
-        connection.subscribe(player);
-        player.on('idle', async () => {
-            await new Promise(resolve => setTimeout(resolve, 150));
-            connection.destroy();
-            if (file.once) invalidateSoundFile(client, file.path);
-            resolve();
-        });
-        player.on('error', (err) => {
-            consoleLog(err);
-        });
-    });        
-}

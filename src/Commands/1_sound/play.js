@@ -23,33 +23,8 @@ module.exports = new Command({
 
         const response = await message.channel.send(`${loading} Loading \`[${args[0]}]\``);
 
-        const play = async (song) => {
-            const player = createAudioPlayer();
-            const resource = createAudioResource(song);
-            const connection = joinVoiceChannel({
-                channelId: senderVoiceChannel.id,
-                guildId: message.guild.id,
-                adapterCreator: message.guild.voiceAdapterCreator,
-                selfDeaf: selfDeaf,
-                debug: debug,
-            });
-                
-            player.play(resource);
-            connection.subscribe(player);
-    
-            player.on('idle', async () => {
-                await new Promise(resolve => setTimeout(resolve, 150));
-                connection.destroy();
-            });
-    
-            player.on('error', (err) => {
-                message.channel.send(`**${error}** Player error: **${err.message}**`);
-                consoleLog('[WARN] Player error', err);
-            });
-        }
-
         if (existsSync(`./${args[0]}`) && allowedExtensions.some(ext => args[0].endsWith(ext))) {
-            play(`./${args[0]}`);
+            client.playerManager.play(client, senderVoiceChannel, { path: `./${args[0]}`});
             if ( (await response.channel.messages.fetch({ limit: 1, cache: false, around: response.id })).has(response.id) ) response.edit(`${success} Playing **\`${args[0]}\`**`);
             return;
         }
@@ -62,7 +37,7 @@ module.exports = new Command({
                 }
                 return;
             }
-            play(file.path);
+            client.playerManager.play(client, senderVoiceChannel, { path: file.path });
             if ( (await response.channel.messages.fetch({ limit: 1, cache: false, around: response.id })).has(response.id) ) {
                 response.edit(`${success} Playing sound for **${(await client.users.fetch(userId)).globalName} - \`${file.filename}\`**`);
             }

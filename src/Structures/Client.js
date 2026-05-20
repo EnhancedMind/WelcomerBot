@@ -35,6 +35,10 @@ class Client extends Discord.Client {
 		 * @type {{ guild: Discord.Collection<Discord.User.Id, { enabledJoin: boolean, enabledLeave: boolean, enabledDefaultJoin: boolean, enabledDefaultLeave: boolean }>, user: Discord.Collection<Discord.User.Id, { enabledJoin: boolean, enabledLeave: boolean, enabledDefaultJoin: boolean, enabledDefaultLeave: boolean }> }} 
 		*/
 		this.settings = { guild: new Discord.Collection(), user: new Discord.Collection() };
+		/**
+		 * 
+		 */
+		this.playerManager = require('./playerManager.js');
 	}
 
     async start() {
