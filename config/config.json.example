@@ -4,7 +4,8 @@
         "token": "put your bot token here",
         "prefix": "*",
         "ignoreMessageEndingWithPrefix": false,
-        "ownerID": "put your discord id here"
+        "ownerID": "put your discord id here",
+        "devIDs": ["put ids of people to manage all sounds here, in an array"]
     },
     "status": {
         "status": "online",
@@ -33,7 +34,16 @@
         "playIntoEmptyChannel": false,
         "selfDeaf": false,
         "debug": false,
+        "loudnessNormalization": true,
+        "bitrate": "auto",
         "allowedExtensions": ["mp3", "wav", "ogg", "flac", "m4a", "aac", "webm", "opus", "aiff", "wma", "ac3"]
+    },
+    "directories": {
+        "topMusicDir": "./music",
+        "userMusicDir": "./music/users",
+        "everyoneMusicDir": "./music/everyone",
+        "defaultMusicDir": "./music/default",
+        "tempMusicDir": "./music/temp"
     },
     "logs": {
         "resetLogOnStart": true,

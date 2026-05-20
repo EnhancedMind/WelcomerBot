@@ -70,7 +70,8 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
         "token": "put your bot token here",
         "prefix": "*",
         "ignoreMessageEndingWithPrefix": false,
-        "ownerID": "put your discord id here"
+        "ownerID": "put your discord id here",
+        "devIDs": ["put ids of people to manage all sounds here, in an array"]
     },
     "status": {
         "status": "online",
@@ -99,7 +100,16 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
         "playIntoEmptyChannel": false,
         "selfDeaf": false,
         "debug": false,
+        "loudnessNormalization": true,
+        "bitrate": "auto",
         "allowedExtensions": ["mp3", "wav", "ogg", "flac", "m4a", "aac", "webm", "opus", "aiff", "wma", "ac3"]
+    },
+    "directories": {
+        "topMusicDir": "./music",
+        "userMusicDir": "./music/users",
+        "everyoneMusicDir": "./music/everyone",
+        "defaultMusicDir": "./music/default",
+        "tempMusicDir": "./music/temp"
     },
     "logs": {
         "resetLogOnStart": true,
@@ -117,6 +127,7 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
 - `bot.prefix`: the prefix which will be used for your bot's commands  
 - `bot.ignoreMessageEndingWithPrefix`: whether to ignore messages (commands) ending with the prefix or not (useful for * and prefixes like this that are used for markdown)  
 - `bot.ownerID`: your discord user id you can get by right clicking user on discord after enabling developer mode  
+- `bot.devIDs`: the discord user ids of people that can manage all sounds, not just their own. You can put multiple ids in the array.  
 <br>
 
 - `status.status`: the status of the bot - `online` / `idle` / `dnd` / `invisible`. Can be changed with a command.  
@@ -145,7 +156,16 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
 - `player.playIntoEmptyChannel`: whether to play leave sound into an empty voice channel or not  
 - `player.selfDeaf`: whether to deafen the bot or not  
 - `player.debug`: whether to show audioplayer debug messages or not  
+- `player.loudnessNormalization`: whether to use loudness normalization or not. If enabled, the bot will try to normalize the loudness of the sounds to -16 LUFS with a true peak of -1.5 dB and a LRA of 11. This can help to make the sounds have a more consistent volume, but it can also cause some distortion and increase the CPU usage.  
+- `player.bitrate`: the bitrate that will be used for the ffmpeg process. It can be a string ffmpeg can parse or 'auto'. If set to 'auto', the bot will try to set the bitrate based on the voice channel's bitrate  
 - `player.allowedExtensions`: the extensions that will be allowed to be played by the bot - **only for advanced users**  
+<br>
+
+- `directories.topMusicDir`: the top level directory where the music files are stored.  
+- `directories.userMusicDir`: the directory where the user music files are stored.  
+- `directories.everyoneMusicDir`: the directory where the everyone music files are stored.  
+- `directories.defaultMusicDir`: the directory where the default music files are stored.  
+- `directories.tempMusicDir`: the directory where the temporary music files are stored. This is used for the addsong command.  
 <br>
 
 - `logs.resetLogOnStart`: whether to clear the session log on start or continue at the end of the file  
