@@ -1,7 +1,7 @@
 const Command = require('../../Structures/Command');
 
-const { EmbedBuilder, version: djsversion } = require('discord.js');
-const { bot: { prefix, ownerID } } = require('../../../config/config.json');
+const { EmbedBuilder, version: djsversion, time } = require('discord.js');
+const { bot: { prefix, ownerID }, logs: { timeFormat } } = require('../../../config/config.json');
 const { version, homepage, developerpage } = require('../../../package.json');
 
 
@@ -25,7 +25,7 @@ module.exports = new Command({
 			Some of my features include:
 			\`\`\`🎶 High-quality sound playback.\n🎶 Easy to host yourself.\`\`\``)
 			.setFooter({
-				text: `Last restart: ${new Date(client.readyAt).toLocaleString()}`
+				text: `Last restart: ${new Date(client.readyAt).toLocaleString(timeFormat)}`
 			});
 
 		message.channel.send({ embeds: [ embed ] });
