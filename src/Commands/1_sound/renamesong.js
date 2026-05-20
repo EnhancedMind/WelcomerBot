@@ -15,13 +15,17 @@ const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/
 const { syncSoundFiles, defaultDirComparison, everyoneDirComparison, userDirComparison, musicDirComparison } = require('../../Structures/musicFilesManager.js');
 
 const helpText = 
-`This command allows you rename/move your songs.
-Renaming your song is as easy as specifying your original path/name and new path/name in the following format: \`${prefix}renamesong <original_file_name_or_path> <new_file_name_or_path>\`.
-To find the names or paths, use the command \`${prefix}playable\` for all or \`${prefix}playable -p\` for your files
-Example usage: \`${prefix}renamesong music${path.sep}users${path.sep}$yourID${path.sep}oldname.mp3 music${path.sep}users${path.sep}$yourID${path.sep}newname.mp3\` 
-or just \`${prefix}removesong oldname.mp3 newname.mp3\`
+`This command allows you rename/move your songs which can also change their behaviour (for more about file behaviour use \`${prefix}addsong --help\`).
 
-Developers can also rename and move files anywhere in ${musicDirComparison} directory
+Renaming your song is as easy as specifying your original path/name and new path/name in the following format:
+\`${prefix}renamesong <original_file_name_or_path> <new_file_name_or_path>\`
+Example usage:
+\`${prefix}renamesong ${userDirComparison}${path.sep}$yourID${path.sep}oldname.mp3 ${userDirComparison}${path.sep}$yourID${path.sep}newname.mp3\` 
+\`${prefix}renamesong oldname.mp3 newname.mp3\`
+
+To find the names or paths of the song file, use the command \`${prefix}playable\` for all or \`${prefix}playable -p\` for your files.
+
+Developers can also rename and move files anywhere in the \`${musicDirComparison}\` directory
 This command only renames and moves files, it does NOT create directories.
 `;
 

@@ -8,11 +8,15 @@ const { syncSoundFiles, defaultDirComparison, everyoneDirComparison, userDirComp
 
 const helpText = 
 `This command allows you to mark songs not be used or remove them completely.
-Removing a song requires specifying its file path or name in the following format: \`${prefix}renamesong <file_to_be_marked>\`.
+Removing a song requires specifying its file path or name in the following format: 
+\`${prefix}renamesong <file_to_be_marked>\`
+
 To find the names or paths, use the command \`${prefix}playable\` for all or \`${prefix}playable -p\` for your files.
 
-If you want to remove the file completely, use the tag \`-f\` or \`--force\` in the format \`${prefix}renamesong -f <file_to_be_removed>\`.
-Example usage: \`${prefix}removesong -f music${path.sep}users${path.sep}$yourID${path.sep}mysong.mp3\` or \`${prefix}removesong mysong.mp3\`
+If you want to remove the file completely, use the tag \`-f\` or \`--force\` like so: \`${prefix}renamesong -f <file_to_be_removed>\`.
+Example usage:
+\`${prefix}removesong -f ${userDirComparison}${path.sep}$yourID${path.sep}mysong.mp3\`
+\`${prefix}removesong mysong.mp3\`
 `;
 
 module.exports = new Command({

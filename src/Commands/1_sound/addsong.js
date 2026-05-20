@@ -14,7 +14,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const { PermissionsBitField } = require('discord.js');
 const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/settingsManager.js');
-const { syncSoundFiles } = require('../../Structures/musicFilesManager.js')
+const { syncSoundFiles, defaultDirComparison, everyoneDirComparison } = require('../../Structures/musicFilesManager.js')
 
 const helpText = 
 `This command allows you to add a song to your library in the database.
@@ -30,9 +30,9 @@ An example file name would be: \`myname_$join_$leave_$once_$ch=0.5.mp3\` or \`my
 Keep in mind that any file sent will be kept on the server, even after using removesound, as that will only mark it as used. The only way to fully remove the sound is to contact the owner of the bot.
 
 This command supports the following arguments for developers:
-- \`--default\` or \`-d\` - Adds song to the default library
-- \`--everyone\` or \`-e\` - Adds song to the everyone library
-- \`--user @user\` or \`-u @user\` - Adds song to \`user\`'s library
+- \`--default\` or \`-d\` - Adds default song to \`${defaultDirComparison}\`
+- \`--everyone\` or \`-e\` - Adds song for everyone to \`${everyoneDirComparison}\`
+- \`--user @user\` or \`-u @user\` - Adds song to \`user\`'s personal library
 `;
 
 module.exports = new Command({
