@@ -3,6 +3,7 @@ const path = require('path');
 
 const Client = require('./Client.js');
 const { bot: {prefix}, player: { allowedExtensions }, directories: {userMusicDir, everyoneMusicDir, defaultMusicDir, topMusicDir} } = require('../../config/config.json');
+const { getSetting } = require('../Structures/settingsManager.js');
 
 const userDirComparison = userMusicDir.split('/').join(path.sep).substring(2);
 const everyoneDirComparison = everyoneMusicDir.split('/').join(path.sep).substring(2);
@@ -117,35 +118,47 @@ function addSoundToList(targetList, filePath, fileName, chanceOverride = undefin
  * Gets a list of all sounds played for the user.
  * @param {Client} client - The client instance.
  * @param {string} userId - The ID of the user.
- * @param {string} type - The type of sound file ('join' or 'leave').
- * @param {Object} settings - The settings object with enabledDefaultJoin and enabledDefaultLeave keys. Defaults to true
- * @returns {[object[], boolean]} - A promise that resolves to an array containing the sound file object array and a boolean indicating if it is a default sound file.
+ * @param {string} type - The type of sound file ('join', 'leave' or 'all').
+ * @returns {Object[]} - The sound file object array.
  */
-function getUserSoundArray(client, userId, type, settings) {
+function getUserSoundArray(client, userId, type) {
+    const guildSettings = await getSetting(client, 'guild', oldState.guild.id);
+    const userSettings = await getSetting(client, 'user', oldState.member.id);
+    const setting = { // check explicitly if either if false, otherwise default to true
+        enabledJoin: !(guildSettings?.enabledJoin === false || userSettings?.enabledJoin === false),
+        enabledDefaultJoin: !(guildSettings?.enabledDefaultJoin === false || userSettings?.enabledDefaultJoin === false),
+        enabledLeave: !(guildSettings?.enabledLeave === false || userSettings?.enabledLeave === false),
+        enabledDefaultLeave: !(guildSettings?.enabledDefaultLeave === false || userSettings?.enabledDefaultLeave === false),
+    }
+
+    if (type === 'join' && settings.enabledJoin === false) {
+        return [];
+    }
+    if (type === 'leave' && settings.enabledLeave === false) {
+        return [];
+    }
+
     let array = [];  // array of sound files to choose from
 
     const filterByType = (item) => {
         if (type === 'join') return item.join && item.valid;
         if (type === 'leave') return item.leave && item.valid;
+        if (type === 'all') return true;
         return false;
     };
-
+    
     if ( client.soundFiles.has(userId) ) { // if userId has his own sound files
         array = client.soundFiles.get(userId).filter(filterByType);
     }
 
-    if (array.length === 0 ) { // if userId does not have his own sound files
-        if (type === 'join' && settings?.enabledDefaultJoin === false) {
-            return null;
+    if (array.length === 0) { // if userId does not have his own sound files
+        if (type === 'join' && settings.enabledDefaultJoin === false) {
+            return [];
         }
-        if (type === 'leave' && settings?.enabledDefaultLeave === false) {
-            return null;
+        if (type === 'leave' && settings.enabledDefaultLeave === false) {
+            return [];
         }
         array = client.soundFiles.get('default').filter(filterByType);
-
-        if (array.length === 0) { // if no sound files :D
-            return null;
-        }
     }
 
     const everyoneArray = client.soundFiles.get('everyone').filter(filterByType);
@@ -157,15 +170,14 @@ function getUserSoundArray(client, userId, type, settings) {
  * Gets a sound file for the user based on the type (join or leave).
  * @param {Client} client - The client instance.
  * @param {string} userId - The ID of the user.
- * @param {string} type - The type of sound file ('join' or 'leave').
- * @param {Object} settings - The settings object with enabledDefaultJoin and enabledDefaultLeave keys. Defaults to true
- * @returns {Promise<[object, boolean]>} - A promise that resolves to an array containing the sound file object and a boolean indicating if it is a default sound file.
+ * @param {string} type - The type of sound file ('join', 'leave' or 'all').
+ * @returns {Promise<Object>} - A promise that resolves to a sound file object.
  */
-const getUserSoundFile = (client, userId, type, settings) => {
+const getUserSoundFile = (client, userId, type) => {
     return new Promise(async (resolve, reject) => {
-        const selectionArray = getUserSoundArray(client, userId, type, settings);
+        const selectionArray = getUserSoundArray(client, userId, type);
 
-        if(!selectionArray || selectionArray.length === 0) {
+        if(selectionArray.length === 0) {
             resolve(null);
             return;
         }
@@ -214,7 +226,7 @@ function findProbabilities(songArray) {
         undefProbability -= Math.abs(chance); // Negative chance would force play the user's first sound
     }
 
-    // const probabilitySum = (undefProbability < 0) ? 1 - undefProbability : 1; // this does not work when all selected sounds have defined chance and their sum < 1
+    const probabilitySum = (undefProbability < 0 && undefCount > 1) ? 1 - undefProbability : 1; // If we have a remainder and a song/s left to define, we will define it to 1
     if (undefProbability < 0) undefProbability = 0;
 
     for (let i = 0; i < probabilities.length; i++) {
@@ -223,10 +235,7 @@ function findProbabilities(songArray) {
         }
     }
 
-    // just calculate the actual true sum
-    const actualProbabilitySum = probabilities.reduce((sum, chance) => sum + chance, 0);
-
-    return [probabilities, actualProbabilitySum];
+    return [probabilities, probabilitySum];
 }
 
 /**
@@ -240,7 +249,6 @@ const invalidateSoundFile = (client, path) => {
     let i = 1;
     while (existsSync( path.slice(0, path.lastIndexOf('.')) + `_$used${i}` + path.slice(path.lastIndexOf('.')) ) ) i++;
     renameSync(path,   path.slice(0, path.lastIndexOf('.')) + `_$used${i}` + path.slice(path.lastIndexOf('.')) );
-
     syncSoundFiles(client);
 }
 

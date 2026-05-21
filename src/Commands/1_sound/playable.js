@@ -118,17 +118,14 @@ function resolveUserFlag(senderId, args, client) {
 		taggedUser = senderId;
 	}
 
-	console.log(`Targeting User ID: ${taggedUser}`);
-	const userArray = getUserSoundArray(client, taggedUser);
-	
 	// Just user flag was triggered
 	if(userFlagIdx !== -1) {
-		const validArray = userArray.filter(song => {return song.valid});
-		return [validArray, taggedUser, false];
+		const array = [...getUserSoundArray(client, taggedUser,'join'),...getUserSoundArray(client, taggedUser,'leave')];
+		return [array, taggedUser, false];
 	}
 	//personal flag was triggered
-	const filteredArray = userArray.filter(song => {return song.path.startsWith(userDirComparison)});
-	return [filteredArray, taggedUser, true];
+	const array = getUserSoundArray(client, taggedUser,'all').filter(song => {return song.path.startsWith(userDirComparison)});
+	return [array, taggedUser, true];
 }
 
 /**
