@@ -17,12 +17,22 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: blob:none
 
       # 1. Grab the version from package.json if no version input was passed down
       - name: Get version from package.json
         if: "${{ inputs.version == '' }}"
         id: package-version
         uses: martinbeentjes/npm-get-version-action@v1.3.1
+
+      # extract short SHA and absolute total commit count for build metadata
+      - name: Generate Build Metadata
+        id: meta
+        run: |
+          echo "SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "BUILD_NUMBER=$(git rev-list --count HEAD)" >> $GITHUB_OUTPUT
 
       # 2. Force the entire repository path (Owner/Repo) to lowercase for Docker compliance
       - name: Lowercase repository path
@@ -80,6 +90,9 @@ jobs:
           tags: |
             ${{ steps.docker-tags.outputs.TAG_PRIMARY }}
             ${{ steps.docker-tags.outputs.TAG_SECONDARY }}
+          build-args: |
+            COMMIT_SHA=${{ steps.meta.outputs.SHA_SHORT }}
+            BUILD_NUMBER=${{ steps.meta.outputs.BUILD_NUMBER }}
 
       # 8. Clean up old untagged container versions using the marketplace action
       - name: Clean untagged images from GHCR
