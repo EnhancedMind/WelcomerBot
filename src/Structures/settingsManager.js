@@ -121,41 +121,9 @@ const getSetting = (client, type, id) => {
 }
 
 
-/**
- * * Check if the user is allowed to play a sound when joining/leaving a voice channel.
- * * @param {Client} client - The client instance.
- * * @param {string} guildId - The ID of the guild.
- * * @param {string} userId - The ID of the user.
- * * @param {string} type - The type of action ('join', 'leave', 'defaultJoin', 'defaultLeave').
- * * @returns {boolean} - True if the user is allowed to play a sound, false otherwise.
- */
-const allowPlay = (client, guildId, userId, type) => {
-    if (type == 'join') {
-        if ( client.settings.guild.has(guildId) && client.settings.guild.get(guildId).enabledJoin == false ) return false;
-        if ( client.settings.user.has(userId) && client.settings.user.get(userId).enabledJoin == false ) return false;
-        return true;
-    }
-    if (type == 'defaultJoin') {
-        if ( client.settings.guild.has(guildId) && client.settings.guild.get(guildId).enabledDefaultJoin == false ) return false;
-        if ( client.settings.user.has(userId) && client.settings.user.get(userId).enabledJoin == false ) return false;
-        return true;
-    }
-    if (type == 'leave') {
-        if ( client.settings.guild.has(guildId) && client.settings.guild.get(guildId).enabledLeave == false ) return false;
-        if ( client.settings.user.has(userId) && client.settings.user.get(userId).enabledLeave == false ) return false;
-        return true;
-    }
-    if (type == 'defaultLeave') {
-        if ( client.settings.guild.has(guildId) && client.settings.guild.get(guildId).enabledDefaultLeave == false ) return false;
-        if ( client.settings.user.has(userId) && client.settings.user.get(userId).enabledLeave == false ) return false;
-        return true;
-    }
-}
-
 module.exports = {
     readSettingsFile,
     writeSettingsFile,
     setSetting,
-    getSetting,
-    allowPlay
+    getSetting
 };
