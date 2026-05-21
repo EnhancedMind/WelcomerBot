@@ -119,11 +119,12 @@ function addSoundToList(targetList, filePath, fileName, chanceOverride = undefin
  * @param {Client} client - The client instance.
  * @param {string} userId - The ID of the user.
  * @param {string} type - The type of sound file ('join', 'leave' or 'all').
+ * @param {int} guildId - The id of the guild.
  * @returns {Object[]} - The sound file object array.
  */
-function getUserSoundArray(client, userId, type) {
-    const guildSettings = await getSetting(client, 'guild', oldState.guild.id);
-    const userSettings = await getSetting(client, 'user', oldState.member.id);
+function getUserSoundArray(client, userId, type, guildId) {
+    const guildSettings = await getSetting(client, 'guild', guildId);
+    const userSettings = await getSetting(client, 'user', userId);
     const setting = { // check explicitly if either if false, otherwise default to true
         enabledJoin: !(guildSettings?.enabledJoin === false || userSettings?.enabledJoin === false),
         enabledDefaultJoin: !(guildSettings?.enabledDefaultJoin === false || userSettings?.enabledDefaultJoin === false),
@@ -173,9 +174,9 @@ function getUserSoundArray(client, userId, type) {
  * @param {string} type - The type of sound file ('join', 'leave' or 'all').
  * @returns {Promise<Object>} - A promise that resolves to a sound file object.
  */
-const getUserSoundFile = (client, userId, type) => {
+const getUserSoundFile = (client, userId, type, guildId) => {
     return new Promise(async (resolve, reject) => {
-        const selectionArray = getUserSoundArray(client, userId, type);
+        const selectionArray = getUserSoundArray(client, userId, type, guildId);
 
         if(selectionArray.length === 0) {
             resolve(null);

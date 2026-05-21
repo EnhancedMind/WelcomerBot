@@ -26,7 +26,7 @@ module.exports = new Command({
 		const jsonFlag = args.includes('--json')
 
 		const page = resolvePage(message, args);
-		const [array, taggedUser, personalFlag] = resolveUserFlag(message.author.id, args, client);
+		const [array, taggedUser, personalFlag] = resolveUserFlag(message, args, client);
 
 		if(array === undefined) return; // Flag had an issue
 
@@ -84,7 +84,8 @@ function resolvePage(message, args) {
  * @param {string[]} args - The command arguments.
  * @returns {[object[], Discord.user, boolean]} - [array with user's songs if flagged, the user, if the flag was 'personal']
  */
-function resolveUserFlag(senderId, args, client) {
+function resolveUserFlag(message, args, client) {
+	const senderId = message.author.id;
 	let userFlagIdx = args.indexOf('--user');
 	if (userFlagIdx === -1) {
 		userFlagIdx = args.indexOf('-u'); // Fallback to shorthand if longhand wasn't used
@@ -120,11 +121,11 @@ function resolveUserFlag(senderId, args, client) {
 
 	// Just user flag was triggered
 	if(userFlagIdx !== -1) {
-		const array = [...getUserSoundArray(client, taggedUser,'join'),...getUserSoundArray(client, taggedUser,'leave')];
+		const array = [...getUserSoundArray(client, taggedUser,'join', message.guildId),...getUserSoundArray(client, taggedUser,'leave', message.guildId)];
 		return [array, taggedUser, false];
 	}
 	//personal flag was triggered
-	const array = getUserSoundArray(client, taggedUser,'all').filter(song => {return song.path.startsWith(userDirComparison)});
+	const array = getUserSoundArray(client, taggedUser,'all', message.guildId).filter(song => {return song.path.startsWith(userDirComparison)});
 	return [array, taggedUser, true];
 }
 
