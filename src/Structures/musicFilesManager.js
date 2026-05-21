@@ -217,11 +217,9 @@ function findProbabilities(songArray) {
     // const probabilitySum = (undefProbability < 0) ? 1 - undefProbability : 1; // this does not work when all selected sounds have defined chance and their sum < 1
     if (undefProbability < 0) undefProbability = 0;
 
-    if (undefCount > 0) {
-        for (let i = 0; i < probabilities.length; i++) {
-            if(isNaN(songArray[i].chance)) {
-                probabilities[i] = undefProbability / undefCount;
-            }
+    for (let i = 0; i < probabilities.length; i++) {
+        if(isNaN(songArray[i].chance)) {
+            probabilities[i] = undefCount > 0 ? undefProbability / undefCount : 0;
         }
     }
 
