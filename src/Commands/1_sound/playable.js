@@ -26,7 +26,7 @@ module.exports = new Command({
 		const jsonFlag = args.includes('--json')
 
 		const page = resolvePage(message, args);
-		const [array, taggedUser, personalFlag] = resolveUserFlag(message, args, client);
+		const [array, taggedUser, personalFlag] = await resolveUserFlag(message, args, client);
 
 		if(array === undefined) return; // Flag had an issue
 
@@ -84,7 +84,7 @@ function resolvePage(message, args) {
  * @param {string[]} args - The command arguments.
  * @returns {[object[], Discord.user, boolean]} - [array with user's songs if flagged, the user, if the flag was 'personal']
  */
-function resolveUserFlag(message, args, client) {
+async function resolveUserFlag(message, args, client) {
 	const senderId = message.author.id;
 	let userFlagIdx = args.indexOf('--user');
 	if (userFlagIdx === -1) {
@@ -121,11 +121,11 @@ function resolveUserFlag(message, args, client) {
 
 	// Just user flag was triggered
 	if(userFlagIdx !== -1) {
-		const array = [...getUserSoundArray(client, taggedUser,'join', message.guildId),...getUserSoundArray(client, taggedUser,'leave', message.guildId)];
+		const array = [...await getUserSoundArray(client, taggedUser,'join', message.guildId),...await getUserSoundArray(client, taggedUser,'leave', message.guildId)];
 		return [array, taggedUser, false];
 	}
 	//personal flag was triggered
-	const array = getUserSoundArray(client, taggedUser,'all', message.guildId).filter(song => {return song.path.startsWith(userDirComparison)});
+	const array = (await getUserSoundArray(client, taggedUser,'all', message.guildId)).filter(song => {return song.path.startsWith(userDirComparison)});
 	return [array, taggedUser, true];
 }
 

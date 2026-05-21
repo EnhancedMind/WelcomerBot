@@ -42,22 +42,23 @@ You can also put a file into a folder inside the `users` folder, eg a subfolder.
 <br>
 
 - `everyone` folder is where you can add sounds that have a chance of being selected for everyone. They can also be considered 'global'. They have a chance of being selected whether the user has a custom sound set or not. The files don't require any special naming, the system just looks for options like `$join`, `$ch=*` etc.  
-You can also put a file into a folder inside the `everyone` folder, eg a subfolder. The folders name is not strict, but looks for options `$ch=*`, `$join`, `$leave` and `$once` in the folder name and applies them to files inside the folder. The chance set in the folder is divided among the files inside the folder. The `$once` will be used for files inside induvidually, not the whole folder. You can also specify options for each file inside the folder, where `$join`, `$leave` and `$once` will be ORed with the folder options and `$ch=*` will hard override the chance for that file, and will not affect the chance divided among the other files inside the folder. You can use this for better organization of the files.  
 
-The user can also set their own join sound by using the `addsong` command, rename them using the `renamesong` command and then removing it with the `removesong` command. The owner can add or remove the sound for anyone. You can get more info on the command by using `addsong --help`.
+You can also put files into a subfolder inside `everyone`,`default` or even `users/123456789012345678_exampleuser`. The folders name is not strict, but looks for options `$ch=*`, `$join`, `$leave` and `$once` in the folder name and applies them to files inside the folder. The chance set in the folder is divided among the files inside the folder. The `$once` will be used for files inside induvidually, not the whole folder. You can also specify options for each file inside the folder, where `$join`, `$leave` and `$once` will be ORed with the folder options and `$ch=*` will hard override the chance for that file, and will not affect the chance divided among the other files inside the folder. You can use this for better organization of the files.
+
+The user can also set their own join sound by using the `addsong` command, rename them and move them within his subfolder using the `renamesong` command and then remove them with the `removesong` command. The owner and developers can add, rename, move and remove the sound for anywhere inside the music folder. You can get more info on the command by typing the command and adding ` --help` (with space).
 <br>
 
 The join sound can also have options. To use options, simply add them to the comment seperated with `_`. The available options are:
 - `$join` - the sound will be played when the user joins a voice channel. This is the default option when neither $join nor $leave is specified.  
 - `$leave` - the sound will be played when the user leaves a voice channel.  
 - `$ch=chance` - the chance of the sound being played. The chance is in decimal form, so 50% chance would be 0.5. You can have multiple files with some chances and some without. If the chance is not specified, it will caculated as 1 / sum of all specified chances / number of files without chance specified. If sum of all specified chances is >=1, the files with unspecified chance will never be played and the sum of all specified chances will be handled as if it was 100% and the chances will be modified accordingly in their ratio. If there are only files with specified chance and the sum of all specified chances is <1, it will be handled as if the sum is 100% and the chances will be modified accordingly in their ratio.  
-So for example `123456789012345678_$ch=0.5_exampleComment.extension` will have 50% chance of being played, `123456789012345678_$ch=0.25_exampleComment.extension` will have 25% chance of being played and `123456789012345678_exampleComment.extension` will have 25% (the remainder) chance of being played.  
+So for example `exampleNameStart_$ch=0.5_exampleNameEnd.extension` will have 50% chance of being played, `exampleNameStart_$ch=0.25_exampleNameEnd.extension` will have 25% chance of being played and `exampleName.extension` will have 25% (the remainder) chance of being played.  
 - `$once` - the sound will be played only once. Then the file will be renamed to `originalname_$used*.extension` and will never be played again. * stands for a number index starting at 1, so if there is another yet unused file with the same name, it will not cause name collision.  
-So for example `123456789012345678_$once_exampleComment.extension` will be played only once and then renamed to `123456789012345678_$once_exampleComment_$used1.extension`.  
+So for example `$once_exampleComment.extension` will be played only once and then renamed to `$once_exampleComment_$used1.extension`.  
 <br>
 
-The options can be combined. For example `123456789012345678_$ch=0.5_$once_exampleComment.extension` will have 50% chance of being played and if it is played it is renamed to `123456789012345678_$ch=0.5_$once_exampleComment_$used1.extension`.  
-You can also specify `$join` and `$leave` at the same time. For example `123456789012345678_$join_$leave_exampleComment.extension` will have a chance for being selected for both join and leave sound.  
+The options can be combined. For example `$ch=0.5_$once_exampleComment.extension` will have 50% chance of being played and if it is played it is renamed to `$ch=0.5_$once_exampleComment_$used1.extension`.  
+You can also specify `$join` and `$leave` at the same time. For example `$join_$leave_exampleComment.extension` will have a chance for being selected for both join and leave sound.  
 <br><br>
 
 

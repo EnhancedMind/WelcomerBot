@@ -23,94 +23,92 @@ const syncSoundFiles = (client) => {
         for (const dirOrFile of userDirReader) {
             if(!/^[0-9]{18,19}/.test(dirOrFile)) continue; //Check if dirOrFile matches the user ID pattern
             const userId = dirOrFile.match(/^([0-9]{18,19})/)[0]; // Extract the user ID from the directory name
+            const dirOrFilePath = path.join(userMusicDir, dirOrFile);
 
-            if (statSync(path.join(userMusicDir, dirOrFile)).isDirectory()) { // Check if the dirOrfile is a directory
-                const userFileReader = readdirSync(path.join(userMusicDir, dirOrFile));
-
-                for (const file of userFileReader) {
-                    const filePath = path.join(userMusicDir, dirOrFile, file);
-                    addUserSoundToList(client, userId, filePath, file);
-                }
+            if (statSync(dirOrFilePath).isDirectory()) { // Check if the dirOrfile is a directory
+                syncDirTree(client, userId, dirOrFilePath);
             }
             else { // Clearly dirOrfile is not a directory
-                const filePath = path.join(userMusicDir, dirOrFile);
-                addUserSoundToList(client, userId, filePath, dirOrFile);
-            }
-        }
-
-        const everyoneDirReader = readdirSync(everyoneMusicDir);
-        client.soundFiles.set('everyone', []);
-        for (const dirOrFile of everyoneDirReader) {
-            if(statSync(path.join(everyoneMusicDir, dirOrFile)).isDirectory()) {  // Check if the dirOrfile is a directory
-                const everyoneFileReader = readdirSync(path.join(everyoneMusicDir, dirOrFile)).filter(file => allowedExtensions.some(ext => file.endsWith(ext))); // filter files by allowed extensions, to prevent folder chances from being skewed by non-sound or system files
-                if (!everyoneFileReader.length) continue; // skip empty folders
-                const fileChance = dirOrFile.includes('$ch=') ? (parseFloat(dirOrFile.split('ch=')[1])/everyoneFileReader.length) : undefined;  // chance set for the folder divided by number of files inside
-                for (const file of everyoneFileReader) {
-                    const targetList = client.soundFiles.get('everyone');
-                    const filePath = path.join(everyoneMusicDir, dirOrFile, file);
-                    addSoundToList(targetList, filePath, file, fileChance, true, dirOrFile.includes('$join'), dirOrFile.includes('$leave'), dirOrFile.includes('$once')); // temporary fix here
+                if ( !client.soundFiles.has(userId) ) {
+                    client.soundFiles.set(userId, []);
                 }
-            }
-            else {
-                const targetList = client.soundFiles.get('everyone');
-                const filePath = path.join(everyoneMusicDir, dirOrFile);
-                addSoundToList(targetList, filePath, dirOrFile);
+                const targetList = client.soundFiles.get(userId);
+                addSoundToList(targetList, dirOrFilePath, dirOrFile);
             }
         }
 
-        const defaultFileReader = readdirSync(defaultMusicDir);
-        client.soundFiles.set('default', []);
-        for (const file of defaultFileReader) {
-            const targetList = client.soundFiles.get('default');
-            const filePath = path.join(defaultMusicDir, file);
-            addSoundToList(targetList, filePath, file);
-        }
+        syncDirTree(client, 'everyone', everyoneDirComparison);
+        syncDirTree(client, 'default', defaultDirComparison);
         resolve();
     });
 }
 
-/**
- * Adds user sound to the client instance database
- * @param {Client} client - The client instance.
- * @param {string} userId - The ID of the user.
- * @param {string} filePath - Path from base to file
- * @param {string} fileName - Name of the file
- * @returns {void}
- */
-function addUserSoundToList(client, userId, filePath, fileName) {
-    if (!allowedExtensions.some(ext => fileName.endsWith(ext))) return; // Check if the file has a valid extension
+function syncDirTree(client, targetListId, dirPath) {
+    if ( !client.soundFiles.has(targetListId) ) {
+        client.soundFiles.set(targetListId, []);
+    }
+    const targetList = client.soundFiles.get(targetListId);
+    _syncDirTree(client, targetList, dirPath, dirSoundTree(dirPath));
+}
 
-    if ( !client.soundFiles.has(userId) ) {
-        client.soundFiles.set(userId, []);
+function dirSoundTree(dirPath) {
+    const reader = readdirSync(dirPath);
+    let dirTree = []
+    for(const fileOrDir of reader) {
+        const fileOrDirPath = path.join(dirPath, fileOrDir);
+        if(statSync(fileOrDirPath).isDirectory()) {
+            const subDirTree = dirSoundTree(fileOrDirPath);
+            if(subDirTree.length !== 0) dirTree.push(['dir', fileOrDir , subDirTree]);
+        }
+        else {
+            if(allowedExtensions.some(ext => fileOrDir.endsWith(ext))) dirTree.push(['sound', fileOrDir]);
+        }
     }
 
-    const targetList = client.soundFiles.get(userId);
-    addSoundToList(targetList, filePath, fileName, undefined, false);
+    return dirTree;
+}
+
+function _syncDirTree(client, targetList, dirPath, dirTree, chance = undefined, joinType = false, leaveType = false, onceType = false) {
+    const defaultChance = (chance) ? chance / dirTree.length : undefined;
+    for(const node of dirTree) {
+        if(node[0] == 'dir') {
+            const [_, subName, subTree] = node;
+            const subChance = subName.includes('$ch=') ? parseFloat(subName.split('ch=')[1]) : defaultChance; // Override chance or take the dir's
+            const subJoin = subName.includes('$join') ? true : joinType;
+            const subLeave = subName.includes('$leave') ? true : leaveType;
+            const subOnce = subName.includes('$once') ? true : onceType;
+            _syncDirTree(client, targetList, path.join(dirPath, subName), subTree, subChance, subJoin, subLeave, subOnce);
+        }
+        else if(node[0] == 'sound') {
+            const [_, fileName] = node;
+            addSoundToList(targetList, path.join(dirPath, fileName), fileName, defaultChance, joinType, leaveType, onceType);
+        }
+        else {
+            console.log(`Misbehaved node ${node} in ${dirPath}`);
+        }
+    }
 }
 
 /**
  * Adds sound to the client instance database
- * @param targetList - List to which the item
+ * @param {Object[]} targetList - List to which the item will be added
  * @param {string} filePath - Path from base to file
  * @param {string} fileName - If the above is a dir, here is the file
- * @param {number|null} [chanceOverride] - Optional manual float override for the playback chance.
+ * @param {number|null} [defaultChance] - Optional manual float override for the playback chance.
  * @param {boolean} checkExtension - Whether to check extension
  * @returns {void}
  */
-function addSoundToList(targetList, filePath, fileName, chanceOverride = undefined, checkExtension = true, joinType = false, leaveType = false, onceType = false) { // temporary fix here
-    if (!allowedExtensions.some(ext => fileName.endsWith(ext))) return; // Check if the file has a valid extension
-
-    const finalChance = fileName.includes('$ch=') ? parseFloat(fileName.split('ch=')[1]) : chanceOverride;
+function addSoundToList(targetList, filePath, fileName, defaultChance = undefined, joinType = false, leaveType = false, onceType = false) { // temporary fix here
+    const finalChance = fileName.includes('$ch=') ? parseFloat(fileName.split('ch=')[1]) : defaultChance;
     const soundFileData = {
         path: filePath,
         filename: fileName,
         chance: finalChance,
-        join: fileName.includes('$join') || !fileName.includes('$leave') || joinType, // temporary fix here
+        join: fileName.includes('$join') || joinType, // temporary fix here
         leave: fileName.includes('$leave') || leaveType, // temporary fix here
         once: fileName.includes('$once') || onceType, // temporary fix here
         valid: !fileName.includes('$used')
     };
-
     targetList.push(soundFileData);
 };
 
@@ -132,10 +130,10 @@ async function getUserSoundArray(client, userId, type, guildId) {
         enabledDefaultLeave: !(guildSettings?.enabledDefaultLeave === false || userSettings?.enabledDefaultLeave === false),
     }
 
-    if (type === 'join' && settings.enabledJoin === false) {
+    if (type === 'join' && setting.enabledJoin === false) {
         return [];
     }
-    if (type === 'leave' && settings.enabledLeave === false) {
+    if (type === 'leave' && setting.enabledLeave === false) {
         return [];
     }
 
@@ -153,10 +151,10 @@ async function getUserSoundArray(client, userId, type, guildId) {
     }
 
     if (array.length === 0) { // if userId does not have his own sound files
-        if (type === 'join' && settings.enabledDefaultJoin === false) {
+        if (type === 'join' && setting.enabledDefaultJoin === false) {
             return [];
         }
-        if (type === 'leave' && settings.enabledDefaultLeave === false) {
+        if (type === 'leave' && setting.enabledDefaultLeave === false) {
             return [];
         }
         array = client.soundFiles.get('default').filter(filterByType);
@@ -176,7 +174,7 @@ async function getUserSoundArray(client, userId, type, guildId) {
  */
 const getUserSoundFile = (client, userId, type, guildId) => {
     return new Promise(async (resolve, reject) => {
-        const selectionArray = getUserSoundArray(client, userId, type, guildId);
+        const selectionArray = await getUserSoundArray(client, userId, type, guildId);
 
         if(selectionArray.length === 0) {
             resolve(null);
@@ -201,7 +199,7 @@ const getUserSoundFile = (client, userId, type, guildId) => {
                     return;
                 }
                 await syncSoundFiles(client); // if the file does not exist, for example it was deleted manually, resync the sound files and try again
-                resolve( await getUserSoundFile(client, userId, type, settings) );
+                resolve( await getUserSoundFile(client, userId, type, guildId) );
                 return;
             }
         }

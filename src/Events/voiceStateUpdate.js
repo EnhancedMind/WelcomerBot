@@ -17,13 +17,11 @@ module.exports = new Event('voiceStateUpdate', async (client, oldState, newState
     if(newState.channelId && !oldState.channelId || oldState.channelId == oldState.guild.afkChannelId) { //joining a channel or returning from afk
         const file = await getUserSoundFile(client, newState.member.id, 'join', oldState.guild.id);
         if (!file) return;
-
         client.playerManager.play(client, newState.channel, file, 800);
     }
 
     else if(!newState.channelId && oldState.channelId) { //leaving a channel
         if (oldState.channel.members.size == 0 && !playIntoEmptyChannel) return;
-
         const file = await getUserSoundFile(client, oldState.member.id, 'leave', oldState.guild.id);
         if (!file) return;
 
