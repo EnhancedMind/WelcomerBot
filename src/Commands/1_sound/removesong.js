@@ -29,9 +29,7 @@ module.exports = new Command({
 		const channel = message.channel;
 		const senderId = message.author.id;
 
-		console.log(args);
 		const forceFlag = args.includes('-f') || args.includes('--force');
-		console.log(forceFlag);
 		const enoughArguments = (forceFlag) ? args.length >= 2 : args.length >= 1
 
 		if(!enoughArguments) return channel.send(`${warning} ${missingArguments}`);
