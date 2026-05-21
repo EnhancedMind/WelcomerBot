@@ -133,7 +133,7 @@ async function play(client, voiceChannel, file, delay = 0) {
 
         const ffmpegOptions = [
             '-loglevel', '8', '-hide_banner',
-            '-i', path.join(path.dirname(require.main.filename), '..', file.path),
+            '-i', path.resolve(file.path),
             '-af', `highpass=f=20, lowpass=f=18000, aresample=async=1,${loudnessNormalization ? 'loudnorm=I=-16:TP=-1.5:LRA=11,' : ''} volume=-10dB`,
             '-c:a', 'libopus',
             '-b:a', `${bitrate == 'auto' ? voiceChannel.bitrate : bitrate}`,
