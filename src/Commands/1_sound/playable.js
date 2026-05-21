@@ -119,7 +119,7 @@ function resolveUserFlag(senderId, args, client) {
 	}
 
 	console.log(`Targeting User ID: ${taggedUser}`);
-	const [userArray, _] = getUserSoundArray(client, taggedUser);
+	const userArray = getUserSoundArray(client, taggedUser);
 	
 	// Just user flag was triggered
 	if(userFlagIdx !== -1) {

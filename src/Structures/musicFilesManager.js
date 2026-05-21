@@ -41,13 +41,13 @@ const syncSoundFiles = (client) => {
         client.soundFiles.set('everyone', []);
         for (const dirOrFile of everyoneDirReader) {
             if(statSync(path.join(everyoneMusicDir, dirOrFile)).isDirectory()) {  // Check if the dirOrfile is a directory
-                const everyoneFileReader = readdirSync(path.join(everyoneMusicDir, dirOrFile));
+                const everyoneFileReader = readdirSync(path.join(everyoneMusicDir, dirOrFile)).filter(file => allowedExtensions.some(ext => file.endsWith(ext))); // filter files by allowed extensions, to prevent folder chances from being skewed by non-sound or system files
                 if (!everyoneFileReader.length) continue; // skip empty folders
                 const fileChance = dirOrFile.includes('$ch=') ? (parseFloat(dirOrFile.split('ch=')[1])/everyoneFileReader.length) : undefined;  // chance set for the folder divided by number of files inside
                 for (const file of everyoneFileReader) {
                     const targetList = client.soundFiles.get('everyone');
                     const filePath = path.join(everyoneMusicDir, dirOrFile, file);
-                    addSoundToList(targetList, filePath, file, fileChance);
+                    addSoundToList(targetList, filePath, file, fileChance, true, dirOrFile.includes('$join'), dirOrFile.includes('$leave'), dirOrFile.includes('$once')); // temporary fix here
                 }
             }
             else {
@@ -96,7 +96,7 @@ function addUserSoundToList(client, userId, filePath, fileName) {
  * @param {boolean} checkExtension - Whether to check extension
  * @returns {void}
  */
-function addSoundToList(targetList, filePath, fileName, chanceOverride = undefined, checkExtension = true) {
+function addSoundToList(targetList, filePath, fileName, chanceOverride = undefined, checkExtension = true, joinType = false, leaveType = false, onceType = false) { // temporary fix here
     if (!allowedExtensions.some(ext => fileName.endsWith(ext))) return; // Check if the file has a valid extension
 
     const finalChance = fileName.includes('$ch=') ? parseFloat(fileName.split('ch=')[1]) : chanceOverride;
@@ -104,9 +104,9 @@ function addSoundToList(targetList, filePath, fileName, chanceOverride = undefin
         path: filePath,
         filename: fileName,
         chance: finalChance,
-        join: fileName.includes('$join') || !fileName.includes('$leave'),
-        leave: fileName.includes('$leave'),
-        once: fileName.includes('$once'),
+        join: fileName.includes('$join') || !fileName.includes('$leave') || joinType, // temporary fix here
+        leave: fileName.includes('$leave') || leaveType, // temporary fix here
+        once: fileName.includes('$once') || onceType, // temporary fix here
         valid: !fileName.includes('$used')
     };
 
@@ -117,27 +117,40 @@ function addSoundToList(targetList, filePath, fileName, chanceOverride = undefin
  * Gets a list of all sounds played for the user.
  * @param {Client} client - The client instance.
  * @param {string} userId - The ID of the user.
+ * @param {string} type - The type of sound file ('join' or 'leave').
+ * @param {Object} settings - The settings object with enabledDefaultJoin and enabledDefaultLeave keys. Defaults to true
  * @returns {[object[], boolean]} - A promise that resolves to an array containing the sound file object array and a boolean indicating if it is a default sound file.
  */
-function getUserSoundArray(client, userId) {
+function getUserSoundArray(client, userId, type, settings) {
     let array = [];  // array of sound files to choose from
-    let defaultType = false;  // whether the user has his own sound files or if just default/everyone ones are used, returned as second value to voiceStateUpdate to check with settings
+
+    const filterByType = (item) => {
+        if (type === 'join') return item.join && item.valid;
+        if (type === 'leave') return item.leave && item.valid;
+        return false;
+    };
 
     if ( client.soundFiles.has(userId) ) { // if userId has his own sound files
-        array = client.soundFiles.get(userId);
+        array = client.soundFiles.get(userId).filter(filterByType);
     }
 
     if (array.length === 0 ) { // if userId does not have his own sound files
-        array = client.soundFiles.get('default');
-        defaultType = true;
+        if (type === 'join' && settings?.enabledDefaultJoin === false) {
+            return null;
+        }
+        if (type === 'leave' && settings?.enabledDefaultLeave === false) {
+            return null;
+        }
+        array = client.soundFiles.get('default').filter(filterByType);
 
         if (array.length === 0) { // if no sound files :D
-            return [null, defaultType];
+            return null;
         }
     }
 
-    array = [...array,...client.soundFiles.get('everyone')];
-    return [array, defaultType];
+    const everyoneArray = client.soundFiles.get('everyone').filter(filterByType);
+    array = [...array,...everyoneArray];
+    return array;
 }
 
 /**
@@ -145,21 +158,17 @@ function getUserSoundArray(client, userId) {
  * @param {Client} client - The client instance.
  * @param {string} userId - The ID of the user.
  * @param {string} type - The type of sound file ('join' or 'leave').
+ * @param {Object} settings - The settings object with enabledDefaultJoin and enabledDefaultLeave keys. Defaults to true
  * @returns {Promise<[object, boolean]>} - A promise that resolves to an array containing the sound file object and a boolean indicating if it is a default sound file.
  */
-const getUserSoundFile = (client, userId, type) => {
+const getUserSoundFile = (client, userId, type, settings) => {
     return new Promise(async (resolve, reject) => {
-        let [userSoundArray, defaultType] = getUserSoundArray(client, userId)
+        const selectionArray = getUserSoundArray(client, userId, type, settings);
 
-        if(userSoundArray.length === 0) {
-            resolve([null, defaultType]);
+        if(!selectionArray || selectionArray.length === 0) {
+            resolve(null);
             return;
         }
-
-        const selectionArray = userSoundArray.filter(item => {
-            if (type == 'join') return item.join && item.valid;
-            if (type == 'leave') return item.leave && item.valid;
-        })
 
         const [probabilities, probabilitySum] = findProbabilities(selectionArray);
 
@@ -175,11 +184,11 @@ const getUserSoundFile = (client, userId, type) => {
             if (randomNumber < (runningSum += probabilities[i])) { //check and add to running sum at the same time
                 // Return the chosen item
                 if (existsSync(selectionArray[i].path)) {
-                    resolve( [selectionArray[i], defaultType] );
+                    resolve(selectionArray[i]);
                     return;
                 }
                 await syncSoundFiles(client); // if the file does not exist, for example it was deleted manually, resync the sound files and try again
-                resolve( await getUserSoundFile(client, userId, type) );
+                resolve( await getUserSoundFile(client, userId, type, settings) );
                 return;
             }
         }
@@ -201,20 +210,25 @@ function findProbabilities(songArray) {
             undefCount++;
             continue;
         }
-        probabilities[i] = chance;
+        probabilities[i] = Math.abs(chance);
         undefProbability -= Math.abs(chance); // Negative chance would force play the user's first sound
     }
 
-    const probabilitySum = (undefProbability < 0) ? 1 - undefProbability : 1;
+    // const probabilitySum = (undefProbability < 0) ? 1 - undefProbability : 1; // this does not work when all selected sounds have defined chance and their sum < 1
     if (undefProbability < 0) undefProbability = 0;
 
-    for (let i = 0; i < probabilities.length; i++) {
-        if(isNaN(songArray[i].chance)) {
-            probabilities[i] = undefProbability / undefCount;
+    if (undefCount > 0) {
+        for (let i = 0; i < probabilities.length; i++) {
+            if(isNaN(songArray[i].chance)) {
+                probabilities[i] = undefProbability / undefCount;
+            }
         }
     }
 
-    return [probabilities, probabilitySum];
+    // just calculate the actual true sum
+    const actualProbabilitySum = probabilities.reduce((sum, chance) => sum + chance, 0);
+
+    return [probabilities, actualProbabilitySum];
 }
 
 /**

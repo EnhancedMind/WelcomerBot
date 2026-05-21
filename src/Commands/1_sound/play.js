@@ -30,7 +30,7 @@ module.exports = new Command({
         }
         else if (args[0].startsWith('<@') && args[0].endsWith('>')) {
             const userId = args[0].replace(/[<@!>]/g, '');
-            const [file, _] = await getUserSoundFile(client, userId, 'join');
+            const file = await getUserSoundFile(client, userId, 'join');
             if (!file) {
                 if ( (await response.channel.messages.fetch({ limit: 1, cache: false, around: response.id })).has(response.id) ) {
                     response.edit(`${error} \`${args[0]}\` doesn't exist.`);
