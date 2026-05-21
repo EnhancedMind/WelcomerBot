@@ -72,9 +72,9 @@ function dirSoundTree(dirPath) {
 
     // Recursive prefix DFS through the directory 
     for(const dirOrFile of reader) {
-        const dirOrFile = path.join(dirPath, dirOrFile);
-        if(statSync(dirOrFile).isDirectory()) {
-            const subDirTree = dirSoundTree(dirOrFile);
+        const dirOrFilePath = path.join(dirPath, dirOrFile);
+        if(statSync(dirOrFilePath).isDirectory()) {
+            const subDirTree = dirSoundTree(dirOrFilePath);
             if(subDirTree.length !== 0) dirTree.push(['dir', dirOrFile , subDirTree]);
         }
         else {
