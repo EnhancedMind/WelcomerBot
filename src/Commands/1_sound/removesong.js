@@ -23,7 +23,7 @@ module.exports = new Command({
 	name: 'removesong',
 	aliases: [ '' ],
 	syntax: 'removesong [-f/--force] <filepath>',
-	description: `Marks the song from the first argument as used. Send the path from \`${prefix}playable\` as an argument. To remove the sound completely, use the tag \`-f\` or \`--force\`.`,
+	description: `Marks the song from the first argument as used. Send the path from \`${prefix}playable\` as an argument.\nTo remove the sound completely, use the tag \`-f\` or \`--force\`.`,
 	help: helpText,
 	async run(message, args, client) {
 		const channel = message.channel;

@@ -15,11 +15,15 @@ You can use the following arguments to modify this behaviour:
 - \`--json\` - Puts the list into a json file and sends it as an attachent.
 - \`--user @user\` or \`-u @user\` - Lists all the songs that may be played for \`user\`.
 - \`--personal @user\` or \`-p @user\` - Lists all the songs in \`user\`'s library.
+- \`--join\` or \`-j\` - Lists all the songs marked for use when \`user\`'s joins. (only works for --user or --personal)
+- \`--leave\` or \`-l\` - Lists all the songs marked for use when \`user\`'s leaves. (only works for --user or --personal)
+- \`pagenumber\` - Specify the page number to view (only works for printing in chat)
 `;
 
 module.exports = new Command({
 	name: 'playable',
 	aliases: [ 'pl', 'pls' ],
+	syntax: 'playable [--json] [-u/--user/-p/--personal <user>] [-j/--join] [-l/--leave] pagenumber',
 	description: `Lists all the files that can be played. Use \`${prefix}playable --json\` to get the output as JSON data.`,
 	help: helpText,
 	async run(message, args, client) {
@@ -96,6 +100,10 @@ async function resolveUserFlag(message, args, client) {
 		personalFlagIdx = args.indexOf('-p');
 	}
 
+	const leaveFlag = args.includes('--leave') || args.includes('-l');
+	const joinFlag = args.includes('--join') || args.includes('-j');
+	const eventFlag = leaveFlag || joinFlag;
+
 	if(userFlagIdx === -1 && personalFlagIdx === -1) return [[],undefined, undefined]; // No flags => [] to list everything
 	if(userFlagIdx !== -1 && personalFlagIdx !== -1) { // Use of both at the same time is invalid
 		message.channel.send({ content: `Both user and personal flags can't be triggered at the same time!`});
@@ -121,11 +129,18 @@ async function resolveUserFlag(message, args, client) {
 
 	// Just user flag was triggered
 	if(userFlagIdx !== -1) {
-		const array = [...await getUserSoundArray(client, taggedUser,'join', message.guildId),...await getUserSoundArray(client, taggedUser,'leave', message.guildId)];
+		const joinArray = (joinFlag || !eventFlag) ? await getUserSoundArray(client, taggedUser, 'join', message.guildId) : [];
+		const leaveArray = (leaveFlag || !eventFlag) ? await getUserSoundArray(client, taggedUser, 'leave', message.guildId) : [];
+		const array = [...joinArray,...leaveArray];
 		return [array, taggedUser, false];
 	}
+
 	//personal flag was triggered
 	const array = (await getUserSoundArray(client, taggedUser,'all', message.guildId)).filter(song => {return song.path.startsWith(userDirComparison)});
+	if(eventFlag) {
+		if(joinFlag) return [array.filter(song => song.join), taggedUser, true];
+		else if(leaveFlag) return [array.filter(song => song.leave), taggedUser, true];
+	}
 	return [array, taggedUser, true];
 }
 
