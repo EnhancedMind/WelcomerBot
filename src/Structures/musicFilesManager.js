@@ -227,7 +227,7 @@ function findProbabilities(songArray) {
         undefProbability -= Math.abs(chance); // Negative chance would force play the user's first sound
     }
 
-    const probabilitySum = (undefProbability < 0 && undefCount > 1) ? 1 - undefProbability : 1; // If we have a remainder and a song/s left to define, we will define it to 1
+    const probabilitySum = (undefProbability >= 0 && undefCount > 0) ? 1 : 1 - undefProbability; // If we have a remainder and a song/s left to define, we will define it to 1
     if (undefProbability < 0) undefProbability = 0;
 
     for (let i = 0; i < probabilities.length; i++) {
