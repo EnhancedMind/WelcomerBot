@@ -99,5 +99,5 @@ jobs:
         uses: dataaxiom/ghcr-cleanup-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          package-name: ${{ steps.string.outputs.PKG_NAME }}
+          package: ${{ steps.string.outputs.PKG_NAME }}
           delete-untagged: true
