@@ -4,6 +4,7 @@ const path = require('path');
 const Client = require('./Client.js');
 const { bot: {prefix}, player: { allowedExtensions }, directories: {userMusicDir, everyoneMusicDir, defaultMusicDir, topMusicDir} } = require('../../config/config.json');
 const { getSetting } = require('../Structures/settingsManager.js');
+const { dir } = require('console');
 
 const userDirComparison = userMusicDir.split('/').join(path.sep).substring(2);
 const everyoneDirComparison = everyoneMusicDir.split('/').join(path.sep).substring(2);
@@ -26,9 +27,10 @@ const syncSoundFiles = (client) => {
             const dirOrFilePath = path.join(userMusicDir, dirOrFile);
 
             if (statSync(dirOrFilePath).isDirectory()) { // Check if the dirOrfile is a directory
-                syncDirTree(client, userId, dirOrFilePath);
+                syncDir(client, userId, dirOrFilePath);
             }
-            else { // Clearly dirOrfile is not a directory
+            else { // Here just for legacy reasons, now each user should have their own directory
+                if(!allowedExtensions.some(ext => dirOrFile.endsWith(ext))) continue; // Check if the file has a valid extension
                 if ( !client.soundFiles.has(userId) ) {
                     client.soundFiles.set(userId, []);
                 }
@@ -37,38 +39,64 @@ const syncSoundFiles = (client) => {
             }
         }
 
-        syncDirTree(client, 'everyone', everyoneDirComparison);
-        syncDirTree(client, 'default', defaultDirComparison);
+        syncDir(client, 'everyone', everyoneDirComparison);
+        syncDir(client, 'default', defaultDirComparison);
         resolve();
     });
 }
 
-function syncDirTree(client, targetListId, dirPath) {
+/**
+ * Prefix DFS through the directory, making an array tree of the directory with valid sound files as leaves and directories as inner nodes
+ * @param {string} dirPath - The path to the directory to be traversed
+ * @returns {Object[]} - An array representing the directory tree, with nodes in the form of ['dir', name, subtree] or ['sound', name]
+ */
+function syncDir(client, targetListId, dirPath) {
+    const dirTree = dirSoundTree(dirPath);
+    if(dirTree.length === 0) return; // Directory does not contain any valid sound files.
+
     if ( !client.soundFiles.has(targetListId) ) {
         client.soundFiles.set(targetListId, []);
     }
     const targetList = client.soundFiles.get(targetListId);
-    _syncDirTree(client, targetList, dirPath, dirSoundTree(dirPath));
+    syncDirTree(targetList, dirPath, dirTree);
 }
 
+/**
+ * Makes an array tree of the directory with valid sound files as leaves and directories as inner nodes, prunes empty directories
+ * @param {string} dirPath - The path to the directory to be traversed
+ * @returns {Object[]} - An array representing the directory tree, with nodes in the form of ['dir', name, subtree] or ['sound', name]
+ */
 function dirSoundTree(dirPath) {
     const reader = readdirSync(dirPath);
     let dirTree = []
-    for(const fileOrDir of reader) {
-        const fileOrDirPath = path.join(dirPath, fileOrDir);
-        if(statSync(fileOrDirPath).isDirectory()) {
-            const subDirTree = dirSoundTree(fileOrDirPath);
-            if(subDirTree.length !== 0) dirTree.push(['dir', fileOrDir , subDirTree]);
+
+    // Recursive prefix DFS through the directory 
+    for(const dirOrFile of reader) {
+        const dirOrFile = path.join(dirPath, dirOrFile);
+        if(statSync(dirOrFile).isDirectory()) {
+            const subDirTree = dirSoundTree(dirOrFile);
+            if(subDirTree.length !== 0) dirTree.push(['dir', dirOrFile , subDirTree]);
         }
         else {
-            if(allowedExtensions.some(ext => fileOrDir.endsWith(ext))) dirTree.push(['sound', fileOrDir]);
+            if(allowedExtensions.some(ext => dirOrFile.endsWith(ext))) dirTree.push(['sound', dirOrFile]);
         }
     }
 
     return dirTree;
 }
 
-function _syncDirTree(client, targetList, dirPath, dirTree, chance = undefined, joinType = false, leaveType = false, onceType = false) {
+/**
+ * Syncs the directory tree
+ * @param {Object[]} targetList - List to which the item will be added
+ * @param {string} dirPath - Path from base to this directory
+ * @param {Object[]} dirTree - The subtree of dirSoundTree for this directory
+ * @param {number|null} [chance] - The default chance for the directory above if no explicit chance is set
+ * @param {boolean} joinType - Whether the directory above is marked for joining
+ * @param {boolean} leaveType - Whether the directory above is marked for leaving
+ * @param {boolean} onceType - Whether the directory above is marked to be used once
+ * @returns {void}
+ */
+function syncDirTree(targetList, dirPath, dirTree, chance = undefined, joinType = false, leaveType = false, onceType = false) {
     const defaultChance = (chance) ? chance / dirTree.length : undefined;
     for(const node of dirTree) {
         if(node[0] == 'dir') {
@@ -77,7 +105,7 @@ function _syncDirTree(client, targetList, dirPath, dirTree, chance = undefined, 
             const subJoin = subName.includes('$join') ? true : joinType;
             const subLeave = subName.includes('$leave') ? true : leaveType;
             const subOnce = subName.includes('$once') ? true : onceType;
-            _syncDirTree(client, targetList, path.join(dirPath, subName), subTree, subChance, subJoin, subLeave, subOnce);
+            syncDirTree(targetList, path.join(dirPath, subName), subTree, subChance, subJoin, subLeave, subOnce);
         }
         else if(node[0] == 'sound') {
             const [_, fileName] = node;
@@ -93,9 +121,11 @@ function _syncDirTree(client, targetList, dirPath, dirTree, chance = undefined, 
  * Adds sound to the client instance database
  * @param {Object[]} targetList - List to which the item will be added
  * @param {string} filePath - Path from base to file
- * @param {string} fileName - If the above is a dir, here is the file
- * @param {number|null} [defaultChance] - Optional manual float override for the playback chance.
- * @param {boolean} checkExtension - Whether to check extension
+ * @param {string} fileName - The name of the file
+ * @param {number|null} [chance] - The default chance for the sound if no explicit chance is set
+ * @param {boolean} joinType - Whether this sound is marked for joining
+ * @param {boolean} leaveType - Whether this sound is marked for leaving
+ * @param {boolean} onceType - Whether this sound is marked to be used once
  * @returns {void}
  */
 function addSoundToList(targetList, filePath, fileName, defaultChance = undefined, joinType = false, leaveType = false, onceType = false) { // temporary fix here
@@ -117,7 +147,7 @@ function addSoundToList(targetList, filePath, fileName, defaultChance = undefine
  * @param {Client} client - The client instance.
  * @param {string} userId - The ID of the user.
  * @param {string} type - The type of sound file ('join', 'leave' or 'all').
- * @param {int} guildId - The id of the guild.
+ * @param {string} guildId - The id of the guild.
  * @returns {Object[]} - The sound file object array.
  */
 async function getUserSoundArray(client, userId, type, guildId) {
@@ -255,6 +285,7 @@ module.exports = {
     syncSoundFiles,
     getUserSoundFile,
     getUserSoundArray,
+    findProbabilities,
     invalidateSoundFile,
     defaultDirComparison,
     everyoneDirComparison,

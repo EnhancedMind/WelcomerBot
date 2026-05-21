@@ -15,15 +15,15 @@ To find the names or paths, use the command \`${prefix}playable\` for all or \`$
 
 If you want to remove the file completely, use the tag \`-f\` or \`--force\` like so: \`${prefix}renamesong -f <file_to_be_removed>\`.
 Example usage:
-\`${prefix}removesong -f ${userDirComparison}${path.sep}$yourID${path.sep}mysong.mp3\`
+\`${prefix}removesong --force ${userDirComparison}${path.sep}$yourID${path.sep}mysong.mp3\`
 \`${prefix}removesong mysong.mp3\`
 `;
 
 module.exports = new Command({
 	name: 'removesong',
 	aliases: [ '' ],
-	syntax: 'removesong [-f/--force] <filepath>',
-	description: `Marks the song from the first argument as used. Send the path from \`${prefix}playable\` as an argument. To remove the sound completely, use the tag \`-f\` or \`--force\`.`,
+	syntax: 'removesong [--force] <filepath>',
+	description: `Marks the song from the first argument as used. Send the path from \`${prefix}playable\` as an argument.\nTo remove the sound completely, use the tag \`-f\` or \`--force\`.`,
 	help: helpText,
 	async run(message, args, client) {
 		const channel = message.channel;
