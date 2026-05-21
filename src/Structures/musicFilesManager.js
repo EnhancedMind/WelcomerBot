@@ -122,7 +122,7 @@ function addSoundToList(targetList, filePath, fileName, chanceOverride = undefin
  * @param {int} guildId - The id of the guild.
  * @returns {Object[]} - The sound file object array.
  */
-function getUserSoundArray(client, userId, type, guildId) {
+async function getUserSoundArray(client, userId, type, guildId) {
     const guildSettings = await getSetting(client, 'guild', guildId);
     const userSettings = await getSetting(client, 'user', userId);
     const setting = { // check explicitly if either if false, otherwise default to true
