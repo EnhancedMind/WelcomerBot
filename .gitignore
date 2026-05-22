@@ -2,6 +2,7 @@ node_modules/
 music/*.mp3
 music/users/*
 music/everyone/*
+music/default/*.m4a
 !music/users/*.example
 !music/users/addUser.md
 howto.md
