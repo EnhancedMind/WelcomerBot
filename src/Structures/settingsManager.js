@@ -1,8 +1,9 @@
-const { readFileSync, writeFileSync, existsSync } = require('fs');
+const { readFile, writeFile } = require('fs/promises');
 const path = require('path');
 
 const Client = require('./Client.js');
 const { consoleLog } = require('../Data/Log.js');
+const { exists } = require('../Utils/fsUtils.js');
 
 //const settingsFilePath = path.join(__dirname, `../../config/settings.json`);
 const settingsFilePath = './config/settings.json';
@@ -13,43 +14,43 @@ const settingsFilePath = './config/settings.json';
  * @param {Client} client - The client instance.
  * @returns {Promise<void>} - A promise that resolves when the settings are read.
  */
-const readSettingsFile = (client) => {
-    return new Promise(async (resolve, reject) => {
-        if (!existsSync(settingsFilePath)) {
-            consoleLog(`[ERROR] Settings file not found, creating new one: ${settingsFilePath}`);
-            await writeSettingsFile(client).catch(err => {
-                consoleLog(`[ERROR] Failed to create settings file: ${err}`);
-                throw err;
-            });
-            return resolve();
+async function readSettingsFile (client) {
+    if (!exists(settingsFilePath)) {
+        consoleLog(`[ERROR] Settings file not found, creating new one: ${settingsFilePath}`);
+        try {
+            await writeSettingsFile(client);
+            return;
         }
-
-        const readData = JSON.parse( readFileSync(settingsFilePath, 'utf8') );
-
-        client.settings.guild.clear();
-        client.settings.user.clear();
-
-        for (const [key, value] of Object.entries(readData.guild)) {
-            //if (!value || !value && !value.enabledDefaultJoin) continue;
-            client.settings.guild.set(key, {
-                enabledJoin: value.enabledJoin === undefined ? true : value.enabledJoin,
-                enabledLeave: value.enabledLeave === undefined ? true : value.enabledLeave,
-                enabledDefaultJoin: value.enabledDefaultJoin === undefined ? true : value.enabledDefaultJoin,
-                enabledDefaultLeave: value.enabledDefaultLeave === undefined ? true : value.enabledDefaultLeave
-            });
+        catch (err) {
+            consoleLog(`[ERROR] Failed to create settings file: ${err}`);
+            return;
         }
-        for (const [key, value] of Object.entries(readData.user)) {
-            //if (!value || !value && !value.enabledDefaultJoin) continue;
-            client.settings.user.set(key, {
-                enabledJoin: value.enabledJoin === undefined ? true : value.enabledJoin,
-                enabledLeave: value.enabledLeave === undefined ? true : value.enabledLeave,
-                enabledDefaultJoin: value.enabledDefaultJoin === undefined ? true : value.enabledDefaultJoin,
-                enabledDefaultLeave: value.enabledDefaultLeave === undefined ? true : value.enabledDefaultLeave
-            });
-        }
+    }
 
-        resolve();
-    });
+    const fileContent = await readFile(settingsFilePath, { encoding: 'utf8' });
+    const readData = JSON.parse(fileContent);
+
+    client.settings.guild.clear();
+    client.settings.user.clear();
+
+    for (const [key, value] of Object.entries(readData.guild)) {
+        //if (!value || !value && !value.enabledDefaultJoin) continue;
+        client.settings.guild.set(key, {
+            enabledJoin: value.enabledJoin === undefined ? true : value.enabledJoin,
+            enabledLeave: value.enabledLeave === undefined ? true : value.enabledLeave,
+            enabledDefaultJoin: value.enabledDefaultJoin === undefined ? true : value.enabledDefaultJoin,
+            enabledDefaultLeave: value.enabledDefaultLeave === undefined ? true : value.enabledDefaultLeave
+        });
+    }
+    for (const [key, value] of Object.entries(readData.user)) {
+        //if (!value || !value && !value.enabledDefaultJoin) continue;
+        client.settings.user.set(key, {
+            enabledJoin: value.enabledJoin === undefined ? true : value.enabledJoin,
+            enabledLeave: value.enabledLeave === undefined ? true : value.enabledLeave,
+            enabledDefaultJoin: value.enabledDefaultJoin === undefined ? true : value.enabledDefaultJoin,
+            enabledDefaultLeave: value.enabledDefaultLeave === undefined ? true : value.enabledDefaultLeave
+        });
+    }
 }
 
 
@@ -58,22 +59,19 @@ const readSettingsFile = (client) => {
  * @param {Client} client - The client instance. 
  * @returns {Promise<void>} - A promise that resolves when the settings are written and rejects if there is an error.
  */
-const writeSettingsFile = (client) => {
-    return new Promise((resolve, reject) => {
-        const data = {
-            guild: Object.fromEntries(client.settings.guild),
-            user: Object.fromEntries(client.settings.user)
-        };
+async function writeSettingsFile (client) {
+    const data = {
+        guild: Object.fromEntries(client.settings.guild),
+        user: Object.fromEntries(client.settings.user)
+    };
 
-        writeFileSync(settingsFilePath, JSON.stringify(data, null, 4), 'utf8', (err) => {
-            if (err) {
-                consoleLog(`[ERROR] Failed to write settings file: ${err}`);
-                return reject(err);
-            }
-        });
-
-        resolve();
-    });
+    try {
+        await writeFile(settingsFilePath, JSON.stringify(data, null, 4), 'utf8')
+    }
+    catch (err) {
+        consoleLog(`[ERROR] Failed to write settings file: ${err}`);
+        throw (err);
+    }
 }
 
 
@@ -96,7 +94,6 @@ const setSetting = (client, type, id, setting, value) => {
             enabledDefaultJoin: true,
             enabledDefaultLeave: true
         });
-        
     }
 
     const currentSettings = client.settings[type].get(id);

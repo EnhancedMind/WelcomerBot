@@ -1,0 +1,6 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Explicitly force Unix line endings for npm config files
+package.json text eol=lf
+package-lock.json text eol=lf

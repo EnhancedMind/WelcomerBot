@@ -23,12 +23,12 @@ module.exports = new Command({
 
         if ( (args.length > 0 && member == message.author.id) || (args.length > 1 && member != message.author.id) ) { //only execute if there is at least one argument (args[0]) and the user is not tagged OR there is only a tagged user in args[0] 
             if ([ 'reset', 'r' ].includes(args[0])) {
-                setSetting(client, 'guild', member, 'enabledJoin', true);
-                setSetting(client, 'guild', member, 'enabledLeave', true);
-                setSetting(client, 'guild', member, 'enabledDefaultJoin', true);
-                setSetting(client, 'guild', member, 'enabledDefaultLeave', true);
+                setSetting(client, 'user', member, 'enabledJoin', true);
+                setSetting(client, 'user', member, 'enabledLeave', true);
+                setSetting(client, 'user', member, 'enabledDefaultJoin', true);
+                setSetting(client, 'user', member, 'enabledDefaultLeave', true);
             }
-            else if (['enable', 'en', 'disable', 'dis' ].includes(args[0])) {} // skip invalid value
+            else if (!['enable', 'en', 'disable', 'dis' ].includes(args[0])) {} // skip invalid value
             else {
                 let setting = true;
 
@@ -40,16 +40,16 @@ module.exports = new Command({
                 }
 
                 if (args.includes('join') || args.includes('all')) {
-                    setSetting(client, 'guild', member, 'enabledJoin', setting);
+                    setSetting(client, 'user', member, 'enabledJoin', setting);
                 }
                 if (args.includes('leave') || args.includes('all')) {
-                    setSetting(client, 'guild', member, 'enabledLeave', setting);
+                    setSetting(client, 'user', member, 'enabledLeave', setting);
                 }
                 if (args.includes('defaultJoin') || args.includes('defaultjoin') || args.includes('all')) {
-                    setSetting(client, 'guild', member, 'enabledDefaultJoin', setting);
+                    setSetting(client, 'user', member, 'enabledDefaultJoin', setting);
                 }
                 if (args.includes('defaultLeave') || args.includes('defaultleave') || args.includes('all')) {
-                    setSetting(client, 'guild', member, 'enabledDefaultLeave', setting);
+                    setSetting(client, 'user', member, 'enabledDefaultLeave', setting);
                 }
             }
 

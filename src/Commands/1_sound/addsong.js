@@ -9,10 +9,12 @@ const {
 } = require('../../../config/config.json')
 
 const https = require('https');
-const { existsSync, readdirSync, statSync, renameSync, mkdirSync, createWriteStream, rmSync, readdir } = require('fs');
+const { createWriteStream } = require('fs');
+const { readdir, stat, rename, mkdir, rm } = require('fs/promises');
 const { spawn } = require('child_process');
 const path = require('path');
-const { PermissionsBitField } = require('discord.js');
+
+const { exists } = require('../../utils/fsUtils.js')
 const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/settingsManager.js');
 const { syncSoundFiles, defaultDirComparison, everyoneDirComparison } = require('../../Structures/musicFilesManager.js')
 
@@ -27,7 +29,6 @@ You can also add various tags in the filenameseperated by underscores that will 
 - \`$once\` - This will make the sound play only once. After that, it will be marked as used and will not play again.
 - \`$ch=0.5\` - This will set the chance of the sound playing to 50%. You can set this to any value between 0 and 1. If you don't set this, the chance will be divided between all the sounds you have minus the files that have a chance set.
 An example file name would be: \`myname_$join_$leave_$once_$ch=0.5.mp3\` or \`myname_$ch=0.3.mp3\` or even just \`myname.mp3\`.
-Keep in mind that any file sent will be kept on the server, even after using removesound, as that will only mark it as used. The only way to fully remove the sound is to contact the owner of the bot.
 
 This command supports the following arguments for developers:
 - \`--default\` or \`-d\` - Adds default song to \`${defaultDirComparison}\`
@@ -50,11 +51,11 @@ module.exports = new Command({
 
 		if (args[0] == '--default' || args[0] == '-d') {
 			if (permissionFail) return channel.send(`${warning} You do not have the permission to add songs to default! (Developer)`);
-			addSongCore(message, client, defaultMusicDir);
+			await addSongCore(message, client, defaultMusicDir);
 		}
 		else if (args[0] == '--everyone' || args[0] == '-e') {
 			if (permissionFail) return channel.send(`${warning} You do not have the permission to add songs to everyone! (Developer)`);
-			addSongCore(message, client, everyoneMusicDir);
+			await addSongCore(message, client, everyoneMusicDir);
 		}
 		else if (args[0] == '--user' || args[0] == '-u') {
 			if (permissionFail) return channel.send(`${warning} You do not have the permission to add songs to other users! (Developer)`);
@@ -62,14 +63,14 @@ module.exports = new Command({
 			let userId;
 			if (args[1].startsWith('<@') && args[1].endsWith('>')) {
 				userId = args[1].replace(/[<@!>]/g, '');
-				addUserSong(message, client, userId)
+				await addUserSong(message, client, userId)
 			}
 			else {
 				return channel.send(`${warning} user ${args[0]} does not exist.`);
 			}
 		}
 		else { // Typical user file
-			addUserSong(message, client, senderId)
+			await addUserSong(message, client, senderId)
 		}
 	}
 });
@@ -82,7 +83,7 @@ module.exports = new Command({
  * @returns {void}
  */
 async function addUserSong(message, client, targetId) {
-	const userDirReader = readdirSync(userMusicDir);
+	const userDirReader = await readdir(userMusicDir);
 
 	// Attempting to find users directory
 	let fileOrDir = undefined;
@@ -91,7 +92,7 @@ async function addUserSong(message, client, targetId) {
 			fileOrDir = undefined;
 			continue;
 		} 
-		if(statSync(path.join(userMusicDir, fileOrDir)).isDirectory()) break; // User's directory found
+		if((await stat(path.join(userMusicDir, fileOrDir))).isDirectory()) break; // User's directory found
 		fileOrDir = undefined;
 	}
 
@@ -100,10 +101,10 @@ async function addUserSong(message, client, targetId) {
 	const userDirPath = path.join(`${userMusicDir}`, `${userDirName}`);
 
 	if(fileOrDir === undefined) {
-		mkdirSync(`${userDirPath}`, { recursive: true });
+		await mkdir(`${userDirPath}`, { recursive: true });
 	}
 
-	addSongCore(message, client, userDirPath);
+	await addSongCore(message, client, userDirPath);
 }
 
 /**
@@ -129,12 +130,13 @@ async function addSongCore(message, client, targetDir) {
 		}
 
 		const filePath = path.join(targetDir,fileName);
-		if (existsSync(filePath))  {
+		if (await exists(filePath))  {
 			channelResponse.push(`${warning} A file with the name \`${fileName}\` already exists! Please rename the file and try again.`);
 			continue;
 		}
 		const tempPath = path.join(tempMusicDir,fileName);
-		if (!existsSync(`${tempMusicDir}`)) mkdirSync(`${tempMusicDir}`, { recursive: true });
+		if (!(await exists(`${tempMusicDir}`))) await mkdir(`${tempMusicDir}`, { recursive: true });
+
 		await new Promise((resolve) => https.get(attachment.url, (res) => res.pipe(createWriteStream(tempPath)).on('finish', () => resolve())));
 
 		const ffprobeProcess = spawn(`ffprobe`,
@@ -148,12 +150,12 @@ async function addSongCore(message, client, targetDir) {
 		ffprobeProcess.stdout.on('data', async (data) => {
 			const duration = parseFloat(data);
 			if (duration > maxTime) {
-				rmSync(tempPath, { force: true });
+				await rm(tempPath, { force: true });
 				channelResponse.push(`${warning} The song \`${fileName}\` is too long! Max length: ${maxTime} seconds`);
 				return;
 			}
 
-			renameSync(tempPath, filePath);
+			await rename(tempPath, filePath);
 			channelResponse.push(`${success} Successfully uploaded \`${fileName}\`!`);
 			syncSoundFiles(client);
 
@@ -170,16 +172,19 @@ async function addSongCore(message, client, targetDir) {
 				settingModified = true;
 			}
 
-			await writeSettingsFile(client).catch(err => {
+			try {
+				await writeSettingsFile(client);
+			}
+			catch {
 				channelResponse.push(`${warning} An error occurred while writing the settings file, your sound is activated only until the bot restarts!`);
-				return;
-			});
+			}
 
 			if (settingModified) {
-				channelReponse.push(`${success} Your settings have been updated to play the sound!`);
+				channelResponse.push(`${success} Your settings have been updated to play the sound!`);
 			}
 		});
 	}
 
-	channel.send(channelResponse.join('\n'));
+	console.log('sending channel response', channelResponse);
+	await channel.send(channelResponse.join('\n'));
 }
