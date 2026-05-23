@@ -97,7 +97,10 @@ async function play(client, voiceChannel, file, delay = 0) {
             }
 
             if (currentSession.fileToInvalidate) {
-                invalidateSoundFile(client, currentSession.fileToInvalidate);
+                try {
+                    invalidateSoundFile(client, currentSession.fileToInvalidate);
+                }
+                catch {}
                 currentSession.fileToInvalidate = null;
             }
 
@@ -132,7 +135,7 @@ async function play(client, voiceChannel, file, delay = 0) {
         if (file.once) currentSession.fileToInvalidate = file.path;
 
         const ffmpegOptions = [
-            '-loglevel', '8', '-hide_banner',
+            //'-loglevel', '8', '-hide_banner',
             '-i', path.resolve(file.path),
             '-af', `highpass=f=20, lowpass=f=18000, aresample=async=1,${loudnessNormalization ? 'loudnorm=I=-16:TP=-1.5:LRA=11,' : ''} volume=-10dB`,
             '-c:a', 'libopus',
@@ -144,19 +147,35 @@ async function play(client, voiceChannel, file, delay = 0) {
             '-f', 'ogg', 'pipe:3'
         ];
 
-        const ffmpegProcess = spawn('ffmpeg', ffmpegOptions, {
-            windowsHide: true, 
-            stdio: [ 
-                // Standard: stdin, stdout, stderr
-                'inherit', 'inherit', 'inherit', 
-                // Custom: pipe:3
-                'pipe'
-            ]
-        });
+        if (!debug) ffmpegOptions.splice(0, 0, ...['-loglevel', '8', '-hide_banner']); // when debug is true, dont insert log supression
 
-        currentSession.ffmpegProcess = ffmpegProcess;
+        try {
+            const ffmpegProcess = spawn('ffmpeg', ffmpegOptions, {
+                windowsHide: true, 
+                stdio: [ 
+                    // Standard: stdin, stdout, stderr
+                    'inherit', 'inherit', 'inherit', 
+                    // Custom: pipe:3
+                    'pipe'
+                ]
+            });
 
-        const resource = createAudioResource(ffmpegProcess.stdio[3], {
+            ffmpegProcess.on('close', (code) => {
+                if (code !== 0) throw new Error(`ffmpeg exited with code ${code}`);
+            });
+
+            ffmpegProcess.on('error', (err) => {
+                throw err
+            });
+
+            currentSession.ffmpegProcess = ffmpegProcess;
+        }
+        catch (err) {
+            consoleLog(`[ERR] FFmpeg process error in player:\n`, err);
+        }
+
+
+        const resource = createAudioResource(currentSession.ffmpegProcess.stdio[3], {
             inputType: 'ogg/opus',
             inlineVolume: false
         });
