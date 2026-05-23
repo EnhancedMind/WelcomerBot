@@ -55,14 +55,14 @@ module.exports = new Command({
 
         const senderVoiceChannel = message.member.voice.channel;
 
-        if (!args[0]) return message.channel.send(`${warning} ${missingArguments}`);
-        if (!senderVoiceChannel) return message.channel.send(`${warning} ${noChannel}`);
-        if (senderVoiceChannel.id == message.guild.afkChannelId) return message.channel.send(`${warning} ${afkChannel}`);
+        if (!args[0]) return await message.channel.send(`${warning} ${missingArguments}`);
+        if (!senderVoiceChannel) return await message.channel.send(`${warning} ${noChannel}`);
+        if (senderVoiceChannel.id == message.guild.afkChannelId) return await message.channel.send(`${warning} ${afkChannel}`);
 
         const currentConnection = getVoiceConnection(message.guild.id);
-        if (currentConnection && currentConnection.joinConfig.channelId != senderVoiceChannel.id) return message.channel.send(`${warning} ${wrongChannel}`);
+        if (currentConnection && currentConnection.joinConfig.channelId != senderVoiceChannel.id) return await message.channel.send(`${warning} ${wrongChannel}`);
 
-        const response = await message.channel.send(`${loading} Loading \`[${searchString}]\``);
+        const response = await await message.channel.send(`${loading} Loading \`[${searchString}]\``);
 
 
         if (args[0].startsWith('<@') && args[0].endsWith('>')) {

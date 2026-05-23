@@ -11,10 +11,10 @@ module.exports = new Command({
 	async run(message, args, client) {
         const senderId = message.author.id;
         const permissionFail = senderId != ownerID && !devIDs.includes(senderId) && !message.member.permissions.has(PermissionsBitField.Flags.ManageMessages);
-		if (permissionFail) return message.channel.send(`${warning} ${invalidPermissions} (Manage Messages)`);
-        if (!args[0]) return message.channel.send(`${warning} ${missingArguments}`);
-        if (isNaN(args[0])) return message.channel.send(`${warning} ${invalidNumber}`);
-        if (args[0] > 100 || args[0] < 1) return message.channel.send(`${warning} Outside of number range!`);
+		if (permissionFail) return await message.channel.send(`${warning} ${invalidPermissions} (Manage Messages)`);
+        if (!args[0]) return await message.channel.send(`${warning} ${missingArguments}`);
+        if (isNaN(args[0])) return await message.channel.send(`${warning} ${invalidNumber}`);
+        if (args[0] > 100 || args[0] < 1) return await message.channel.send(`${warning} Outside of number range!`);
 
         const result = await message.channel.messages.fetch({limit: 100});
 
@@ -24,10 +24,10 @@ module.exports = new Command({
         let messagesDeleted = 0;
         for (let i = 0; i < resultArray.length; i++) {
             if (resultArray[i].author.id == client.user.id) {
-                if ( (await message.channel.messages.fetch({ limit: 1, cache: false, around: resultArray[i].id })).has(resultArray[i].id) ) resultArray[i].delete();
+                resultArray[i].delete().catch(() => {});
                 messagesDeleted++;
                 if (resultArray[i+1].content.startsWith(prefix)) {
-                    if ( (await message.channel.messages.fetch({ limit: 1, cache: false, around: resultArray[i+1].id })).has(resultArray[i+1].id) )resultArray[i+1].delete();
+                    resultArray[i+1].delete().catch(() => {});
                     messagesDeleted++;
                 }
             }
@@ -36,8 +36,9 @@ module.exports = new Command({
 
         const response = await message.channel.send(`${success} Deleting ${args[0]} messages`)
         setTimeout(async () => {
-            if ( (await response.channel.messages.fetch({ limit: 1, cache: false, around: response.id })).has(response.id) )response.delete();
-            if ( (await message.channel.messages.fetch({ limit: 1, cache: false, around: message.id })).has(message.id) ) message.delete();
+            // response is by bot, message is by user to trigger bot
+            response.delete().catch(() => {});
+            message.delete().catch(() => {});
         }, 3750);
 	}
 });

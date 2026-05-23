@@ -8,6 +8,6 @@ module.exports = new Command({
 	aliases: [ 'hi', 'hey' ],
 	description: 'Says Hello!',
 	async run(message, args, client) {
-		message.channel.send(`${success} Hello!`);
+		await message.channel.send(`${success} Hello!`);
 	}
 });
