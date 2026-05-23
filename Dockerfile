@@ -23,7 +23,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install --no-audit --no-fun
+RUN npm install --no-audit --no-fund
 
 COPY --chown=node:node . .
 
