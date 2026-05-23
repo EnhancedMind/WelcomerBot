@@ -11,7 +11,7 @@ module.exports = new Command({
     syntax: 'guild <action> <optionalType> <optionalType> <optionalType> <optionalType>',
 	description: 'Sets whether the bot is enabled in the guild or not. Requires Manage Server permission.',
 	async run(message, args, client) {
-		if (!message.member.permissions.has(PermissionsBitField.Flags.ManageGuild) && message.author.id != ownerID && !devIDs.includes(message.author.id)) return message.channel.send(`${error} ${invalidPermissions} (Manage Server)`);
+		if (!message.member.permissions.has(PermissionsBitField.Flags.ManageGuild) && message.author.id != ownerID && !devIDs.includes(message.author.id)) return await message.channel.send(`${error} ${invalidPermissions} (Manage Server)`);
 
         if (args.length > 0) {
             if ([ 'reset', 'r' ].includes(args[0])) {
@@ -45,11 +45,14 @@ module.exports = new Command({
                 }
             }
 
-            writeSettingsFile(client).catch(err => {
-                message.channel.send(`${error} An error occured while writing the settings file, the settings are only applied until the bot restarts!`);
-            });
+            try {
+                await writeSettingsFile(client)
+            }
+            catch (err) {
+                await message.channel.send(`${error} An error occured while writing the settings file, the settings are only applied until the bot restarts!`);
+            }
         }
 
-        message.channel.send(`${success} The current setting for this server are:\n\`\`\`\n${JSON.stringify(getSetting(client, 'guild', message.guild.id), null, 4)} \n\`\`\``);
+        await message.channel.send(`${success} The current setting for this server are:\n\`\`\`\n${JSON.stringify(getSetting(client, 'guild', message.guild.id), null, 4)} \n\`\`\``);
 	}
 });
