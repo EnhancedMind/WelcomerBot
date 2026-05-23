@@ -20,7 +20,7 @@ module.exports = new Command({
                 setSetting(client, 'guild', message.guild.id, 'enabledDefaultJoin', true);
                 setSetting(client, 'guild', message.guild.id, 'enabledDefaultLeave', true);
             }
-            else if (['enable', 'en', 'disable', 'dis' ].includes(args[0])) {} // skip invalid value
+            else if (!['enable', 'en', 'disable', 'dis' ].includes(args[0])) {} // skip invalid value
             else {
                 let setting = true;
 
