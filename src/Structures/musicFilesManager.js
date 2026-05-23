@@ -96,20 +96,21 @@ function dirSoundTree(dirPath) {
  * @param {boolean} onceType - Whether the directory above is marked to be used once
  * @returns {void}
  */
-function syncDirTree(targetList, dirPath, dirTree, chance = undefined, joinType = false, leaveType = false, onceType = false) {
+function syncDirTree(targetList, dirPath, dirTree, chance = undefined, chanceOrigin = undefined, joinType = false, leaveType = false, onceType = false) {
     const defaultChance = (chance) ? chance / dirTree.length : undefined;
     for(const node of dirTree) {
         if(node[0] == 'dir') {
             const [_, subName, subTree] = node;
             const subChance = subName.includes('$ch=') ? parseFloat(subName.split('ch=')[1]) : defaultChance; // Override chance or take the dir's
+            const newChanceOrigin = (subChance != defaultChance) ? subName : chanceOrigin; // If we have an overridden chance, the origin becomes the subdirectory, otherwise we keep the inherited origin
             const subJoin = subName.includes('$join') ? true : joinType;
             const subLeave = subName.includes('$leave') ? true : leaveType;
             const subOnce = subName.includes('$once') ? true : onceType;
-            syncDirTree(targetList, path.join(dirPath, subName), subTree, subChance, subJoin, subLeave, subOnce);
+            syncDirTree(targetList, path.join(dirPath, subName), subTree, subChance, newChanceOrigin, subJoin, subLeave, subOnce);
         }
         else if(node[0] == 'sound') {
             const [_, fileName] = node;
-            addSoundToList(targetList, path.join(dirPath, fileName), fileName, defaultChance, joinType, leaveType, onceType);
+            addSoundToList(targetList, path.join(dirPath, fileName), fileName, defaultChance, chanceOrigin, joinType, leaveType, onceType);
         }
         else {
             console.log(`Misbehaved node ${node} in ${dirPath}`);
@@ -128,12 +129,14 @@ function syncDirTree(targetList, dirPath, dirTree, chance = undefined, joinType 
  * @param {boolean} onceType - Whether this sound is marked to be used once
  * @returns {void}
  */
-function addSoundToList(targetList, filePath, fileName, defaultChance = undefined, joinType = false, leaveType = false, onceType = false) { // temporary fix here
-    const finalChance = fileName.includes('$ch=') ? parseFloat(fileName.split('ch=')[1]) : defaultChance;
+function addSoundToList(targetList, filePath, fileName, defaultChance = undefined, chanceOrigin = undefined, joinType = false, leaveType = false, onceType = false) { // temporary fix here
+    const finalChance = fileName.includes('$ch=') ? parseFloat(fileName.split('$ch=')[1]) : defaultChance;
+    const finalChanceOrigin = finalChance != defaultChance ? fileName : chanceOrigin;
     const soundFileData = {
         path: filePath,
         filename: fileName,
         chance: finalChance,
+        chanceOrigin: finalChanceOrigin,
         join: fileName.includes('$join') || joinType, // temporary fix here
         leave: fileName.includes('$leave') || leaveType, // temporary fix here
         once: fileName.includes('$once') || onceType, // temporary fix here

@@ -183,17 +183,17 @@ async function printPlayable(message, client, array, taggedUser, personal, page)
 		if(song.path.startsWith(defaultDirComparison)) defaultCount++;
 	}
 
-	let senderName = "DEBUG";
+	let targetsName = "DEBUG";
 	const embeds = [];
 	let embedHeadline;
 	
 	if(personal) {
-		senderName = (await client.users.fetch(taggedUser)).globalName;
-		embedHeadline = `${senderName}'s personal files!`;
+		targetsName = (await client.users.fetch(taggedUser)).globalName;
+		embedHeadline = `${targetsName}'s personal files!`;
 	}
 	else if(taggedUser) {
-		senderName = (await client.users.fetch(taggedUser)).globalName;
-		embedHeadline = `${senderName}'s active files!`;
+		targetsName = (await client.users.fetch(taggedUser)).globalName;
+		embedHeadline = `${targetsName}'s active files!`;
 	}
 	else {
 		embedHeadline = `All playable files!`;
@@ -228,10 +228,10 @@ async function printPlayable(message, client, array, taggedUser, personal, page)
 	}
 		
 	if(personal) {
-		embeds[0].setDescription(`**Here are all the personal files of ${senderName}:**\n\`\`\`🎶 Personal files: ${userCount}\`\`\``);
+		embeds[0].setDescription(`**Here are all the personal files of ${targetsName}:**\n\`\`\`🎶 Personal files: ${userCount}\`\`\``);
 	}
 	else if(taggedUser) {
-		embeds[0].setDescription(`**Here are all the files that may play for ${senderName}:**\n\`\`\`🎶 Everyone files: ${everyoneCount}\n🎶 Default files: ${defaultCount}\n🎶 User files: ${userCount}\`\`\``);
+		embeds[0].setDescription(`**Here are all the files that may play for ${targetsName}:**\n\`\`\`🎶 Everyone files: ${everyoneCount}\n🎶 Default files: ${defaultCount}\n🎶 User files: ${userCount}\`\`\``);
 	}
 	else {
 		embeds[0].setDescription(`**Here are all the files that can be played by the bot:**\n\`\`\`🎶 Everyone files: ${everyoneCount}\n🎶 Default files: ${defaultCount}\n🎶 User files: ${userCount}\`\`\``);
