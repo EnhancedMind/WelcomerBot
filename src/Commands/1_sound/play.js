@@ -1,7 +1,7 @@
 const Command = require('../../Structures/Command.js');
 
 const { getVoiceConnection } = require('@discordjs/voice');
-const { stat } = require('fs').promises;
+const { stat } = require('fs/promises');
 const path = require('path');
 
 const { getUserSoundFile, searchSoundFiles } = require('../../Structures/musicFilesManager.js');
