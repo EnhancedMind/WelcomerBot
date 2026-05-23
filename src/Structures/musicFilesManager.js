@@ -1,8 +1,9 @@
-const { readdirSync, existsSync, renameSync, statSync } = require('fs');
+const { readdir, rename, stat } = require('fs/promises');
 const path = require('path');
 const Fuse = require('fuse.js');
 
 const Client = require('./Client.js');
+const { exists } = require('../utils/fsUtils.js');
 const { bot: {prefix}, player: { allowedExtensions }, directories: {userMusicDir, everyoneMusicDir, defaultMusicDir, topMusicDir} } = require('../../config/config.json');
 const { getSetting } = require('../Structures/settingsManager.js');
 const { dir } = require('console');
@@ -17,33 +18,30 @@ const musicDirComparison = topMusicDir.split('/').join(path.sep).substring(2);
  * @param {Client} client - The client instance.	
  * @returns {Promise<void>} - A promise that resolves when the sound files are synced.
  */
-const syncSoundFiles = (client) => {
-    return new Promise((resolve, reject) => {
-        client.soundFiles.clear();
+async function syncSoundFiles (client) {
+    client.soundFiles.clear();
 
-        const userDirReader = readdirSync(userMusicDir);
-        for (const dirOrFile of userDirReader) {
-            if(!/^[0-9]{18,19}/.test(dirOrFile)) continue; //Check if dirOrFile matches the user ID pattern
-            const userId = dirOrFile.match(/^([0-9]{18,19})/)[0]; // Extract the user ID from the directory name
-            const dirOrFilePath = path.join(userMusicDir, dirOrFile);
+    const userDirReader = await readdir(userMusicDir);
+    for (const dirOrFile of userDirReader) {
+        if(!/^[0-9]{18,19}/.test(dirOrFile)) continue; //Check if dirOrFile matches the user ID pattern
+        const userId = dirOrFile.match(/^([0-9]{18,19})/)[0]; // Extract the user ID from the directory name
+        const dirOrFilePath = path.join(userMusicDir, dirOrFile);
 
-            if (statSync(dirOrFilePath).isDirectory()) { // Check if the dirOrfile is a directory
-                syncDir(client, userId, dirOrFilePath);
-            }
-            else { // Here just for legacy reasons, now each user should have their own directory
-                if(!allowedExtensions.some(ext => dirOrFile.endsWith(ext))) continue; // Check if the file has a valid extension
-                if ( !client.soundFiles.has(userId) ) {
-                    client.soundFiles.set(userId, []);
-                }
-                const targetList = client.soundFiles.get(userId);
-                addSoundToList(targetList, dirOrFilePath, dirOrFile);
-            }
+        if ((await stat(dirOrFilePath)).isDirectory()) { // Check if the dirOrfile is a directory
+            await syncDir(client, userId, dirOrFilePath);
         }
+        else { // Here just for legacy reasons, now each user should have their own directory
+            if(!allowedExtensions.some(ext => dirOrFile.endsWith(ext))) continue; // Check if the file has a valid extension
+            if ( !client.soundFiles.has(userId) ) {
+                client.soundFiles.set(userId, []);
+            }
+            const targetList = client.soundFiles.get(userId);
+            addSoundToList(targetList, dirOrFilePath, dirOrFile);
+        }
+    }
 
-        syncDir(client, 'everyone', everyoneDirComparison);
-        syncDir(client, 'default', defaultDirComparison);
-        resolve();
-    });
+    await syncDir(client, 'everyone', everyoneDirComparison);
+    await syncDir(client, 'default', defaultDirComparison);
 }
 
 /**
@@ -51,15 +49,15 @@ const syncSoundFiles = (client) => {
  * @param {string} dirPath - The path to the directory to be traversed
  * @returns {Object[]} - An array representing the directory tree, with nodes in the form of ['dir', name, subtree] or ['sound', name]
  */
-function syncDir(client, targetListId, dirPath) {
-    const dirTree = dirSoundTree(dirPath);
+async function syncDir(client, targetListId, dirPath) {
+    const dirTree = await dirSoundTree(dirPath);
     if(dirTree.length === 0) return; // Directory does not contain any valid sound files.
 
     if ( !client.soundFiles.has(targetListId) ) {
         client.soundFiles.set(targetListId, []);
     }
     const targetList = client.soundFiles.get(targetListId);
-    syncDirTree(targetList, dirPath, dirTree);
+    await syncDirTree(targetList, dirPath, dirTree);
 }
 
 /**
@@ -67,15 +65,15 @@ function syncDir(client, targetListId, dirPath) {
  * @param {string} dirPath - The path to the directory to be traversed
  * @returns {Object[]} - An array representing the directory tree, with nodes in the form of ['dir', name, subtree] or ['sound', name]
  */
-function dirSoundTree(dirPath) {
-    const reader = readdirSync(dirPath);
+async function dirSoundTree(dirPath) {
+    const reader = await readdir(dirPath);
     let dirTree = []
 
     // Recursive prefix DFS through the directory 
     for(const dirOrFile of reader) {
         const dirOrFilePath = path.join(dirPath, dirOrFile);
-        if(statSync(dirOrFilePath).isDirectory()) {
-            const subDirTree = dirSoundTree(dirOrFilePath);
+        if((await stat(dirOrFilePath)).isDirectory()) {
+            const subDirTree = await dirSoundTree(dirOrFilePath);
             if(subDirTree.length !== 0) dirTree.push(['dir', dirOrFile , subDirTree]);
         }
         else {
@@ -97,7 +95,7 @@ function dirSoundTree(dirPath) {
  * @param {boolean} onceType - Whether the directory above is marked to be used once
  * @returns {void}
  */
-function syncDirTree(targetList, dirPath, dirTree, chance = undefined, joinType = false, leaveType = false, onceType = false) {
+async function syncDirTree(targetList, dirPath, dirTree, chance = undefined, joinType = false, leaveType = false, onceType = false) {
     const defaultChance = (chance) ? chance / dirTree.length : undefined;
     for(const node of dirTree) {
         if(node[0] == 'dir') {
@@ -106,7 +104,7 @@ function syncDirTree(targetList, dirPath, dirTree, chance = undefined, joinType 
             const subJoin = subName.includes('$join') ? true : joinType;
             const subLeave = subName.includes('$leave') ? true : leaveType;
             const subOnce = subName.includes('$once') ? true : onceType;
-            syncDirTree(targetList, path.join(dirPath, subName), subTree, subChance, subJoin, subLeave, subOnce);
+            await syncDirTree(targetList, path.join(dirPath, subName), subTree, subChance, subJoin, subLeave, subOnce);
         }
         else if(node[0] == 'sound') {
             const [_, fileName] = node;
@@ -204,38 +202,31 @@ async function getUserSoundArray(client, userId, type, guildId) {
  * @param {string} userId - The ID of the guild.
  * @returns {Promise<Object>} - A promise that resolves to a sound file object.
  */
-const getUserSoundFile = (client, userId, type, guildId) => {
-    return new Promise(async (resolve, reject) => {
-        const selectionArray = await getUserSoundArray(client, userId, type, guildId);
+async function getUserSoundFile (client, userId, type, guildId) {
+    const selectionArray = await getUserSoundArray(client, userId, type, guildId);
 
-        if(selectionArray.length === 0) {
-            resolve(null);
-            return;
-        }
+    if(selectionArray.length === 0) return null;
 
-        const [probabilities, probabilitySum] = findProbabilities(selectionArray);
+    const [probabilities, probabilitySum] = findProbabilities(selectionArray);
 
-        // Choose a random item from the array based on probabilities,
-        // this number is between 0 and the sum of all probabilities so scaled accordingly
-        const randomNumber = Math.random() * probabilitySum;
+    // Choose a random item from the array based on probabilities,
+    // this number is between 0 and the sum of all probabilities so scaled accordingly
+    const randomNumber = Math.random() * probabilitySum;
 
-        // Iterate through the probabilities and keep track of the running sum
-        let runningSum = 0; // running sum of probabilities, each iteration adds the current probability to the running sum
+    // Iterate through the probabilities and keep track of the running sum
+    let runningSum = 0; // running sum of probabilities, each iteration adds the current probability to the running sum
 
-        for (let i = 0; i < probabilities.length; i++) {
-            // If the random number is less than the running sum + current probability, choose the current item 
-            if (randomNumber < (runningSum += probabilities[i])) { //check and add to running sum at the same time
-                // Return the chosen item
-                if (existsSync(selectionArray[i].path)) {
-                    resolve(selectionArray[i]);
-                    return;
-                }
-                await syncSoundFiles(client); // if the file does not exist, for example it was deleted manually, resync the sound files and try again
-                resolve( await getUserSoundFile(client, userId, type, guildId) );
-                return;
+    for (let i = 0; i < probabilities.length; i++) {
+        // If the random number is less than the running sum + current probability, choose the current item 
+        if (randomNumber < (runningSum += probabilities[i])) { //check and add to running sum at the same time
+            // Return the chosen item
+            if (await exists(selectionArray[i].path)) {
+                return selectionArray[i];
             }
+            await syncSoundFiles(client); // if the file does not exist, for example it was deleted manually, resync the sound files and try again
+            return await getUserSoundFile(client, userId, type, guildId);
         }
-    });
+    }
 }
 
 /**
@@ -359,12 +350,12 @@ function searchSoundFiles({client, searchString, firstPriorityUserId = null, joi
  * @param {string} path - The path of the sound file to invalidate.
  * @returns {void}
  */
-const invalidateSoundFile = (client, path) => {
-    if (!existsSync(path)) return;
+async function invalidateSoundFile (client, path) {
+    if (!(await exists(path))) return;
     let i = 1;
-    while (existsSync( path.slice(0, path.lastIndexOf('.')) + `_$used${i}` + path.slice(path.lastIndexOf('.')) ) ) i++;
-    renameSync(path,   path.slice(0, path.lastIndexOf('.')) + `_$used${i}` + path.slice(path.lastIndexOf('.')) );
-    syncSoundFiles(client);
+    while (await exists( path.slice(0, path.lastIndexOf('.')) + `_$used${i}` + path.slice(path.lastIndexOf('.')) ) ) i++;
+    await rename(path,   path.slice(0, path.lastIndexOf('.')) + `_$used${i}` + path.slice(path.lastIndexOf('.')) );
+    await syncSoundFiles(client);
 }
 
 module.exports = {

@@ -1,8 +1,10 @@
 const Command = require('../../Structures/Command');
 
 const { bot: { prefix, ownerID , devIDs}, emoji: { success, warning }, response: { missingArguments } } = require('../../../config/config.json')
-const { existsSync, rmSync} = require('fs');
+const { rm } = require('fs/promises');
 const path = require('path');
+
+const { exists } = require('../../utils/fsUtils.js');
 const { invalidateSoundFile } = require('../../Structures/musicFilesManager.js');
 const { syncSoundFiles, defaultDirComparison, everyoneDirComparison, userDirComparison, musicDirComparison } = require('../../Structures/musicFilesManager.js');
 
@@ -21,7 +23,7 @@ Example usage:
 
 module.exports = new Command({
 	name: 'removesong',
-	aliases: [ '' ],
+	aliases: [ 'rm' ],
 	syntax: 'removesong [--force] <filepath>',
 	description: `Marks the song from the first argument as used. Send the path from \`${prefix}playable\` as an argument.\nTo remove the sound completely, use the tag \`-f\` or \`--force\`.`,
 	help: helpText,
@@ -53,7 +55,7 @@ module.exports = new Command({
 		}
 
 		if(!file.startsWith(musicDirComparison)) return channel.send(`${warning}${warning}${warning} You tried to make changes outside the music database${warning}${warning}${warning}\nAttempted move from: \`${file}\``);
-		if (!existsSync(file)) return channel.send(`${warning} file \`${file}\` doesn't exist!`);
+		if (!(await exists(file))) return channel.send(`${warning} file \`${file}\` doesn't exist!`);
 
 		const permissionFail = senderId != ownerID && !devIDs.includes(senderId);
 		if (permissionFail) {
@@ -69,7 +71,7 @@ module.exports = new Command({
 		}
 
 		if(forceFlag) {
-			rmSync(file);
+			await rm(file);
 			channel.send(`${success} Successfully removed the file ${file} from database`);
 		}
 		else {

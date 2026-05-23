@@ -7,11 +7,10 @@ const {
 	player: { maxTime, allowedExtensions }
 } = require('../../../config/config.json')
 
-const https = require('https');
-const { existsSync, renameSync } = require('fs');
+const { rename } = require('fs/promises');
 const path = require('path');
-const { PermissionsBitField } = require('discord.js');
-const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/settingsManager.js');
+
+const { exists } = require('../../utils/fsUtils.js');
 const { syncSoundFiles, defaultDirComparison, everyoneDirComparison, userDirComparison, musicDirComparison } = require('../../Structures/musicFilesManager.js');
 
 const helpText = 
@@ -65,10 +64,10 @@ module.exports = new Command({
 		if(!origin.startsWith(musicDirComparison)) return channel.send(`${warning}${warning}${warning} you tried to make changes outside the music database${warning}${warning}${warning}\nAttempted move from: \`${origin}\``);
 		if(!destination.startsWith(musicDirComparison)) return channel.send(`${warning}${warning}${warning} you tried to make changes outside the music database${warning}${warning}${warning}\nAttempted move to: \`${destination}\``);
 
-		if (!existsSync(origin)) return channel.send(`${warning} file \`${origin}\` doesn't exist!`);
-		if (existsSync(destination)) return channel.send(`${warning} file \`${destination}\` already exists!`);
+		if (!(await exists(origin))) return channel.send(`${warning} file \`${origin}\` doesn't exist!`);
+		if (await exists(destination)) return channel.send(`${warning} file \`${destination}\` already exists!`);
 
-		if (!existsSync(path.dirname(destination))) return channel.send(`${warning} directory \`${path.dirname(destination)}\` for destination doesn't exist!`);
+		if (!(await exists(path.dirname(destination)))) return channel.send(`${warning} directory \`${path.dirname(destination)}\` for destination doesn't exist!`);
 
 		const permissionFail = senderId != ownerID && !devIDs.includes(senderId);
 		if (permissionFail) {
@@ -83,7 +82,7 @@ module.exports = new Command({
 			}
 		}
 
-		renameSync(origin, destination);
+		await rename(origin, destination);
 		channel.send(`Song succesfully renamed \nFrom: \`${origin}\`\nTo: \`${destination}\``);
 		syncSoundFiles(client);
 	}
