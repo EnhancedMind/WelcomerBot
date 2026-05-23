@@ -6,7 +6,6 @@ music/default/*.m4a
 !music/users/*.example
 !music/users/addUser.md
 howto.md
-.gitattributes
 src/notes.md
 logs/
 test*
