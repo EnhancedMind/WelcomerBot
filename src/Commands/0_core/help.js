@@ -1,7 +1,7 @@
 const Command = require('../../Structures/Command');
 
 const { EmbedBuilder } = require('discord.js');
-const { readdirSync } = require('fs');
+const { readdirSync } = require('fs/promises');
 const paginator = require('../../Structures/Paginator');
 const { bot: { prefix } } = require('../../../config/config.json');
 const { homepage } = require('../../../package.json');
@@ -12,7 +12,7 @@ module.exports = new Command({
     aliases: [ 'h' ],
 	description: 'Shows the help menu',
 	async run(message, args, client) {
-        const cmdDir = readdirSync('./src/Commands');
+        const cmdDir = await readdir('./src/Commands');
 
 		let page = 0;
         // if args[0] is a number, set page to args[0]
@@ -26,7 +26,7 @@ module.exports = new Command({
 
         let pages = [];
         let i = 0;
-        cmdDir.forEach(dirs => {
+        for (const dirs of cmdDir) {
             pages[i] = new EmbedBuilder()
                 .setColor(0x3399FF)
                 .setAuthor({
@@ -44,7 +44,7 @@ module.exports = new Command({
                     .addFields( [ { name: '**Prefix**', value: `:wavy_dash:The prefix is:   **${prefix}**`, inline: false } ] )
             }
 
-            readdirSync(`./src/Commands/${dirs}`)
+            (await readdir(`./src/Commands/${dirs}`))
                 .filter(file => file.endsWith('.js'))
                 .forEach(file => {
                     const data = client.commands.get(file.substring(0, file.lastIndexOf('.')));
@@ -52,8 +52,10 @@ module.exports = new Command({
                     else pages[i].addFields( [ { name: `**${data.name[0].toUpperCase() + data.name.slice(1)}**`, value: `:wavy_dash:${data.description}`, inline: false } ] );
                 });
             i++
-        });
+        };
 
-        paginator(message, pages, null, page);
+        paginator(message, pages, null, page).catch(async (err) => {
+            await message.channel.send('The paginator failed.');
+        });
 	}
 });
