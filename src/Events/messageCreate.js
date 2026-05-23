@@ -1,6 +1,7 @@
 const Event = require('../Structures/Event');
+const { consoleLog } = require('../Data/Log');
 
-const { bot: { prefix, ignoreMessageEndingWithPrefix }, response: { notValidCommand } } = require('../../config/config.json');
+const { bot: { prefix, ignoreMessageEndingWithPrefix }, emoji: { error: emojiError }, response: { notValidCommand } } = require('../../config/config.json');
 
 
 module.exports = new Event('messageCreate', async (client, message) => {
@@ -18,5 +19,21 @@ module.exports = new Event('messageCreate', async (client, message) => {
     if (!notValidCommand && !command) return;
 	if (!command) return message.channel.send(`**${cmd}** is not a valid command!`);
     if (args[0] == '--help' || args[0] == '-h') return message.channel.send(command.help ? command.help : command.description);
-	command.run(message, args, client);
+
+    try {
+        await command.run(message, args, client);
+    }
+	catch (err) {
+        consoleLog(`[ERR] Failed running command "${command.name}":`, err);
+        try {
+            await message.channel.send([
+                `${emojiError} A fatal error occurred while executing the **${command.name}** command. The operation was aborted.`,
+                `> **Details:** \`${err.name}\`: \`${err.message}\``,
+                `*If this keeps happening, please notify the bot administrator.*`
+            ].join('\n'));
+        }
+        catch (sendErr) {
+            consoleLog(`[ERR] Could not deliver error message to Discord text channel:`, sendErr);
+        }
+    }
 });
