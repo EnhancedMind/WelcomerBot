@@ -1,9 +1,7 @@
 const Event = require('../Structures/Event.js');
 
-const { createAudioPlayer, createAudioResource, joinVoiceChannel } = require('@discordjs/voice');
-const { consoleLog } = require('../Data/Log.js');
-const { player: { playIntoEmptyChannel, selfDeaf, debug } } = require('../../config/config.json');
-const { getUserSoundFile, invalidateSoundFile } = require('../Structures/musicFilesManager.js');
+const { player: { playIntoEmptyChannel } } = require('../../config/config.json');
+const { getUserSoundFile } = require('../Structures/musicFilesManager.js');
 const { getSetting } = require('../Structures/settingsManager.js');
 
 
