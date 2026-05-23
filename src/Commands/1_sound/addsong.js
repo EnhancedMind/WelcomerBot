@@ -2,11 +2,11 @@ const Command = require('../../Structures/Command');
 
 const { 
 	bot: { prefix, ownerID, devIDs }, 
-	emoji: { success, warning }, 
+	emoji: { success, info, warning }, 
 	response: { missingArguments }, 
 	player: { maxTime, allowedExtensions },
 	directories: {userMusicDir, defaultMusicDir, everyoneMusicDir, tempMusicDir}
-} = require('../../../config/config.json')
+} = require('../../../config/config.json');
 
 const https = require('https');
 const { createWriteStream } = require('fs');
@@ -14,9 +14,10 @@ const { readdir, stat, rename, mkdir, rm } = require('fs/promises');
 const { spawn } = require('child_process');
 const path = require('path');
 
-const { exists } = require('../../utils/fsUtils.js')
+const { exists } = require('../../utils/fsUtils.js');
+const { consoleLog } = require('../../Data/Log.js');
 const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/settingsManager.js');
-const { syncSoundFiles, defaultDirComparison, everyoneDirComparison } = require('../../Structures/musicFilesManager.js')
+const { syncSoundFiles, defaultDirComparison, everyoneDirComparison } = require('../../Structures/musicFilesManager.js');
 
 const helpText = 
 `This command allows you to add a song to your library in the database.
@@ -46,19 +47,19 @@ module.exports = new Command({
 		const channel = message.channel;
 		const senderId = message.author.id;
 
-		if (!message.attachments.size) return channel.send(`${warning} ${missingArguments} (No attachment found)`);
+		if (!message.attachments.size) return await channel.send(`${warning} ${missingArguments} (No attachment found)`);
 		const permissionFail = senderId != ownerID && !devIDs.includes(senderId);
 
 		if (args[0] == '--default' || args[0] == '-d') {
-			if (permissionFail) return channel.send(`${warning} You do not have the permission to add songs to default! (Developer)`);
+			if (permissionFail) return await channel.send(`${warning} You do not have the permission to add songs to default! (Developer)`);
 			await addSongCore(message, client, defaultMusicDir);
 		}
 		else if (args[0] == '--everyone' || args[0] == '-e') {
-			if (permissionFail) return channel.send(`${warning} You do not have the permission to add songs to everyone! (Developer)`);
+			if (permissionFail) return await channel.send(`${warning} You do not have the permission to add songs to everyone! (Developer)`);
 			await addSongCore(message, client, everyoneMusicDir);
 		}
 		else if (args[0] == '--user' || args[0] == '-u') {
-			if (permissionFail) return channel.send(`${warning} You do not have the permission to add songs to other users! (Developer)`);
+			if (permissionFail) return await channel.send(`${warning} You do not have the permission to add songs to other users! (Developer)`);
 
 			let userId;
 			if (args[1].startsWith('<@') && args[1].endsWith('>')) {
@@ -66,7 +67,7 @@ module.exports = new Command({
 				await addUserSong(message, client, userId)
 			}
 			else {
-				return channel.send(`${warning} user ${args[0]} does not exist.`);
+				return await channel.send(`${warning} user ${args[1]} is not a valid user.`);
 			}
 		}
 		else { // Typical user file
@@ -96,7 +97,7 @@ async function addUserSong(message, client, targetId) {
 		fileOrDir = undefined;
 	}
 
-	const dirTag = (await client.users.fetch(targetId)).globalName;
+	const dirTag = (fileOrDir === undefined) ? (await client.users.fetch(targetId)).globalName : ''; // awesome oneliner to avoid API call if user alreay has a dir, im so proud of myself - EnhancedMind
 	const userDirName = (fileOrDir !== undefined) ? fileOrDir : [targetId, dirTag].join('_');
 	const userDirPath = path.join(`${userMusicDir}`, `${userDirName}`);
 
@@ -119,7 +120,13 @@ async function addSongCore(message, client, targetDir) {
 	const channel = message.channel;
 	const senderId = message.author.id;
 
+	const response = await channel.send(`${info} Working...`)
+
 	const channelResponse = [];
+
+	// Modifying settings if they are disabled
+	let settingModified = false;
+	const setting = getSetting(client, 'user', senderId);
 
 	for(const [_, attachment] of allAttachments) {
 		const fileName = attachment.title ? `${attachment.title}${path.extname(attachment.name)}` : attachment.name;
@@ -139,52 +146,82 @@ async function addSongCore(message, client, targetDir) {
 
 		await new Promise((resolve) => https.get(attachment.url, (res) => res.pipe(createWriteStream(tempPath)).on('finish', () => resolve())));
 
-		const ffprobeProcess = spawn(`ffprobe`,
-			[ '-i', tempPath, //input file
-			'-show_entries', 'format=duration', //only show duration
-			'-v', 'quiet', //prevent output spam
-			'-of', 'csv=p=0' //output only the duration in seconds 
-			]
-		);
+		let duration;
+		try {
+			duration = await new Promise((resolve, reject) => {
+				const ffprobeProcess = spawn(`ffprobe`, [
+					'-i', tempPath, //input file
+					'-show_entries', 'format=duration', //only show duration
+					'-v', 'quiet', //prevent output spam
+					'-of', 'csv=p=0' //output only the duration in seconds 
+					]
+				);
 
-		ffprobeProcess.stdout.on('data', async (data) => {
-			const duration = parseFloat(data);
-			if (duration > maxTime) {
-				await rm(tempPath, { force: true });
-				channelResponse.push(`${warning} The song \`${fileName}\` is too long! Max length: ${maxTime} seconds`);
-				return;
-			}
+				ffprobeProcess.stdout.on('data', async (data) => {
+					const duration = parseFloat(data);
+					resolve(duration);
+				});
 
+				ffprobeProcess.on('close', (code) => {
+                    if (code !== 0) reject(new Error(`ffprobe exited with code ${code}`));
+                });
+
+				ffprobeProcess.on('error', (err) => reject(err));
+			});
+		}
+		catch (err) {
+			consoleLog(`[ERR] Failed analyzing ${fileName}:`, err);
+			channelResponse.push(`${warning} Failed to analyze \`${fileName}\`. The file might be corrupted.`);
+			await rm(tempPath, { force: true }).catch(() => {});
+			continue;
+		}
+
+		if (duration > maxTime) {
+			await rm(tempPath, { force: true }).catch(() => {});
+			channelResponse.push(`${warning} The song \`${fileName}\` is too long! Max length: ${maxTime} seconds`);
+			continue;
+		}
+
+		try {
 			await rename(tempPath, filePath);
-			channelResponse.push(`${success} Successfully uploaded \`${fileName}\`!`);
-			syncSoundFiles(client);
+		}
+		catch (err) {
+			channelResponse.push(`${warning} Failed to move \`${fileName}\`. Terminating...`);
+			continue;
+		}
+		channelResponse.push(`${success} Successfully uploaded \`${fileName}\`!`);
+		await syncSoundFiles(client);
 
-			// Modifying settings if audio is diabled
-			let settingModified = false;
-			const setting = getSetting(client, 'user', senderId);
-			if (!setting) return;
-			if (!setting.enabledJoin && fileName.includes('$join')) {
-				setSetting(client, 'user', senderId, 'enabledJoin', true);
-				settingModified = true;
-			}
-			else if (!setting.enabledLeave && fileName.includes('$leave')) {
-				setSetting(client, 'user', senderId, 'enabledLeave', true);
-				settingModified = true;
-			}
-
-			try {
-				await writeSettingsFile(client);
-			}
-			catch {
-				channelResponse.push(`${warning} An error occurred while writing the settings file, your sound is activated only until the bot restarts!`);
-			}
-
-			if (settingModified) {
-				channelResponse.push(`${success} Your settings have been updated to play the sound!`);
-			}
-		});
+		if (!setting) continue;
+		if (!setting.enabledJoin && (fileName.includes('$join') || !fileName.includes('$leave')) ) {
+			setSetting(client, 'user', senderId, 'enabledJoin', true);
+			settingModified = true;
+		}
+		else if (!setting.enabledLeave && fileName.includes('$leave')) {
+			setSetting(client, 'user', senderId, 'enabledLeave', true);
+			settingModified = true;
+		}
 	}
 
-	console.log('sending channel response', channelResponse);
-	await channel.send(channelResponse.join('\n'));
+	if (settingModified) {
+		try {
+			await writeSettingsFile(client);
+			channelResponse.push(`${success} Your settings have been updated to play the sound!`);
+		}
+		catch {
+			channelResponse.push(`${warning} An error occurred while writing the settings file, your sound is activated only until the bot restarts!`);
+		}
+	}
+
+	// ensure message is not empty
+	if (channelResponse.length === 0) {
+        channelResponse.push(`${warning} No valid files were processed, or other problem occured.`);
+    }
+
+	try {
+		await response.edit(channelResponse.join('\n'));
+	}
+	catch (_) {
+		await channel.send(channelResponse.join('\n'));
+	}
 }
