@@ -1,5 +1,6 @@
 const { readdirSync, existsSync, renameSync, statSync } = require('fs');
 const path = require('path');
+const Fuse = require('fuse.js');
 
 const Client = require('./Client.js');
 const { bot: {prefix}, player: { allowedExtensions }, directories: {userMusicDir, everyoneMusicDir, defaultMusicDir, topMusicDir} } = require('../../config/config.json');
@@ -200,6 +201,7 @@ async function getUserSoundArray(client, userId, type, guildId) {
  * @param {Client} client - The client instance.
  * @param {string} userId - The ID of the user.
  * @param {string} type - The type of sound file ('join', 'leave' or 'all').
+ * @param {string} userId - The ID of the guild.
  * @returns {Promise<Object>} - A promise that resolves to a sound file object.
  */
 const getUserSoundFile = (client, userId, type, guildId) => {
@@ -267,6 +269,90 @@ function findProbabilities(songArray) {
     return [probabilities, probabilitySum];
 }
 
+
+/**
+ * Searches for sound files using prioritly exact match for path or filename, secondarily using fuzzy search.
+ * @param {Object} options - The search options.
+ * @param {Client} options.client - The client instance.
+ * @param {string} options.searchString - The query string to search for.
+ * @param {string|number|null} [options.firstPriorityUserId=null] - The ID of the prioritized user, if any.
+ * @param {boolean} [options.joinFlag=false] - Whether this search should search only for join sounds. Additive with leaveFlag.
+ * @param {boolean} [options.leaveFlag=false] - Whether this search should search only for leave sounds. Additive with joinFlag.
+ * @param {number} [options.threshold=0.35] - Fuzzy search threshold. 0.0 is perfect match, 1.0 is loose. Defaults to 0.35, gives reasonable results.
+ * @returns {{ results: Array<[Object]>, reason: string }} An object containing the Fuse.js search results and the status reason.
+ */
+function searchSoundFiles({client, searchString, firstPriorityUserId = null, joinFlag = false, leaveFlag = false, threshold = 0.35}) {
+    const soundMap = client.soundFiles;
+    
+    const allKeys = Array.from(soundMap.keys());
+    const priorityOrder = [];
+
+    if (soundMap.has(firstPriorityUserId)) priorityOrder.push({ key: firstPriorityUserId, priorityIndex: 1 });
+    allKeys.forEach(k => {
+        if (k !== firstPriorityUserId && k !== 'everyone' && k !== 'default') {
+            priorityOrder.push({ key: k, priorityIndex: 2 });
+        }
+    });
+    if (soundMap.has('everyone')) priorityOrder.push({ key: 'everyone', priorityIndex: 3 });
+    if (soundMap.has('default')) priorityOrder.push({ key: 'default', priorityIndex: 4 });
+
+    const searchablePool = [];
+
+    // single-pass loop for exact match and pool generation at the same time
+    for (const { key, priorityIndex } of priorityOrder) {
+        const filesToSearch = soundMap.get(key);
+        if (!filesToSearch) continue;
+
+        for (const file of filesToSearch) {
+            // remove extension for quality-of-life filename matching
+            const filenameNoExt = file.filename.substring(0, file.filename.lastIndexOf('.')) || file.filename;
+
+            // exact path or exact file name match
+            if (file.path == searchString || file.filename == searchString || filenameNoExt == searchString) {
+                const result = {
+                    results: [{
+                        item: file,
+                        refIndex: 0,
+                        score: 0
+                    }],
+                    reason: 'Exact Match'
+                }
+                return result;
+            }
+
+            // setup for fuzzy search: if no exact match, filter by flags and add to fuzzy pool
+            if (joinFlag && !file.join) continue;
+            if (leaveFlag && !file.leave) continue;
+
+            searchablePool.push({ ...file, priorityIndex });
+        }
+    }
+
+    // fuzzy search fallback (Fuse.js)
+    if (searchablePool.length == 0) {
+        const result = {
+            results: [],
+            reason: 'Not Found'
+        }
+        return result;
+    }
+
+    const fuse = new Fuse(searchablePool, {
+        keys: ['filename'],
+        useTokenSearch: true,
+        threshold: threshold,       // max score the lib will return (0.0 is perfect, 1.0 is loose), no actually idk, but it seems to affect it, 0.35 feels reasonable, gives reasonable results
+        includeScore: true
+    });
+
+    const fuzzyResults = fuse.search(searchString);
+
+    const result = {
+        results: fuzzyResults,
+        reason: 'Fuzzy Search'
+    }
+    return result;
+}
+
 /**
  * Invalidates a sound file by renaming it to a new name with a suffix indicating it has been used.
  * @param {Client} client - The client instance.
@@ -286,6 +372,7 @@ module.exports = {
     getUserSoundFile,
     getUserSoundArray,
     findProbabilities,
+    searchSoundFiles,
     invalidateSoundFile,
     defaultDirComparison,
     everyoneDirComparison,
