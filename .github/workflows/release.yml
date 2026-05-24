@@ -26,6 +26,7 @@ jobs:
           tag_name: version_${{ steps.package-version.outputs.current-version }}
           name: WelcomerBot ${{ steps.package-version.outputs.current-version }}
           generate_release_notes: true # This makes the automatic bulleted list!
+          draft: true # Only create draft release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
