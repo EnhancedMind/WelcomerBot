@@ -135,6 +135,7 @@ function addSoundToList(targetList, filePath, fileName, defaultChance = undefine
         path: filePath,
         filename: fileName,
         chance: finalChance,
+        chanceOrigin: finalChanceOrigin,
         join: fileName.includes('$join') || joinType || !(fileName.includes('$leave') || leaveType),
         leave: fileName.includes('$leave') || leaveType,
         once: fileName.includes('$once') || onceType,
