@@ -1,7 +1,7 @@
 const Event = require('../Structures/Event');
 const { consoleLog } = require('../Data/Log');
 
-const { bot: { prefix, ignoreMessageEndingWithPrefix }, emoji: { error: emojiError }, response: { notValidCommand } } = require('../../config/config.json');
+const { bot: { prefix, ignoreMessageEndingWithPrefix }, emoji: { error: emojiError, warning }, response: { notValidCommand } } = require('../../config/config.json');
 
 
 module.exports = new Event('messageCreate', async (client, message) => {
@@ -26,10 +26,14 @@ module.exports = new Event('messageCreate', async (client, message) => {
 	catch (err) {
         consoleLog(`[ERR] Failed running command "${command.name}":`, err);
         try {
+            const errName = err?.name || 'Error';
+            const errMessage = err?.message || 'An unknown structural error occurred.';
             await message.channel.send([
-                `${emojiError} A fatal error occurred while executing the **${command.name}** command. The operation was aborted.`,
-                `> **Details:** \`${err.name}\`: \`${err.message}\``,
-                `*If this keeps happening, please notify the bot administrator.*`
+                `${emojiError} **The \`${command.name}\` command encountered an unhandled exception and had to stop, though it may be partially completed.**`,
+                `${warning} **Note: Please check current states or files handled by this command before retrying, as some actions may have been partially executed or affected before the failure.**`,
+                ``,
+                `> **Details:** \`${errName}\`: \`${errMessage}\``,
+                `*If you notice broken states or if this keeps happening, please notify the bot administrator.*`
             ].join('\n'));
         }
         catch (sendErr) {
