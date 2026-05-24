@@ -72,11 +72,11 @@ module.exports = new Command({
 
 		if(forceFlag) {
 			await rm(file);
-			await channel.send(`${success} Successfully removed the file ${file} from database`);
+			await channel.send(`${success} Successfully removed the file \`${file}\` from database`);
 		}
 		else {
 			await invalidateSoundFile(client, file);
-			await channel.send(`${success} Successfully invalidated the file ${file}!`);
+			await channel.send(`${success} Successfully invalidated the file \`${file}\`!`);
 		}
 		
 		await syncSoundFiles(client);
