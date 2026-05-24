@@ -190,7 +190,6 @@ async function addSongCore(message, client, targetDir) {
 			continue;
 		}
 		channelResponse.push(`${success} Successfully uploaded \`${fileName}\`!`);
-		await syncSoundFiles(client);
 
 		if (!setting) continue;
 		if (!setting.enabledJoin && (fileName.includes('$join') || !fileName.includes('$leave')) ) {
@@ -202,6 +201,8 @@ async function addSongCore(message, client, targetDir) {
 			settingModified = true;
 		}
 	}
+
+	await syncSoundFiles(client);
 
 	if (settingModified) {
 		try {
@@ -222,6 +223,6 @@ async function addSongCore(message, client, targetDir) {
 		await response.edit(channelResponse.join('\n'));
 	}
 	catch (_) {
-		await channel.send(channelResponse.join('\n'));
+		await channel.send(channelResponse.join('\n')).catch(() => {});
 	}
 }
