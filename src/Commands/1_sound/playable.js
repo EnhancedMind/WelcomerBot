@@ -75,7 +75,6 @@ function resolvePage(message, args) {
 	}
 
 	if (isNaN(page)) {
-		console.log(`User ${message.author.globalName} entered an invalid page argument`)
 		page = 0;
 	}
 
@@ -86,6 +85,7 @@ function resolvePage(message, args) {
  * Find the specified page number or set it to 0
  * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
  * @param {string[]} args - The command arguments.
+ * @param {Client} client - The client instance.
  * @returns {[object[], Discord.user, boolean]} - [array with user's songs if flagged, the user, if the flag was 'personal']
  */
 async function resolveUserFlag(message, args, client) {

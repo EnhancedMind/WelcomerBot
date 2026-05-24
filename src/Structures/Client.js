@@ -28,7 +28,7 @@ class Client extends Discord.Client {
 		 */
 		this.commands = new Discord.Collection();
 		/**
-		 * @type {Discord.Collection<Discord.User.Id, [{ path: string, filename: string, chance: number, chanceOrigin:string ,join:boolean, leave:boolean, once: boolean, valid: boolean}] >}
+		 * @type {Discord.Collection<Discord.User.Id, [{ path: string, filename: string, chance: number, chanceOrigin:string, join:boolean, leave:boolean, once: boolean, valid: boolean}] >}
 		 */
 		this.soundFiles = new Discord.Collection();
 		/** 

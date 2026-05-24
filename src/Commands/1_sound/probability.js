@@ -33,9 +33,10 @@ module.exports = new Command({
 });
 
 /**
- * Find the specified page number or set it to 0
+ * Finds the potential tagged user and join/leave flags in the arguments and returns them.
  * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
  * @param {string[]} args - The command arguments.
+ * @param {Client} client - The client instance.
  * @returns {[ [Object[], Object[]], Discord.user, [ [float[],float], [float[],float] ] ]} - [array with user's songs if flagged, the user, the probabilities for each song]
  */
 function resolveFlags(message, args, client) {
@@ -67,11 +68,21 @@ function resolveFlags(message, args, client) {
     return [taggedUser, joinFlag, leaveFlag];
 }
 
+
+/**
+ * Finds the potential tagged user and join/leave flags in the arguments and returns them.
+ * @param {Client} client - The client instance.
+ * @param {string} taggedUser - The user tagged in the arguments (if any).
+ * @param {boolean} joinFlag - Whether the join flag was triggered.
+ * @param {boolean} leaveFlag - Whether the leave flag was triggered.
+ * @param {string} guildId - The server (guild id) to get the songs for.
+ * @returns {[ Object[], Object[], [float, float], int ] ]} - [array with user's songs, array with corresponding probabilities, sums for join and leave, selfexplanatory]
+ */
 async function getSoundsWithProbabilities(client, taggedUser, joinFlag, leaveFlag, guildId) {
     const eventFlag = joinFlag || leaveFlag;
 
-    const [joinArray, joinProbabilities, joinSum] = (joinFlag || !eventFlag) ? await deleteZeroProbabilityFiles(client, taggedUser, 'join', guildId) : [[],[]];
-    const [leaveArray, leaveProbabilities, leaveSum] = (leaveFlag || !eventFlag) ? await deleteZeroProbabilityFiles(client, taggedUser, 'leave', guildId) : [[],[]];
+    const [joinArray, joinProbabilities, joinSum] = (joinFlag || !eventFlag) ? await getProbabilityAndFiles(client, taggedUser, 'join', guildId) : [[],[]];
+    const [leaveArray, leaveProbabilities, leaveSum] = (leaveFlag || !eventFlag) ? await getProbabilityAndFiles(client, taggedUser, 'leave', guildId) : [[],[]];
 
     const array = [...joinArray,...leaveArray];
     const probabilities = [...joinProbabilities,...leaveProbabilities];
@@ -79,7 +90,13 @@ async function getSoundsWithProbabilities(client, taggedUser, joinFlag, leaveFla
     return [array, probabilities, sums, joinArray.length];
 }
 
-async function deleteZeroProbabilityFiles(client, taggedUser, type, guildId) {
+/**
+ * Finds the potential tagged user and join/leave flags in the arguments and returns them.
+ * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
+ * @param {string[]} args - The command arguments.
+ * @returns {[ Object[], Discord.user, [ [float[],float], [float[],float] ] ]} - [array with user's songs if flagged, the user, the probabilities for each song]
+ */
+async function getProbabilityAndFiles(client, taggedUser, type, guildId) {
     const array = await getUserSoundArray(client, taggedUser, type, guildId);
     const [probabilities,sum] = findProbabilities(array);
     const realProbabilities = probabilities.map(prob => prob/sum);
@@ -101,9 +118,10 @@ async function deleteZeroProbabilityFiles(client, taggedUser, type, guildId) {
  * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
  * @param {Client} client - The client instance.
  * @param {object[]} array - The array of files to print.
+ * @param {object[]} probabilities - The array of corresponding probabilities.
+ * @param {int[]} [sums] - [sumOfJoinProbabilities, sumOfLeaveProbabilities].
+ * @param {int} joinCount - The amount of join files in the array (used for formatting reasons).
  * @param {Discord.user|undefined} taggedUser - The user tagged in the arguments (if any).
- * @param {boolean} personal - If the display is of personal files.
- * @param {boolean} page - Page specified to display first.
  * @returns {null}
  */
 async function printProbability(message, client, array, probabilities, [joinSum, leaveSum], joinCount, taggedUser) {

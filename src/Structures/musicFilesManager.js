@@ -128,16 +128,16 @@ async function syncDirTree(targetList, dirPath, dirTree, chance = undefined, cha
  * @param {boolean} onceType - Whether this sound is marked to be used once
  * @returns {void}
  */
-function addSoundToList(targetList, filePath, fileName, defaultChance = undefined, chanceOrigin = undefined, joinType = false, leaveType = false, onceType = false) { // temporary fix here
+function addSoundToList(targetList, filePath, fileName, defaultChance = undefined, chanceOrigin = undefined, joinType = false, leaveType = false, onceType = false) {
     const finalChance = fileName.includes('$ch=') ? parseFloat(fileName.split('$ch=')[1]) : defaultChance;
     const finalChanceOrigin = finalChance != defaultChance ? fileName : chanceOrigin;
     const soundFileData = {
         path: filePath,
         filename: fileName,
         chance: finalChance,
-        join: fileName.includes('$join') || joinType || !(fileName.includes('$leave') || leaveType), // temporary fix here
-        leave: fileName.includes('$leave') || leaveType, // temporary fix here
-        once: fileName.includes('$once') || onceType, // temporary fix here
+        join: fileName.includes('$join') || joinType || !(fileName.includes('$leave') || leaveType),
+        leave: fileName.includes('$leave') || leaveType,
+        once: fileName.includes('$once') || onceType,
         valid: !fileName.includes('$used')
     };
     targetList.push(soundFileData);
