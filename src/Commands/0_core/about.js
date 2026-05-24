@@ -35,6 +35,6 @@ module.exports = new Command({
 				text: `Last restart: ${new Date(client.readyAt).toLocaleString(timeFormat)}`
 			});
 
-		message.channel.send({ embeds: [ embed ] });
+		await message.channel.send({ embeds: [ embed ] });
 	}
 });

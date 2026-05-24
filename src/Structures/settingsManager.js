@@ -3,7 +3,7 @@ const path = require('path');
 
 const Client = require('./Client.js');
 const { consoleLog } = require('../Data/Log.js');
-const { exists } = require('../Utils/fsUtils.js');
+const { exists } = require('../utils/fsUtils.js');
 
 //const settingsFilePath = path.join(__dirname, `../../config/settings.json`);
 const settingsFilePath = './config/settings.json';

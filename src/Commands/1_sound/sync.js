@@ -12,6 +12,6 @@ module.exports = new Command({
 		const response = await message.channel.send(`${loading} Syncing sound files...`);
 		await syncSoundFiles(client);
 
-		if ( (await response.channel.messages.fetch({ limit: 1, cache: false, around: response.id })).has(response.id) ) response.edit(`${success} Sound database updated!`);
+		response.edit(`${success} Sound database updated!`).catch(() => {});
 	}
 });

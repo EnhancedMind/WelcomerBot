@@ -333,6 +333,7 @@ function searchSoundFiles({client, searchString, firstPriorityUserId = null, joi
     const fuse = new Fuse(searchablePool, {
         keys: ['filename'],
         useTokenSearch: true,
+        tokenize: /[\p{L}\p{M}\p{N}]+/gu,  // default for Fuse.js, but also seperate by underscores, (default:   /[\p{L}\p{M}\p{N}_]+/gu   )
         threshold: threshold,       // max score the lib will return (0.0 is perfect, 1.0 is loose), no actually idk, but it seems to affect it, 0.35 feels reasonable, gives reasonable results
         includeScore: true
     });

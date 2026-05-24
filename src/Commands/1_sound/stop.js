@@ -11,11 +11,11 @@ module.exports = new Command({
 	description: 'Stops and disconnects the audio player.',
 	async run(message, args, client) {
 		const connection = getVoiceConnection(message.guild.id);
-		if (!connection) return message.channel.send(`${warning} ${noMusic}`);
+		if (!connection) return await message.channel.send(`${warning} ${noMusic}`);
 
-		if (( !message.member.voice.channel || connection.joinConfig.channelId != message.member.voice.channel.id ) && !message.member.permissions.has(PermissionsBitField.Flags.ManageChannels) && message.author.id != ownerID) return message.channel.send(`${warning} ${wrongChannel}`);
+		if (( !message.member.voice.channel || connection.joinConfig.channelId != message.member.voice.channel.id ) && !message.member.permissions.has(PermissionsBitField.Flags.ManageChannels) && message.author.id != ownerID) return await message.channel.send(`${warning} ${wrongChannel}`);
 
 		client.playerManager.disconnect(message.guild.id);
-		message.channel.send(`'${success} The player has stopped.`);
+		await message.channel.send(`'${success} The player has stopped.`);
 	}
 });

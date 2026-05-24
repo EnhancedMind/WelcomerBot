@@ -1,15 +1,15 @@
 const { ReactionCollector, Message, EmbedBuilder } = require("discord.js");
 
 // based on npm package saanuregh/discord.js-pagination which is outdated
-    /**
-     * 
-     * @param {Message} msg (Discord.js message)
-     * @param {EmbedBuilder} pages (array of Discord.js EmbedBuilders)
-     * @param {String} messageContent (content of the message)
-     * @param {Number} page (current page)
-     * @param {Array} emojiList (defaults to [ '◀️', '▶️', '⏹️' ] )
-     * @param {number} timeout (default to 90 seconds)
-     */
+/**
+ * 
+ * @param {Message} msg (Discord.js message)
+ * @param {EmbedBuilder} pages (array of Discord.js EmbedBuilders)
+ * @param {String} messageContent (content of the message)
+ * @param {Number} page (current page)
+ * @param {Array} emojiList (defaults to [ '◀️', '▶️', '⏹️' ] )
+ * @param {number} timeout (default to 90 seconds)
+ */
 const paginator = async (msg, pages, messageContent = null, page = 0, emojiList = [ '◀️', '▶️', '⏹️' ], timeout = 90000) => {
     if (!msg && !msg.channel) throw new Error("Channel is inaccessible.");
     if (!pages) throw new Error("Pages are not given.");
@@ -24,15 +24,13 @@ const paginator = async (msg, pages, messageContent = null, page = 0, emojiList 
     const curPage = await msg.channel.send({ content: messageContent, embeds: [pages[page].setFooter({ text: `Page ${page + 1} / ${pages.length}` })] });
     if (pages.length == 1) return;
 
-    let allEmoji = false;
     const react = async () => {
         for (const emoji of emojiList) {
-            if ( (await curPage.channel.messages.fetch({ limit: 1, cache: false, around: curPage.id })).has(curPage.id) ) curPage.react(emoji);
+            curPage.react(emoji).catch(() => {});
             await new Promise(resolve => setTimeout(resolve, 750));
         } 
-        allEmoji = true;
     }
-    react();
+    const allReactionsSubmittedPromise = react();
 
     const filter = (reaction, user) => emojiList.includes(reaction.emoji.name) && user.bot == false;
 
@@ -42,7 +40,7 @@ const paginator = async (msg, pages, messageContent = null, page = 0, emojiList 
     collector.on('collect', async (reaction, user) => {
         if (reaction.count < 2) return;
 
-        reaction.users.remove(user);
+        reaction.users.remove(user).catch(() => {});
 
         if (user != msg.author) return;
 
@@ -60,14 +58,13 @@ const paginator = async (msg, pages, messageContent = null, page = 0, emojiList 
                 break;
 		}
         collector.resetTimer();
-        if ( (await curPage.channel.messages.fetch({ limit: 1, cache: false, around: curPage.id })).has(curPage.id) ) curPage.edit({ content: messageContent, embeds: [pages[page].setFooter({ text: `Page ${page + 1} / ${pages.length}` })] });
+        curPage.edit({ content: messageContent, embeds: [pages[page].setFooter({ text: `Page ${page + 1} / ${pages.length}` })] }).catch(() => {});
     });
 
     collector.on('end', async (_, reason) => {
         if (reason.endsWith('Delete')) return;
-        //wait for allEMoji to be true
-		while (!allEmoji) await new Promise(resolve => setTimeout(resolve, 100));
-        curPage.reactions.removeAll();
+		await allReactionsSubmittedPromise;
+        curPage.reactions.removeAll().catch(() => {});
     });
 }
 

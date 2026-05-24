@@ -14,23 +14,21 @@ module.exports = new Command({
 	async run(message, args, client) {
         const senderId = message.author.id;
         const permissionFail = senderId != ownerID && !devIDs.includes(senderId) && !message.member.permissions.has(PermissionsBitField.Flags.Administrator);
-		if (permissionFail) return message.channel.send(`${warning} ${invalidPermissions} (Administrator)`);
-        if (!args[0]) return message.channel.send(`${warning} ${missingArguments}`);
-        if (isNaN(args[0])) return message.channel.send(`${warning} ${invalidNumber}`);
-        if (args[0] > 99 || args[0] < 1) return message.channel.send(`${warning} Outside of number range!`);
-        if (args[0] != args[1]) return message.channel.send(`${warning} Invalid confirmation!`);
+		if (permissionFail) return await message.channel.send(`${warning} ${invalidPermissions} (Administrator)`);
+        if (!args[0]) return await message.channel.send(`${warning} ${missingArguments}`);
+        if (isNaN(args[0])) return await message.channel.send(`${warning} ${invalidNumber}`);
+        if (args[0] > 99 || args[0] < 1) return await message.channel.send(`${warning} Outside of number range!`);
+        if (args[0] != args[1]) return await message.channel.send(`${warning} Invalid confirmation!`);
 
         const response = await message.channel.send(`${warning} Are you sure you want to delete ${args[0]} messages from all users?`);
 
-        let allEmoji = false;
         const react = async () => { 
             for (const emoji of emojiList) {
-                if ( (await response.channel.messages.fetch({ limit: 1, cache: false, around: response.id })).has(response.id) ) response.react(emoji); 
+                response.react(emoji).catch(() => {}); 
                 await new Promise(resolve => setTimeout(resolve, 750));
             } 
-            allEmoji = true;
         }
-        react();
+        const allReactionsSubmittedPromise = react();
 
         const filter = (reaction, user) => (emojiList.includes(reaction.emoji.name)) && user.bot == false;
 
@@ -41,21 +39,20 @@ module.exports = new Command({
                 case emojiList[0]:
                     const result = await message.channel.messages.fetch({limit: args[0]});
                     result.delete(result.firstKey());  //remove the response message from the bulk delete
-                    message.channel.bulkDelete(result);
+                    message.channel.bulkDelete(result).catch(() => {});
 
-                    if ( (await response.channel.messages.fetch({ limit: 1, cache: false, around: response.id })).has(response.id) ) response.edit(`${success} Deleting ${args[0]} messages`);
+                    response.edit(`${success} Deleting ${args[0]} messages`).catch(() => {});
                     setTimeout(async () => {
-                        if ( (await response.channel.messages.fetch({ limit: 1, cache: false, around: response.id })).has(response.id) ) response.delete()
+                        response.delete().catch(() => {});
                     }, 3750);
 
                     collector.stop();
                     break;
 
                 case emojiList[1]:
-                    //wait for allEMoji to be true
                     collector.stop();
-                    while (!allEmoji) await new Promise(resolve => setTimeout(resolve, 100));
-                    if ( (await response.channel.messages.fetch({ limit: 1, cache: false, around: response.id })).has(response.id) )  response.reactions.removeAll();
+                    await allReactionsSubmittedPromise;
+                    response.reactions.removeAll().catch(() => {});
                     break;
             }
         });

@@ -55,12 +55,12 @@ module.exports = new Command({
 
         const senderVoiceChannel = message.member.voice.channel;
 
-        if (!args[0]) return message.channel.send(`${warning} ${missingArguments}`);
-        if (!senderVoiceChannel) return message.channel.send(`${warning} ${noChannel}`);
-        if (senderVoiceChannel.id == message.guild.afkChannelId) return message.channel.send(`${warning} ${afkChannel}`);
+        if (!args[0]) return await message.channel.send(`${warning} ${missingArguments}`);
+        if (!senderVoiceChannel) return await message.channel.send(`${warning} ${noChannel}`);
+        if (senderVoiceChannel.id == message.guild.afkChannelId) return await message.channel.send(`${warning} ${afkChannel}`);
 
-        const currentConnection = getVoiceConnection(message.guild.id);
-        if (currentConnection && currentConnection.joinConfig.channelId != senderVoiceChannel.id) return message.channel.send(`${warning} ${wrongChannel}`);
+        const currentConnection = await getVoiceConnection(message.guild.id);
+        if (currentConnection && currentConnection.joinConfig.channelId != senderVoiceChannel.id) return await message.channel.send(`${warning} ${wrongChannel}`);
 
         const response = await message.channel.send(`${searching} Searching for \`[${searchString}]\``);
 
@@ -75,7 +75,7 @@ module.exports = new Command({
         const embed = new EmbedBuilder()
             .setColor(0x3399FF)
             .setTitle('Search Results')
-            .setDescription(results.map((item, index) => `${emojiListSource[index]}**${item.item.filename}**`).join('\n'));
+            .setDescription(results.map((item, index) => `${emojiListSource[index]}**\`${item.item.filename}\`**`).join('\n'));
 
         response.edit({ content: `${success} Search results for \`${args.join(' ')}\`:`, embeds: [embed] }).catch(() => {});
 
@@ -98,20 +98,20 @@ module.exports = new Command({
         collector.on('collect', async (reaction, user) => {
             if (reaction.count < 2) return;
 
-            reaction.users.remove(user);
+            reaction.users.remove(user).catch(() => {});
 
             if (user != message.author) return;
 
             const index = emojiList.indexOf(reaction.emoji.name);
             if (index == emojiList.length - 1) {
                 response.edit({ content:`${success} Cancelled search.`, embeds: [] }).catch(() => {});
-                collector.stop();
+                collector.stop().catch(() => {});
                 return;
             }
 
             client.playerManager.play(client, senderVoiceChannel, { path: results[index].item.path });
             response.edit({ content: `${success} Playing **\`${results[index].item.filename}\`** (${searchResult.reason})`, embeds: [] }).catch(() => {});
-            collector.stop();
+            collector.stop().catch(() => {});
         });
 
         collector.on('end', async (_, reason) => {

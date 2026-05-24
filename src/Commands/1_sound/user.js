@@ -15,7 +15,7 @@ module.exports = new Command({
             const modifiedArg = arg.replace(/[<@!>]/g, '');
             if (!isNaN(modifiedArg) && (modifiedArg.length == 18 || modifiedArg.length == 19)) {
                 member = modifiedArg;
-                if (args.length > 1 && message.author.id != ownerID && !devIDs.includes(message.author.id)) return message.channel.send(`${error} ${invalidPermissions} (Bot owner)`);
+                if (args.length > 1 && message.author.id != ownerID && !devIDs.includes(message.author.id)) return await message.channel.send(`${error} ${invalidPermissions} (Bot owner)`);
                 break;
             }
         }
@@ -53,11 +53,14 @@ module.exports = new Command({
                 }
             }
 
-            writeSettingsFile(client).catch(err => {
-                message.channel.send(`${error} An error occured while writing the settings file, the settings are only applied until the bot restarts!`);
-            });
+            try {
+                await writeSettingsFile(client)
+            }
+            catch (err) {
+                await message.channel.send(`${error} An error occured while writing the settings file, the settings are only applied until the bot restarts!`);
+            }
         }
         
-        message.channel.send(`${success} The current settings for this user are:\n\`\`\`\n${JSON.stringify(getSetting(client, 'user', member), null, 4)} \n\`\`\``);
+        await message.channel.send(`${success} The current settings for this user are:\n\`\`\`\n${JSON.stringify(getSetting(client, 'user', member), null, 4)} \n\`\`\``);
 	}
 });
