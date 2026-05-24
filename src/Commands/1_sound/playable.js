@@ -237,5 +237,7 @@ async function printPlayable(message, client, array, taggedUser, personal, page)
 		embeds[0].setDescription(`**Here are all the files that can be played by the bot:**\n\`\`\`🎶 Everyone files: ${everyoneCount}\n🎶 Default files: ${defaultCount}\n🎶 User files: ${userCount}\`\`\``);
 	}
 
-	paginator(message, embeds, null, page);
+	paginator(message, embeds, null, page).catch(async (err) => {
+		await message.channel.send('The paginator failed.');
+	});;
 }

@@ -11,7 +11,7 @@ const { ReactionCollector, Message, EmbedBuilder } = require("discord.js");
  * @param {number} timeout (default to 90 seconds)
  */
 const paginator = async (msg, pages, messageContent = null, page = 0, emojiList = [ '◀️', '▶️', '⏹️' ], timeout = 90000) => {
-    if (!msg && !msg.channel) throw new Error("Channel is inaccessible.");
+    if (!msg || !msg.channel) throw new Error("Channel is inaccessible.");
     if (!pages) throw new Error("Pages are not given.");
     if (emojiList[0].style === "LINK" || emojiList[1].style === "LINK" || emojiList[2].style === "LINK")
         throw new Error("Link buttons are not supported'");

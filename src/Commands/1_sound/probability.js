@@ -28,7 +28,7 @@ module.exports = new Command({
         const [taggedUser, joinFlag, leaveFlag] = resolveFlags(message, args, client);
         if(taggedUser === undefined) return; // Nonexistent user tagged
         const [array, probabilities, sums, joinCount] = await getSoundsWithProbabilities(client, taggedUser, joinFlag, leaveFlag, message.guildId);
-        printProbability(message, client, array, probabilities, sums, joinCount, taggedUser);
+        await printProbability(message, client, array, probabilities, sums, joinCount, taggedUser);
     }
 });
 
@@ -143,7 +143,7 @@ async function printProbability(message, client, array, probabilities, [joinSum,
                 });
         }
         const sum = (i < joinCount) ? joinSum : leaveSum;
-        const origin = array[i].chanceOrigin ? array[i].chanceOrigin : 'Defined by the remainder';
+        const origin = array[i].chanceOrigin ? array[i].chanceOrigin.replaceAll('_', '\\_') : 'Defined by the remainder';
         embeds[j].addFields({
             name: `\`${array[i].filename}\``,
             value: `${(i < joinCount) ? 'Join' : 'Leave'} probability: ${ (probabilities[i]*100).toFixed(2) }% - (Reason: ${origin})`,
@@ -154,7 +154,7 @@ async function printProbability(message, client, array, probabilities, [joinSum,
         embeds[0] = new EmbedBuilder()
         .setColor(0x3399FF)
         .setAuthor({
-            name: embedHeadline,
+            name: `${targetName}'s songs!`,
             url: homepage,
             iconURL: client.user.displayAvatarURL({ size: 1024, dynamic: true })
         });
@@ -162,5 +162,7 @@ async function printProbability(message, client, array, probabilities, [joinSum,
         
     embeds[0].setDescription(`**Here are the probabilities for ${targetName}:**`);
 
-    paginator(message, embeds, null, 0);
+    paginator(message, embeds, null, 0).catch(async (err) => {
+        await message.channel.send('The paginator failed.');
+    });
 }
