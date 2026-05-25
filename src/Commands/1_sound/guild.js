@@ -2,7 +2,7 @@ const Command = require('../../Structures/Command.js');
 
 const { PermissionsBitField } = require('discord.js');
 const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/settingsManager.js');
-const { bot: { ownerID }, emoji: { success }, response: { invalidPermissions } } = require('../../../config/config.json');
+const { bot: { ownerID }, emoji: { success, error }, response: { invalidPermissions } } = require('../../../config/config.json');
 
 
 module.exports = new Command({
