@@ -294,8 +294,41 @@ async function getUserPath(client, targetId) {
     return userDirPath;
 }
 
+/**
+ * Returns the duration of a file with ffprobe, or rejects with an error.
+ * @param {string} inputPath - The path of the file.
+ * @returns {Promise<number>} The duration in seconds.
+ */
+async function getFileDuration(inputPath) {
+    return new Promise((resolve, reject) => {
+        const ffprobeProcess = spawn(`ffprobe`, [
+            '-i', path.resolve(inputPath), //input file
+            '-show_entries', 'format=duration', //only show duration
+            '-v', 'quiet', //prevent output spam
+            '-of', 'csv=p=0' //output only the duration in seconds 
+            ]
+        );
 
+        let output = '';
 
+        ffprobeProcess.stdout.on('data', (data) => {
+            output += data.toString();
+        });
+
+        ffprobeProcess.on('close', (code) => {
+            if (code == 0) {
+                const duration = parseFloat(output);
+                if (isNaN(duration)) reject(new Error('Failed to parse duration from ffprobe output'));
+                else resolve(duration);
+            }
+            else {
+                reject(new Error(`ffprobe exited with code ${code}`));
+            }
+        });
+
+        ffprobeProcess.on('error', (err) => reject(err));
+    });
+}
 
 /**
  * Searches for sound files using prioritly exact match for path or filename, secondarily using fuzzy search.
@@ -401,6 +434,7 @@ module.exports = {
     getUserSoundArray,
     findProbabilities,
     getUserPath,
+    getFileDuration,
     searchSoundFiles,
     invalidateSoundFile,
     defaultDirComparison,
