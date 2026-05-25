@@ -263,6 +263,39 @@ function findProbabilities(songArray) {
     return [probabilities, probabilitySum];
 }
 
+/**
+ * Get the users directory for usersounds, or creates it if non-existent
+ * @param {Client} client - The client instance.
+ * @param {string} targetId - The id of the user
+ * @returns {string} The relative path to the user directory
+ */
+async function getUserPath(client, targetId) {
+    const userDirReader = await readdir(userMusicDir);
+
+    // Attempting to find users directory
+    let fileOrDir = undefined;
+    for(fileOrDir of userDirReader) {
+        if(!fileOrDir.startsWith(targetId)) { // Check if fileOrDir matches the user ID pattern
+            fileOrDir = undefined;
+            continue;
+        } 
+        if((await stat(path.join(userMusicDir, fileOrDir))).isDirectory()) break; // User's directory found
+        fileOrDir = undefined;
+    }
+
+    const dirTag = (fileOrDir === undefined) ? (await client.users.fetch(targetId)).globalName : ''; // awesome oneliner to avoid API call if user alreay has a dir, im so proud of myself - EnhancedMind
+    const userDirName = (fileOrDir !== undefined) ? fileOrDir : `${targetId}_${dirTag}`;
+    const userDirPath = path.join(userMusicDir, userDirName);
+
+    if(fileOrDir === undefined) {
+        await mkdir(userDirPath, { recursive: true });
+    }
+
+    return userDirPath;
+}
+
+
+
 
 /**
  * Searches for sound files using prioritly exact match for path or filename, secondarily using fuzzy search.
@@ -367,6 +400,7 @@ module.exports = {
     getUserSoundFile,
     getUserSoundArray,
     findProbabilities,
+    getUserPath,
     searchSoundFiles,
     invalidateSoundFile,
     defaultDirComparison,
