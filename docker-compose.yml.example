@@ -1,11 +1,26 @@
 services:
   welcomerbot:
-    image: 'your image goes here'
+    image: ghcr.io/enhancedmind/welcomerbot:latest
     container_name: welcomerbot
     environment:
       - TZ=Europe/Prague # set your timezone here, used for timestamping logs and responses to commands
+    ports:
+      - 3000:3000
     volumes:   # these 3 volumes have to be mapped inside the container, theoretically logs are optional. (host:container)
       - ~/docker/welcomerbot/config/:/app/config/
       - ~/docker/welcomerbot/logs/:/app/logs/
       - ~/docker/welcomerbot/music/:/app/music/
+    restart: unless-stopped
+
+  filebrowser:
+    image: filebrowser/filebrowser:s6
+    container_name: welcomerbot-filebrowser
+    environment:
+      - TZ=Europe/Prague
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ~/docker/welcomerbot/music/:/srv
+      - ~/docker/welcomerbot/config/filebrowser/config:/config
+      - ~/docker/welcomerbot/config/filebrowser/database:/database
     restart: unless-stopped

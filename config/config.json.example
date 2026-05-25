@@ -45,6 +45,15 @@
         "tempMusicDir": "./music/temp",
         "topMusicDir": "./music"
     },
+    "filebrowser": {
+        "enabled": false,
+        "port": 3000,
+        "filebrowserUrl": "http://ip:port",
+        "filebrowserApiUrl": "http://ip:port/api",
+        "cookieName": "fbWelcomerSession",
+        "sessionLifetimeMinutes": 5,
+        "externalDomain": "https://example.com",
+    },
     "logs": {
         "resetLogOnStart": true,
         "logToFile": false,

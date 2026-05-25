@@ -16,7 +16,8 @@ const { readdirSync } = require('fs');
 const { initLog, fileLog, consoleLog } = require('../Data/Log');
 const { readSettingsFile } = require('./settingsManager.js');
 const { syncSoundFiles } = require('./musicFilesManager.js');
-const { bot: { token } } = require('../../config/config.json');
+const { initProxyServer } = require('./Web/server.js')
+const { bot: { token }, filebrowser: { enabled: fbEnabled } } = require('../../config/config.json');
 
 
 class Client extends Discord.Client {
@@ -72,6 +73,9 @@ class Client extends Discord.Client {
 				fileLog(`[INFO] Event ${event.event} loaded`)
 				this.on(event.event, event.run.bind(null, this));
 			});
+
+		if (fbEnabled) initProxyServer(this);
+		else consoleLog('[INFO] Filebrowser is disabled');
 
         this.login(token);
     }

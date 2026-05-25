@@ -14,5 +14,6 @@ run.sh
 src/notes.md
 music/
 logs/
+config/
 .env
 *.removedfromdocker

@@ -12,10 +12,14 @@ test*
 src/Events/resume.js
 src/Commands/4_fun/
 .vscode/
-config/
-!config/*.example
+config/**
+!config/**/
+!config/**/**/
+!*.example
 *.old*
 .VSCodeCounter
 nodemon.json
 musicold/
 *.eol
+*.exe
+start*.bat

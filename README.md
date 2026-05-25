@@ -61,6 +61,24 @@ The options can be combined. For example `$ch=0.5_$once_exampleComment.extension
 You can also specify `$join` and `$leave` at the same time. For example `$join_$leave_exampleComment.extension` will have a chance for being selected for both join and leave sound.  
 <br><br>
 
+## Filebrowser management
+
+Also, with the new web management, users can use the `webmanage` command to get a expiring unique link to a filebrowser instance pointed to the music folder, where each user will be restricted only to their personal files, unless they are an admin or a developer who used a coresponding flag.  
+
+The filebrowser instance must be set up externally, and point to the same music folder as welcomer bot. The bot comunicates with filebrowser via its api to dynamically set users with restrcited access only to their personal files.  
+The recommended config setup for filebrowser is:  
+```bash
+filebrowser config import config/filebrowser/config/settings.json -d config/filebrowser/database/filebrowser.db
+filebrowser -d config/filebrowser/database/filebrowser.db users add admin adminpassword --perm.admin=true
+```
+
+Alternatively, if you don't want to use the provided filebrowser config, you can use  
+```bash
+filebrowser config set -d filebrowserdbfile.db --root .\\music --auth.method=proxy --auth.header=X-Welcomer-User --branding.name "Welcomer bot file manager" --branding.disableExternal --branding.disableUsedPercentage --tokenExpirationTime 10m
+```
+
+For setup in docker see the provided docker-compose.yml file.  
+<br><br>
 
 ## Configuration
 Copy the `config.json.example` in the config folder and rename it to `config.json`  
@@ -111,6 +129,15 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
         "defaultMusicDir": "./music/default",
         "tempMusicDir": "./music/temp",
         "topMusicDir": "./music"
+    },
+    "filebrowser": {
+        "enabled": false,
+        "port": 3000,
+        "filebrowserUrl": "http://ip:port",
+        "filebrowserApiUrl": "http://ip:port/api",
+        "cookieName": "fbWelcomerSession",
+        "sessionLifetimeMinutes": 5,
+        "externalDomain": "https://example.com",
     },
     "logs": {
         "resetLogOnStart": true,
@@ -169,6 +196,15 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
 - `directories.topMusicDir`: the base directory for the above, limiting the scope of what song commands can change  
 <br>
 
+- `filebrowser.enabled`: whether the filebrowser reverse proxy and handlers are enabled, this includes webmanage command being enabled or not  
+- `filebrowser.port`: the port on which the reverse proxy will be exposed  
+- `filebrowser.filebrowserUrl`: the url of the filebrowser instance, like "http://127.0.0.1:3000"  
+- `filebrowser.filebrowserApiUrl`: the url where the filebrowser api will be accessible, like "http://127.0.0.1:3000/api"  
+- `filebrowser.cookieName`: the name of the cookie provided by the user, reccomended not to change  
+- `filebrowser.sessionLifetimeMinutes`: the lifetime of the session after which user will be disconnected for inactivity  
+- `filebrowser.externalDomain`: the external domain provided in the user message, like "https://example.com"  
+<br>
+
 - `logs.resetLogOnStart`: whether to clear the session log on start or continue at the end of the file  
 - `logs.logToFile`: whether to log to a file or only to the console  
 - `logs.timeFormat`: the time format that will be used for the logs - [en-US](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/DateTimeFormat)  
@@ -177,7 +213,7 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
 
 ## Instalation
 To use the project you will need:  
-[Node JS v20.12.0 or newer](https://nodejs.org/en/), but I recommend using the latest LTS version.  
+[Node JS v20.12.0 or newer (current lts recommended)](https://nodejs.org/en/), but I recommend using the latest LTS version.  
 You will also need ffmpeg and ffprobe installed on your system and added to the PATH. You can download them from [ffmpeg official website](https://ffmpeg.org/download.html). They are already included in the docker image.  
 <br>
 
