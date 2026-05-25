@@ -160,12 +160,16 @@ async function play(client, voiceChannel, file, delay = 0) {
                 ]
             });
 
-            ffmpegProcess.on('close', (code) => {
-                if (code !== 0) throw new Error(`ffmpeg exited with code ${code}`);
+            ffmpegProcess.on('close', (code, signal) => {
+                if (code !== 0 && signal !== 'SIGKILL') { // with SIGKILL code will be null
+                    consoleLog(`[ERR] FFmpeg exited with code ${code}, disconnecting...`);
+                    disconnect(guildId);
+                }
             });
 
             ffmpegProcess.on('error', (err) => {
-                throw err
+                consoleLog(`[ERR] FFmpeg process error:\n`, err);
+                disconnect(guildId);
             });
 
             currentSession.ffmpegProcess = ffmpegProcess;
