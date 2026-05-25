@@ -178,7 +178,7 @@ async function ensureUserExists(username, scopePath) {
         consoleLog(`[INFO] Jailed account layout for filebrowser user "${username}" cleanly created.`);
     }
     catch (error) {
-        consoleLrror(`[ERROR] Error while creating filebrowser user`, error);
+        consoleLog(`[ERROR] Error while creating filebrowser user`, error);
         throw new Error(error);
     }
 }
