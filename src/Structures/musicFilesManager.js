@@ -1,6 +1,7 @@
 const { readdir, rename, stat } = require('fs/promises');
 const path = require('path');
 const Fuse = require('fuse.js');
+const { spawn } = require('child_process');
 
 const Client = require('./Client.js');
 const { exists } = require('../utils/fsUtils.js');
