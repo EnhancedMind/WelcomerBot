@@ -271,6 +271,19 @@ function findProbabilities(songArray) {
  * @returns {string} The relative path to the user directory
  */
 async function getUserPath(client, targetId) {
+    const userFiles = client.soundFiles.get(targetId);
+    const baseLen = userDirComparison.split(path.sep).filter(Boolean).length;
+
+    for (const item of userFiles) {
+        const segments = item.path.split(path.sep).filter(Boolean);
+        if (segments.length >= baseLen + 2) {
+            const targetDir = segments[baseLen];
+            if (targetDir.startsWith(targetId)) {
+                return path.join(...segments.slice(0, baseLen + 1)) + path.sep;
+            }
+        }
+    }
+
     const userDirReader = await readdir(userMusicDir);
 
     // Attempting to find users directory
