@@ -2,6 +2,7 @@ const http = require('http');
 const crypto = require('crypto');
 const path = require('path');
 const { rm } = require('fs/promises');
+const { readFileSync } = require('fs');
 
 const { consumeLoginToken } = require('./tokenStore');
 const { consoleLog } = require('../../Data/Log');
@@ -12,6 +13,9 @@ const { emoji: { warning }, player: { maxTime }, filebrowser: { port, filebrowse
 
 const cookieSecret = crypto.randomBytes(64).toString('hex');
 const isProd = process.env.NODE_ENV == 'production';
+
+const htmlPath = path.join(__dirname, 'login.html');
+const loginHtmlContent = readFileSync(htmlPath, 'utf8');
 
 
 // cryptographic cookie helpers
@@ -84,8 +88,14 @@ function initProxyServer(client) {
         const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
         const pathname = parsedUrl.pathname;
 
-        // login route with token
+        // scrapers dont usually run js, so a file with js is servered that validates the token with POST request, not get
         if (pathname === '/proxylogin' && req.method === 'GET') {
+            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+            return res.end(loginHtmlContent);
+        }
+
+        // login route with token
+        if (pathname === '/proxylogin/verify' && req.method === 'POST') {
             const token = parsedUrl.searchParams.get('token');
             
             if (!token) {
@@ -103,8 +113,8 @@ function initProxyServer(client) {
             // issue signed secure session cookie string manually
             const signedCookie = signUser(fbUser);
             
-            res.writeHead(302, {
-                'Location': '/',
+            res.writeHead(200, {
+                'Content-Type': 'text/plain',
                 'Set-Cookie': `${cookieName}=${signedCookie}; Path=/; HttpOnly; SameSite=Strict${isProd ? '; Secure' : ''}`
             });
             return res.end();
@@ -146,7 +156,6 @@ function initProxyServer(client) {
 
             // rires when data pipeline with File Browser concludes cleanly
             proxyRes.on('end', async () => {
-
                 if (verifiedUser == 'admin' || verifiedUser == 'developer') return;
                 
                 // Catch successful TUS protocol chunks stream completions
