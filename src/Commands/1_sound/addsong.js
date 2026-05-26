@@ -17,7 +17,7 @@ const path = require('path');
 const { exists } = require('../../utils/fsUtils.js');
 const { consoleLog } = require('../../Data/Log.js');
 const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/settingsManager.js');
-const { syncSoundFiles, defaultDirComparison, everyoneDirComparison } = require('../../Structures/musicFilesManager.js');
+const { syncSoundFiles, getUserPath, getFileDuration, defaultDirComparison, everyoneDirComparison } = require('../../Structures/musicFilesManager.js');
 
 const helpText = 
 `This command allows you to add a song to your library in the database.
@@ -64,49 +64,19 @@ module.exports = new Command({
 			let userId;
 			if (args[1].startsWith('<@') && args[1].endsWith('>')) {
 				userId = args[1].replace(/[<@!>]/g, '');
-				await addUserSong(message, client, userId)
+				const userPath = await getUserPath(client, userId);
+				await addSongCore(message, client, userPath)
 			}
 			else {
 				return await channel.send(`${warning} user ${args[1]} is not a valid user.`);
 			}
 		}
 		else { // Typical user file
-			await addUserSong(message, client, senderId)
+			const userPath = await getUserPath(client, senderId);
+			await addSongCore(message, client, userPath)
 		}
 	}
 });
-
-/**
- * Adds a song from message to the user with id targetId
- * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
- * @param {Client} client - The client instance.
- * @param {string} targetId - The id of the user to add this file to.
- * @returns {void}
- */
-async function addUserSong(message, client, targetId) {
-	const userDirReader = await readdir(userMusicDir);
-
-	// Attempting to find users directory
-	let fileOrDir = undefined;
-	for(fileOrDir of userDirReader) {
-		if(!fileOrDir.startsWith(targetId)) { // Check if fileOrDir matches the user ID pattern
-			fileOrDir = undefined;
-			continue;
-		} 
-		if((await stat(path.join(userMusicDir, fileOrDir))).isDirectory()) break; // User's directory found
-		fileOrDir = undefined;
-	}
-
-	const dirTag = (fileOrDir === undefined) ? (await client.users.fetch(targetId)).globalName : ''; // awesome oneliner to avoid API call if user alreay has a dir, im so proud of myself - EnhancedMind
-	const userDirName = (fileOrDir !== undefined) ? fileOrDir : [targetId, dirTag].join('_');
-	const userDirPath = path.join(`${userMusicDir}`, `${userDirName}`);
-
-	if(fileOrDir === undefined) {
-		await mkdir(`${userDirPath}`, { recursive: true });
-	}
-
-	await addSongCore(message, client, userDirPath);
-}
 
 /**
  * Adds a song from message to the target directory
@@ -148,26 +118,7 @@ async function addSongCore(message, client, targetDir) {
 
 		let duration;
 		try {
-			duration = await new Promise((resolve, reject) => {
-				const ffprobeProcess = spawn(`ffprobe`, [
-					'-i', tempPath, //input file
-					'-show_entries', 'format=duration', //only show duration
-					'-v', 'quiet', //prevent output spam
-					'-of', 'csv=p=0' //output only the duration in seconds 
-					]
-				);
-
-				ffprobeProcess.stdout.on('data', async (data) => {
-					const duration = parseFloat(data);
-					resolve(duration);
-				});
-
-				ffprobeProcess.on('close', (code) => {
-                    if (code !== 0) reject(new Error(`ffprobe exited with code ${code}`));
-                });
-
-				ffprobeProcess.on('error', (err) => reject(err));
-			});
+			duration = await getFileDuration(tempPath);
 		}
 		catch (err) {
 			consoleLog(`[ERR] Failed analyzing ${fileName}:`, err);
