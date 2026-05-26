@@ -12,6 +12,31 @@ services:
       - ~/docker/welcomerbot/music/:/app/music/
     restart: unless-stopped
 
+  filebrowser-init:
+    image: filebrowser/filebrowser:s6
+    container_name: welcomerbot-filebrowser-init
+    user: "1000:1000"
+    environment:
+      - TZ=Europe/Prague
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ~/docker/welcomerbot/config/filebrowser/config:/config
+      - ~/docker/welcomerbot/config/filebrowser/database:/database
+    entrypoint: /bin/sh   # set filebrowser admin password in this service
+    command: >
+      -c "if [ ! -f /database/filebrowser.db ]; then
+            echo 'Database file missing! Importing exported_config.json...';
+            filebrowser config import /config/exported_config.json --database /database/filebrowser.db;
+
+            echo 'Creating admin user...';
+            filebrowser users add admin adminpassword --database /database/filebrowser.db --perm.admin=true; 
+            
+            echo 'Initialization complete!';
+          else
+            echo 'Database already exists. Skipping initialization.';
+          fi" 
+
   filebrowser:
     image: filebrowser/filebrowser:s6
     container_name: welcomerbot-filebrowser
@@ -24,3 +49,6 @@ services:
       - ~/docker/welcomerbot/config/filebrowser/config:/config
       - ~/docker/welcomerbot/config/filebrowser/database:/database
     restart: unless-stopped
+    depends_on:
+      filebrowser-init:
+        condition: service_completed_successfully

@@ -65,10 +65,12 @@ You can also specify `$join` and `$leave` at the same time. For example `$join_$
 
 Also, with the new web management, users can use the `webmanage` command to get a expiring unique link to a filebrowser instance pointed to the music folder, where each user will be restricted only to their personal files, unless they are an admin or a developer who used a coresponding flag.  
 
+You must enable this in config along with its settings, this is disabled by default.  
+
 The filebrowser instance must be set up externally, and point to the same music folder as welcomer bot. The bot comunicates with filebrowser via its api to dynamically set users with restrcited access only to their personal files.  
 The recommended config setup for filebrowser is:  
 ```bash
-filebrowser config import config/filebrowser/config/settings.json -d config/filebrowser/database/filebrowser.db
+filebrowser config import config/filebrowser/config/exported_config.json -d config/filebrowser/database/filebrowser.db
 filebrowser -d config/filebrowser/database/filebrowser.db users add admin adminpassword --perm.admin=true
 ```
 
@@ -76,8 +78,11 @@ Alternatively, if you don't want to use the provided filebrowser config, you can
 ```bash
 filebrowser config set -d filebrowserdbfile.db --root .\\music --auth.method=proxy --auth.header=X-Welcomer-User --branding.name "Welcomer bot file manager" --branding.disableExternal --branding.disableUsedPercentage --tokenExpirationTime 10m
 ```
+<br>
 
 For setup in docker see the provided docker-compose.yml file.  
+In docker seup, make sure to set the filebrowser root to `/srv`  
+The docker-compose.yml will automatically initiate the filebrowser database with the exported_config.json file. If the database already exists, it will not be re-initiated.  
 <br><br>
 
 ## Configuration
