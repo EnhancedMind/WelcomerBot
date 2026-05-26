@@ -1,4 +1,4 @@
-const { readdir, rename, stat } = require('fs/promises');
+const { readdir, mkdir, rename, stat } = require('fs/promises');
 const path = require('path');
 const Fuse = require('fuse.js');
 const { spawn } = require('child_process');
