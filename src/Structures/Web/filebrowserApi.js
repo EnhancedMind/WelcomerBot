@@ -106,7 +106,7 @@ async function ensureUserExists(username, scopePath) {
                     'path': '',
                     'regex': true,
                     'regexp': {
-                        'raw': '.*[.].*'
+                        'raw': '[.][a-zA-Z][^/]*$'  // match a literal dot '[.]', followed by a letter '[a-zA-Z]' and not followed with a / until the end of string '[^/]*$'
                     }
                 },
                 {
@@ -114,7 +114,7 @@ async function ensureUserExists(username, scopePath) {
                     'path': '',
                     'regex': true,
                     'regexp': {
-                        'raw': `(?i).*[.](${allowedExtensions.join('|')})$`
+                        'raw': `(?i)[.](${allowedExtensions.join('|')})$` // match a literal dot '[.]', followed by case insensitive '(?i)' extension '(...|...)' at the end of string '$'
                     }
                 }
             ],
