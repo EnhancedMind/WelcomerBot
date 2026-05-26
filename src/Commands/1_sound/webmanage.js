@@ -11,11 +11,25 @@ const { getUserPath } = require('../../Structures/musicFilesManager');
 const { ensureUserExists } = require('../../Structures/Web/filebrowserApi');
 const { generateLoginToken } = require('../../Structures/Web/tokenStore');
 
+const helpText =
+`This command generates a private, single-use authentication link for FileBrowser instance connected to this bot's sound file system and sends it into your DMs.
+
+Developer arguments:
+\`\`\`
+  -a, --admin    Generates a link for the admin account. Full privileges to manage users
+                 and modify all files within the root.
+  -d, --dev      Generates a link for the developer account. Shares the same root scope,
+                but restricted to music files only.
+\`\`\`
+*Note: For both developer flags, the file duration check is disabled.*
+`
 
 module.exports = new Command({
 	name: 'webmanage',
-	aliases: [ 'wm' ],
-	description: 'TBD',
+	aliases: [ 'wm', 'web' ],
+	syntax: 'webmanage [flags]',
+	description: 'Generates a private, single-use link for FileBrowser instance connected to this bot\'s sound file system.',
+	help: helpText,
 	async run(message, args, client) {
 		const senderId = message.author.id;
 
