@@ -10,14 +10,14 @@ const tokenPool = new Map();
 function generateLoginToken(username) {
     const token = crypto.randomBytes(20).toString('hex');
     const expiresAt = Date.now() + 10 * 60 * 1000;
-    
+
     tokenPool.set(token, { username, expiresAt });
-    
+
     // auto cleanup
     setTimeout(() => {
         tokenPool.delete(token);
     }, 10 * 60 * 1000);
-    
+
     return token;
 }
 
@@ -28,16 +28,16 @@ function generateLoginToken(username) {
  */
 function consumeLoginToken(token) {
     const record = tokenPool.get(token);
-    
+
     if (!record) return null;
-    
+
     // delete to enforce single use
     tokenPool.delete(token);
-    
+
     if (Date.now() > record.expiresAt) {
         return null; // Expired
     }
-    
+
     return record.username;
 }
 

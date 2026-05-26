@@ -39,7 +39,7 @@ module.exports = new Command({
 			const secureToken = generateLoginToken(fbUser);
 			const loginLink = `${externalDomain}/proxylogin?token=${secureToken}`
 
-			await message.author.send(`Here is your secure, single-use access link (valid for 10 minutes):\n${loginLink}`);
+			await message.author.send(`Here is your secure, single-use access link (valid for 10 minutes):\n<${loginLink}>`);
             
             await response.edit(`A secure login link was sent to your DMs!`).catch(() => {});
 		}
