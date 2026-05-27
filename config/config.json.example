@@ -52,6 +52,7 @@
         "filebrowserApiUrl": "http://ip:port/api",
         "cookieName": "fbWelcomerSession",
         "sessionLifetimeMinutes": 5,
+        "maxUploadSizeBytes": 20971520,
         "externalDomain": "https://example.com",
     },
     "logs": {

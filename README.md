@@ -142,6 +142,7 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
         "filebrowserApiUrl": "http://ip:port/api",
         "cookieName": "fbWelcomerSession",
         "sessionLifetimeMinutes": 5,
+        "maxUploadSizeBytes": 20971520,
         "externalDomain": "https://example.com",
     },
     "logs": {
@@ -207,6 +208,7 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
 - `filebrowser.filebrowserApiUrl`: the url where the filebrowser api will be accessible, like "http://127.0.0.1:3000/api"  
 - `filebrowser.cookieName`: the name of the cookie provided by the user, reccomended not to change  
 - `filebrowser.sessionLifetimeMinutes`: the lifetime of the session after which user will be disconnected for inactivity  
+- `filebrowser.maxUploadSizeBytes`: the maximum allowed upload size in bytes. This is used to prevent users from uploading files that are too large. Default is 20 MB
 - `filebrowser.externalDomain`: the external domain provided in the user message, like "https://example.com"  
 <br>
 

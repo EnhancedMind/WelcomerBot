@@ -9,13 +9,15 @@ const { consoleLog } = require('../../Data/Log');
 const Client = require('../Client');
 const { syncSoundFiles, getUserPath, getFileDuration } = require('../musicFilesManager');
 
-const { emoji: { warning }, player: { maxTime }, filebrowser: { port, filebrowserUrl, cookieName, sessionLifetimeMinutes } } = require('../../../config/config.json');
+const { emoji: { warning }, player: { maxTime }, filebrowser: { port, filebrowserUrl, cookieName, sessionLifetimeMinutes, maxUploadSizeBytes } } = require('../../../config/config.json');
 
 const cookieSecret = crypto.randomBytes(64).toString('hex');
 const isProd = process.env.NODE_ENV == 'production';
 
 const htmlPath = path.join(__dirname, 'login.html');
 const loginHtmlContent = readFileSync(htmlPath, 'utf8');
+
+const activeUploadsLength = new Map();
 
 
 // cryptographic cookie helpers
@@ -135,6 +137,15 @@ function initProxyServer(client) {
         // inject user identity context for File Browser upstream
         req.headers['x-welcomer-user'] = verifiedUser;
 
+        // check if request is a TUS upload initiation and if the declared upload size exceeds the configured maximum
+        if (req.method === 'POST' && pathname.startsWith('/api/tus/')) {
+            const uploadLength = req.headers['upload-length'];
+            if (uploadLength && parseInt(uploadLength, 10) > maxUploadSizeBytes) {
+                res.writeHead(413, { 'Content-Type': 'text/plain' });
+                return res.end(`Payload Too Large: Maximum allowed upload size is ${maxUploadSizeBytes / 1024 / 1024} MB.`);
+            }
+            if (verifiedUser != 'admin' && verifiedUser != 'developer') activeUploadsLength.set(`${verifiedUser}:${pathname}`, parseInt(uploadLength, 10));
+        }
 
         // reverse proxy for upstream filebrowser
         // glue the request url onto the filebrowser url (/api/tus => filebrowser:8080/api/tus)
@@ -157,15 +168,21 @@ function initProxyServer(client) {
             // rires when data pipeline with File Browser concludes cleanly
             proxyRes.on('end', async () => {
                 if (verifiedUser == 'admin' || verifiedUser == 'developer') return;
-                
+
                 // Catch successful TUS protocol chunks stream completions
                 if (req.method === 'PATCH' && pathname.startsWith('/api/tus/')) {
                     if (proxyRes.statusCode === 200 || proxyRes.statusCode === 204) {
-                        
-                        // strip the endpoint namespace and clean up special character encoding
-                        const cleanedPath = decodeURIComponent(pathname.replace('/api/tus', ''));
-                        
-                        await handleFileUploadCompletion(client, cleanedPath, verifiedUser);
+
+                        const currentOffset = parseInt(proxyRes.headers['upload-offset'] || 0, 10);
+                        const totalExpectedLength = activeUploadsLength.get(`${verifiedUser}:${pathname}`);
+
+                        if (totalExpectedLength && currentOffset >= totalExpectedLength) {
+                            activeUploadsLength.delete(`${verifiedUser}:${pathname}`);
+
+                            // strip the endpoint namespace and clean up special character encoding
+                            const cleanedPath = decodeURIComponent(pathname.replace('/api/tus', ''));
+                            await handleFileUploadCompletion(client, cleanedPath, verifiedUser);
+                        }
                     }
                 }
             });
@@ -197,23 +214,20 @@ function initProxyServer(client) {
  * @returns {void}
  */
 async function handleFileUploadCompletion(client, filePath, userID) {
-    consoleLog(`[INFO] Detected completed upload for user ${userID}: ${filePath}`);
     const absoluteFilePath = path.join(await getUserPath(client, userID), filePath);
 
     const duration = await getFileDuration(absoluteFilePath).catch(err => {
         consoleLog(`[ERR] Error getting file duration for ${absoluteFilePath}:`, err);
-        return null;
     });
 
-    consoleLog(`[INFO] File upload completed: ${absoluteFilePath} (Duration: ${duration}s)`);
-
-    if (duration <= maxTime) {
+    if (!isNaN(duration) && duration <= maxTime) {
         syncSoundFiles(client).catch(() => {});
         return;
     }
 
     try {
-        await rm(absoluteFilePath);
+        await new Promise(resolve => setTimeout(resolve, 200)); // short delay to ensure file is unlocked
+        await rm(absoluteFilePath, { force: true });
     }
     catch (err) {
         consoleLog(`[ERR] Failed to remove file ${absoluteFilePath}:`, err);
@@ -224,9 +238,12 @@ async function handleFileUploadCompletion(client, filePath, userID) {
 
     const message = [
         `${warning} A file upload from file browser was traced back to your account.`,
-        `The file \`${filePath}\` has a duration of ${duration.toFixed(2)} seconds, which exceeds the maximum allowed duration of ${maxTime} seconds.`,
         `The file was automatically removed to prevent abuse.`
     ];
+
+    if (!isNaN(duration)) message.splice(1, 0, `The file \`${filePath}\` has a duration of ${duration.toFixed(2)} seconds, which exceeds the maximum allowed duration of ${maxTime} seconds.`,)
+    else message.splice(1, 0, `The file \`${filePath}\` could not be processed to determine its duration, and was removed as a precaution.`);
+
     user.send(message.join('\n')).catch(err => {
         consoleLog(`[ERR] Error sending message to user ${userID}:`, err);
     });
