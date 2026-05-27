@@ -19,7 +19,7 @@ Developer arguments:
   -a, --admin    Generates a link for the admin account. Full privileges to manage users
                  and modify all files within the root.
   -d, --dev      Generates a link for the developer account. Shares the same root scope,
-                but restricted to music files only.
+                 but restricted to music files only.
 \`\`\`
 *Note: For both developer flags, the file duration check is disabled.*
 `
