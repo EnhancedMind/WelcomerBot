@@ -174,13 +174,13 @@ function initProxyServer(client) {
         }
 
         // check if request is a TUS upload initiation and if the declared upload size exceeds the configured maximum
-        if (req.method === 'POST' && pathname.startsWith('/api/tus/') && verifiedUser != 'admin') {
+        if (req.method === 'POST' && pathname.startsWith('/api/tus/')) {
             const uploadLength = req.headers['upload-length'];
-            if (uploadLength && parseInt(uploadLength, 10) > maxUploadSizeBytes) {
+            if (uploadLength && parseInt(uploadLength, 10) > maxUploadSizeBytes && verifiedUser != 'admin') {
                 res.writeHead(413, { 'Content-Type': 'text/plain' });
                 return res.end(`Payload Too Large: Maximum allowed upload size is ${maxUploadSizeBytes / 1024 / 1024} MB.`);
             }
-            if (verifiedUser != 'admin' && verifiedUser != 'developer') activeUploadsLength.set(`${verifiedUser}:${pathname}`, parseInt(uploadLength, 10));
+            activeUploadsLength.set(`${verifiedUser}:${pathname}`, parseInt(uploadLength, 10));
         }
 
         // reverse proxy for upstream filebrowser
@@ -214,6 +214,8 @@ function initProxyServer(client) {
 
                 // fires when data pipeline with File Browser concludes cleanly
                 proxyRes.on('end', async () => {
+                    const isSuccess = proxyRes.statusCode == 200 || proxyRes.statusCode == 201 || proxyRes.statusCode == 204;
+
                     if (isDirListing) {
                         try {
                             let json = JSON.parse(dataBuffer);
@@ -242,22 +244,25 @@ function initProxyServer(client) {
                         }
                         return;
                     }
-
                     // Catch successful TUS protocol chunks stream completions
-                    if (req.method === 'PATCH' && pathname.startsWith('/api/tus/') && verifiedUser != 'admin' && verifiedUser != 'developer') {
-                        if (proxyRes.statusCode === 200 || proxyRes.statusCode === 204) {
+                    if (req.method === 'PATCH' && pathname.startsWith('/api/tus/') && isSuccess) {
+                        const currentOffset = parseInt(proxyRes.headers['upload-offset'] || 0, 10);
+                        const totalExpectedLength = activeUploadsLength.get(`${verifiedUser}:${pathname}`);
 
-                            const currentOffset = parseInt(proxyRes.headers['upload-offset'] || 0, 10);
-                            const totalExpectedLength = activeUploadsLength.get(`${verifiedUser}:${pathname}`);
+                        if (totalExpectedLength && currentOffset >= totalExpectedLength) {
+                            activeUploadsLength.delete(`${verifiedUser}:${pathname}`);
 
-                            if (totalExpectedLength && currentOffset >= totalExpectedLength) {
-                                activeUploadsLength.delete(`${verifiedUser}:${pathname}`);
-
-                                // strip the endpoint namespace and clean up special character encoding
-                                const cleanedPath = decodeURIComponent(pathname.replace('/api/tus', ''));
-                                await handleFileUploadCompletion(client, cleanedPath, verifiedUser);
-                            }
+                            // strip the endpoint namespace and clean up special character encoding
+                            const cleanedPath = decodeURIComponent(pathname.replace('/api/tus', ''));
+                            if (verifiedUser == 'admin' || verifiedUser == 'developer') syncSoundFiles(client).catch(() => {});
+                            else await handleFileUploadCompletion(client, cleanedPath, verifiedUser).catch((err) => {
+                                consoleLog(`[ERR] Error handling file upload completion for user ${verifiedUser} and file ${cleanedPath}`, err);
+                            });
                         }
+                    }
+
+                    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && pathname.startsWith('/api/resources/') && isSuccess) {
+                        syncSoundFiles(client).catch(() => {});
                     }
                 });
             }
@@ -309,7 +314,7 @@ async function handleFileUploadCompletion(client, filePath, userID) {
         return;
     }
 
-    const user = await client.users.fetch(userID);
+    const user = await client.users.fetch(userID).catch(() => { return; });
 
     const message = [
         `${warning} A file upload from file browser was traced back to your account.`,
