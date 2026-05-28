@@ -101,7 +101,7 @@ async function ensureUserExists(username, scopePath) {
             username: username,
             password: generateRandomPassword(),
             rules: [  // only allow music files with config allowed extensions
-                {
+                /*{
                     'allow': false,
                     'path': '',
                     'regex': true,
@@ -116,7 +116,7 @@ async function ensureUserExists(username, scopePath) {
                     'regexp': {
                         'raw': `(?i)[.](${allowedExtensions.join('|')})$` // match a literal dot '[.]', followed by case insensitive '(?i)' extension '(...|...)' at the end of string '$'
                     }
-                }
+                }*/
             ],
             lockPassword: true
         };

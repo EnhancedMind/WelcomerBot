@@ -9,7 +9,7 @@ const { consoleLog } = require('../../Data/Log');
 const Client = require('../Client');
 const { syncSoundFiles, getUserPath, getFileDuration } = require('../musicFilesManager');
 
-const { emoji: { warning }, player: { maxTime }, filebrowser: { port, filebrowserUrl, cookieName, sessionLifetimeMinutes, maxUploadSizeBytes } } = require('../../../config/config.json');
+const { emoji: { warning }, player: { maxTime, allowedExtensions }, filebrowser: { port, filebrowserUrl, cookieName, sessionLifetimeMinutes, maxUploadSizeBytes } } = require('../../../config/config.json');
 
 const cookieSecret = crypto.randomBytes(64).toString('hex');
 const isProd = process.env.NODE_ENV == 'production';
@@ -137,8 +137,44 @@ function initProxyServer(client) {
         // inject user identity context for File Browser upstream
         req.headers['x-welcomer-user'] = verifiedUser;
 
+
+        // check if manupulated file has a valid extension
+        if (pathname.startsWith('/api/resources/') && verifiedUser != 'admin') {
+            const isFolder = pathname.endsWith('/');
+
+            if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && !isFolder) {
+                const ext = path.extname(pathname).toLowerCase().slice(1); // remove the dot
+                if (!allowedExtensions.includes(ext)) {
+                    res.writeHead(403, { 'Content-Type': 'text/plain' });
+                    return res.end('Forbidden: This file type is not allowed.');
+                }
+            }
+
+            if (req.method === 'PATCH' && !isFolder) {
+                const urlObject = new URL(req.url, `http://${req.headers.host}`);
+                const destination = urlObject.searchParams.get('destination');
+
+                if (destination) {
+                    const ext = path.extname(destination).toLowerCase().slice(1); // remove the dot
+                    if (!allowedExtensions.includes(ext)) {
+                        res.writeHead(403, { 'Content-Type': 'text/plain' });
+                        return res.end('Forbidden: Target file type is not allowed.');
+                    }
+                }
+            }
+        }
+
+        // block downloads of non allowed file types
+        if (req.method === 'GET' && pathname.startsWith('/api/raw/') && verifiedUser != 'admin') {
+            const ext = path.extname(pathname).toLowerCase().slice(1); // remove the dot
+            if (!allowedExtensions.includes(ext)) {
+                res.writeHead(403, { 'Content-Type': 'text/plain' });
+                return res.end('Forbidden: This file type is not allowed.');
+            }
+        }
+
         // check if request is a TUS upload initiation and if the declared upload size exceeds the configured maximum
-        if (req.method === 'POST' && pathname.startsWith('/api/tus/')) {
+        if (req.method === 'POST' && pathname.startsWith('/api/tus/') && verifiedUser != 'admin') {
             const uploadLength = req.headers['upload-length'];
             if (uploadLength && parseInt(uploadLength, 10) > maxUploadSizeBytes) {
                 res.writeHead(413, { 'Content-Type': 'text/plain' });
@@ -160,33 +196,72 @@ function initProxyServer(client) {
                 headers: req.headers
             }, 
             (proxyRes) => {
-            // Pass response status and headers immediately back to browser
-            res.writeHead(proxyRes.statusCode, proxyRes.headers);
-            proxyRes.pipe(res);
+                // is a request for directory listing and not from admin user
+                const isDirListing = req.method === 'GET' && pathname.startsWith('/api/resources/') && pathname.endsWith('/') && verifiedUser != 'admin';
 
+                // Pass response status and headers immediately back to browser
+                if (!isDirListing) {
+                    res.writeHead(proxyRes.statusCode, proxyRes.headers);
+                    proxyRes.pipe(res);
+                }
 
-            // rires when data pipeline with File Browser concludes cleanly
-            proxyRes.on('end', async () => {
-                if (verifiedUser == 'admin' || verifiedUser == 'developer') return;
+                let dataBuffer = '';
+                if (isDirListing) {
+                    proxyRes.on('data', (chunk) => {
+                        dataBuffer += chunk.toString();
+                    });
+                }
 
-                // Catch successful TUS protocol chunks stream completions
-                if (req.method === 'PATCH' && pathname.startsWith('/api/tus/')) {
-                    if (proxyRes.statusCode === 200 || proxyRes.statusCode === 204) {
+                // fires when data pipeline with File Browser concludes cleanly
+                proxyRes.on('end', async () => {
+                    if (isDirListing) {
+                        try {
+                            let json = JSON.parse(dataBuffer);
 
-                        const currentOffset = parseInt(proxyRes.headers['upload-offset'] || 0, 10);
-                        const totalExpectedLength = activeUploadsLength.get(`${verifiedUser}:${pathname}`);
+                            if (json.items && Array.isArray(json.items)) {
+                                json.items = json.items.filter(item => {
+                                    if (item.isDir) return true;
+                                    const ext = item.extension.startsWith('.') ? item.extension.slice(1).toLowerCase() : item.extension.toLowerCase();
+                                    return allowedExtensions.includes(ext);
+                                });
 
-                        if (totalExpectedLength && currentOffset >= totalExpectedLength) {
-                            activeUploadsLength.delete(`${verifiedUser}:${pathname}`);
+                                json.numFiles = json.items.filter(item => !item.isDir).length;
+                                json.numDirs = json.items.filter(item => item.isDir).length;
+                            }
 
-                            // strip the endpoint namespace and clean up special character encoding
-                            const cleanedPath = decodeURIComponent(pathname.replace('/api/tus', ''));
-                            await handleFileUploadCompletion(client, cleanedPath, verifiedUser);
+                            const modifiedBody = JSON.stringify(json);
+                            const modifiedHeaders = { ...proxyRes.headers };
+                            modifiedHeaders['content-length'] = Buffer.byteLength(modifiedBody, 'utf8');
+
+                            res.writeHead(proxyRes.statusCode, modifiedHeaders);
+                            res.end(modifiedBody);
+                        }
+                        catch {
+                            res.writeHead(proxyRes.statusCode, proxyRes.headers);
+                            res.end(dataBuffer);
+                        }
+                        return;
+                    }
+
+                    // Catch successful TUS protocol chunks stream completions
+                    if (req.method === 'PATCH' && pathname.startsWith('/api/tus/') && verifiedUser != 'admin' && verifiedUser != 'developer') {
+                        if (proxyRes.statusCode === 200 || proxyRes.statusCode === 204) {
+
+                            const currentOffset = parseInt(proxyRes.headers['upload-offset'] || 0, 10);
+                            const totalExpectedLength = activeUploadsLength.get(`${verifiedUser}:${pathname}`);
+
+                            if (totalExpectedLength && currentOffset >= totalExpectedLength) {
+                                activeUploadsLength.delete(`${verifiedUser}:${pathname}`);
+
+                                // strip the endpoint namespace and clean up special character encoding
+                                const cleanedPath = decodeURIComponent(pathname.replace('/api/tus', ''));
+                                await handleFileUploadCompletion(client, cleanedPath, verifiedUser);
+                            }
                         }
                     }
-                }
-            });
-        });
+                });
+            }
+        );
 
         // handle sudden proxy or upstream connection dropouts
         proxyReq.on('error', (err) => {
