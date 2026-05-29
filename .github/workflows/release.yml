@@ -21,7 +21,7 @@ jobs:
 
       # 2. Automatically create the GitHub Release & generate notes from commits
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: version_${{ steps.package-version.outputs.current-version }}
           name: WelcomerBot ${{ steps.package-version.outputs.current-version }}
