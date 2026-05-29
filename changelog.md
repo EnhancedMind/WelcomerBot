@@ -1,3 +1,29 @@
+# Version 0.7.1
+Started creating official docker image for linux/amd64 and linux/arm64 platforms, more info in README.md  
+Added support for FileBrowser as a music file management backend accessible through the new webmanage command, more info in README.md  
+Changed Node env to production in docker image  
+Removed ffmpeg-static and ffprobe-static from dependencies, they are now required in system path if not using docker image  
+Added help to commands  
+Reworked and fixed the addsong command, can now handle multiple files in attachment to one command, added owner and dev management, for more use addsong --help  
+The play command now supports fuzzy searching for the file by name  
+Added tags for displaying personal files for triggering or tagged user in playable command, and other filtering, more in playable --help  
+Added probability command that displays all the files that can be played for given user and the probability of each file being played, more in probability --help  
+Reworked the removesong command to be more powerful and able to fully remove songs from the filesystem, more in removesong --help  
+Added the renamesong command, to rename or move files  
+Added the search command, which searches for songs on same principle as play, and gives up to 5 best results to choose from, more in search --help  
+The about command now also displays the current build, as commit number, and short commit hash alongside the version if run in docker from official image  
+Moved the audio player to its own centralized module, along with ffmpeg loudness normalization  
+Moved most stuff to non-blocking fs/promises to prevent the bot from stuttering or being unresponsive  
+Added better error handling to commands  
+Added a last case error handler for all commands to catch any unhandled errors, prevent the bot from crashing and let the user know something went wrong  
+Changed stuff to reduce the amount of API calls, mainly for verification if a resource exists, now it is just tried and caught  
+Fixed paginator not handling negative and decimal page numbers passed by the command, causing crashes  
+Changed deprecated stuff indicated by discord.js  
+Updated @discordjs/voice to version 0.19.2  
+Updated discord.js to version 14.26.4  
+Updated libsodium-wrappers to version 0.8.4  
+Replaced @discordjs/opus with native js opusscript version 0.0.8, which should work on more platforms without the need of compiling native modules  
+
 # Version 0.6.2
 The everyone sound directory can now have subdirectories with defined chance, join, leave and once settings, change is divided among the files inside the subdirectory, more in README.md  
 Added aptional argument 'json' to playable command to get the sound files database as JSON file attachment  
