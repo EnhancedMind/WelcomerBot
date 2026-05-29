@@ -1,6 +1,6 @@
 const Command = require('../../Structures/Command');
 
-const { EmbedBuilder, version: djsversion, time } = require('discord.js');
+const { EmbedBuilder, version: djsversion } = require('discord.js');
 const { bot: { prefix, ownerID }, logs: { timeFormat } } = require('../../../config/config.json');
 const { version, homepage, developerpage } = require('../../../package.json');
 

@@ -5,15 +5,15 @@ A complete code to download for a Welcomer Bot
 <br>
 
 ## Description and Features
-- Play sounds when users join or leave voice channels
-- Custom join and leave sounds per user
-- Global join and leave sounds for everyone
+- Play sounds when users join or leave voice channels  
+- Custom join and leave sounds per user  
+- Global join and leave sounds for everyone  
 - Default join and leave sounds when no custom sound is set  
 - Chance-based sound selection for varied playback  
 - Option to play sounds only once  
 - Configurable bot settings per user and guild  
 - Command-based sound management for users, file system-based management for the owner  
-- Supports multiple audio formats (mp3, wav, ogg, flac, m4a, aac, webm, opus, aiff, wma, ac3)
+- Supports multiple audio formats (mp3, wav, ogg, flac, m4a, aac, webm, opus, aiff, wma, ac3)  
 
 This Discord bot plays sounds when users join or leave voice channels. For example, when you join a voice channel, the bot detects it, joins as well, plays a sound, then leaves. The same happens when you leave the channel.  
 
@@ -37,18 +37,18 @@ Inside the `default` folder you can add the default sounds that will be played w
 These are the default sounds I have set up. You can put however many sounds you want in the folder or not any at all. The files don't require any strict naming, the system just looks for options like `$join`, `$ch=*` etc., more explained below.  
 <br>
 
-- `users` folder is where you can add custom join sounds for users. To add user a custom sound, simply put a music file named 'USERID_optionalcomment.extention'. You can get the userid in discord after enabling developer mode by right clicking the user and selecting 'copy ID'. The allowed extensions are the same as in the config file. I strongly advise against changing the allowedExtensions in the config if you don't know what you are doing.
-You can also put a file into a folder inside the `users` folder, eg a subfolder. The folders name must start with the user id, then the file inside doesn't have to start with the user id. You can use this for better organization of the files.
+- `users` folder is where you can add custom join sounds for users. To add user a custom sound, simply put a music file named 'USERID_optionalcomment.extention'. You can get the userid in discord after enabling developer mode by right clicking the user and selecting 'copy ID'. The allowed extensions are the same as in the config file. I strongly advise against changing the allowedExtensions in the config if you don't know what you are doing.  
+You can also put a file into a folder inside the `users` folder, eg a subfolder. The folders name must start with the user id, then the file inside doesn't have to start with the user id. You can use this for better organization of the files.  
 <br>
 
 - `everyone` folder is where you can add sounds that have a chance of being selected for everyone. They can also be considered 'global'. They have a chance of being selected whether the user has a custom sound set or not. The files don't require any special naming, the system just looks for options like `$join`, `$ch=*` etc.  
 
-You can also put files into a subfolder inside `everyone`,`default` or even `users/123456789012345678_exampleuser`. The folders name is not strict, but looks for options `$ch=*`, `$join`, `$leave` and `$once` in the folder name and applies them to files inside the folder. The chance set in the folder is divided among the files inside the folder. The `$once` will be used for files inside induvidually, not the whole folder. You can also specify options for each file inside the folder, where `$join`, `$leave` and `$once` will be ORed with the folder options and `$ch=*` will hard override the chance for that file, and will not affect the chance divided among the other files inside the folder. You can use this for better organization of the files.
+You can also put files into a subfolder inside `everyone`,`default` or even `users/123456789012345678_exampleuser`. The folders name is not strict, but looks for options `$ch=*`, `$join`, `$leave` and `$once` in the folder name and applies them to files inside the folder. The chance set in the folder is divided among the files inside the folder. The `$once` will be used for files inside induvidually, not the whole folder. You can also specify options for each file inside the folder, where `$join`, `$leave` and `$once` will be ORed with the folder options and `$ch=*` will hard override the chance for that file, and will not affect the chance divided among the other files inside the folder. You can use this for better organization of the files.  
 
-The user can also set their own join sound by using the `addsong` command, rename them and move them within his subfolder using the `renamesong` command and then remove them with the `removesong` command. The owner and developers can add, rename, move and remove the sound for anywhere inside the music folder. You can get more info on the command by typing the command and adding ` --help` (with space).
+The user can also set their own join sound by using the `addsong` command, rename them and move them within his subfolder using the `renamesong` command and then remove them with the `removesong` command. The owner and developers can add, rename, move and remove the sound for anywhere inside the music folder. You can get more info on the command by typing the command and adding ` --help` (with space).  
 <br>
 
-The join sound can also have options. To use options, simply add them to the comment seperated with `_`. The available options are:
+The join sound can also have options. To use options, simply add them to the comment seperated with `_`. The available options are:  
 - `$join` - the sound will be played when the user joins a voice channel. This is the default option when neither $join nor $leave is specified.  
 - `$leave` - the sound will be played when the user leaves a voice channel.  
 - `$ch=chance` - the chance of the sound being played. The chance is in decimal form, so 50% chance would be 0.5. You can have multiple files with some chances and some without. If the chance is not specified, it will caculated as 1 / sum of all specified chances / number of files without chance specified. If sum of all specified chances is >=1, the files with unspecified chance will never be played and the sum of all specified chances will be handled as if it was 100% and the chances will be modified accordingly in their ratio. If there are only files with specified chance and the sum of all specified chances is <1, it will be handled as if the sum is 100% and the chances will be modified accordingly in their ratio.  
@@ -195,9 +195,9 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
 - `player.allowedExtensions`: the extensions that will be allowed to be played by the bot - **only for advanced users**  
 <br>
 
-- `directories.userMusicDir`: directory used for user music
+- `directories.userMusicDir`: directory used for user music  
 - `directories.everyoneMusicDir`: directory used for music played for everyone  
-- `directories.defaultMusicDir`: directory used for users without custom music
+- `directories.defaultMusicDir`: directory used for users without custom music  
 - `directories.tempMusicDir`: directory used for temporary music files  
 - `directories.topMusicDir`: the base directory for the above, limiting the scope of what song commands can change  
 <br>
@@ -208,7 +208,7 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
 - `filebrowser.filebrowserApiUrl`: the url where the filebrowser api will be accessible, like "http://127.0.0.1:3000/api"  
 - `filebrowser.cookieName`: the name of the cookie provided by the user, reccomended not to change  
 - `filebrowser.sessionLifetimeMinutes`: the lifetime of the session after which user will be disconnected for inactivity  
-- `filebrowser.maxUploadSizeBytes`: the maximum allowed upload size in bytes. This is used to prevent users from uploading files that are too large. Default is 20 MB
+- `filebrowser.maxUploadSizeBytes`: the maximum allowed upload size in bytes. This is used to prevent users from uploading files that are too large. Default is 20 MB  
 - `filebrowser.externalDomain`: the external domain provided in the user message, like "https://example.com"  
 <br>
 

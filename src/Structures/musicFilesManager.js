@@ -203,7 +203,7 @@ async function getUserSoundArray(client, userId, type, guildId) {
  * @param {Client} client - The client instance.
  * @param {string} userId - The ID of the user.
  * @param {string} type - The type of sound file ('join', 'leave' or 'all').
- * @param {string} userId - The ID of the guild.
+ * @param {string} guildId - The ID of the guild.
  * @returns {Promise<Object>} - A promise that resolves to a sound file object.
  */
 async function getUserSoundFile (client, userId, type, guildId) {

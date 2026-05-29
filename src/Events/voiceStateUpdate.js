@@ -9,9 +9,6 @@ module.exports = new Event('voiceStateUpdate', async (client, oldState, newState
     if (oldState.member.user.bot || newState.member.user.bot) return;
     if (newState.channelId == newState.guild.afkChannelId) return;
 
-    const guildSettings = await getSetting(client, 'guild', oldState.guild.id);
-    const userSettings = await getSetting(client, 'user', oldState.member.id);
-
     if(newState.channelId && !oldState.channelId || oldState.channelId == oldState.guild.afkChannelId) { //joining a channel or returning from afk
         const file = await getUserSoundFile(client, newState.member.id, 'join', oldState.guild.id);
         if (!file) return;

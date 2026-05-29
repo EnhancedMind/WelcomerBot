@@ -62,7 +62,7 @@ module.exports = new Command({
         const currentConnection = getVoiceConnection(message.guild.id);
         if (currentConnection && currentConnection.joinConfig.channelId != senderVoiceChannel.id) return await message.channel.send(`${warning} ${wrongChannel}`);
 
-        const response = await await message.channel.send(`${loading} Loading \`[${searchString}]\``);
+        const response = await message.channel.send(`${loading} Loading \`[${searchString}]\``);
 
 
         if (args[0].startsWith('<@') && args[0].endsWith('>')) {
