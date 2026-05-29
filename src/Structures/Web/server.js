@@ -87,8 +87,33 @@ function parseCookieHeader(cookieHeader, name) {
 function initProxyServer(client) {
     // core HTTP router
     const server = http.createServer((req, res) => {
-        const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
-        const pathname = parsedUrl.pathname;
+        const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+        let pathname = parsedUrl.pathname;
+
+        // check for path traversal attempts
+        try {
+            pathname = decodeURIComponent(pathname);
+        }
+        catch (_) {
+            res.writeHead(400, { 'Content-Type': 'text/plain' });
+            return res.end('Bad Request: Malformed URI');
+        }
+
+        if (pathname.includes('../') || pathname.includes('..\\') || pathname.includes('\0')) {
+            res.writeHead(403, { 'Content-Type': 'text/plain' });
+            return res.end('Forbidden: Invalid path.');
+        }
+
+        if (req.method === 'PATCH') {
+            const destination = parsedUrl.searchParams.get('destination');
+            if (destination) {
+                const decodedDest = decodeURIComponent(destination);
+                if (decodedDest.includes('../') || decodedDest.includes('..\\') || decodedDest.includes('\0')) {
+                    res.writeHead(403, { 'Content-Type': 'text/plain' });
+                    return res.end('Forbidden: Invalid destination path sequence.');
+                }
+            }
+        }
 
         // scrapers dont usually run js, so a file with js is servered that validates the token with POST request, not get
         if (pathname === '/proxylogin' && req.method === 'GET') {
@@ -151,8 +176,7 @@ function initProxyServer(client) {
             }
 
             if (req.method === 'PATCH' && !isFolder) {
-                const urlObject = new URL(req.url, `http://${req.headers.host}`);
-                const destination = urlObject.searchParams.get('destination');
+                const destination = parsedUrl.searchParams.get('destination');
 
                 if (destination) {
                     const ext = path.extname(destination).toLowerCase().slice(1); // remove the dot
@@ -180,7 +204,12 @@ function initProxyServer(client) {
                 res.writeHead(413, { 'Content-Type': 'text/plain' });
                 return res.end(`Payload Too Large: Maximum allowed upload size is ${maxUploadSizeBytes / 1024 / 1024} MB.`);
             }
-            activeUploadsLength.set(`${verifiedUser}:${pathname}`, parseInt(uploadLength, 10));
+            activeUploadsLength.set(`${verifiedUser}:${pathname}`, {
+                length: parseInt(uploadLength, 10),
+                timeoutId: setTimeout(() => {
+                        activeUploadsLength.delete(`${verifiedUser}:${pathname}`);
+                    }, 3 * 3600 * 1000)
+            });
         }
 
         // reverse proxy for upstream filebrowser
@@ -249,7 +278,8 @@ function initProxyServer(client) {
                         const currentOffset = parseInt(proxyRes.headers['upload-offset'] || 0, 10);
                         const totalExpectedLength = activeUploadsLength.get(`${verifiedUser}:${pathname}`);
 
-                        if (totalExpectedLength && currentOffset >= totalExpectedLength) {
+                        if (totalExpectedLength && currentOffset >= totalExpectedLength.length) {
+                            clearTimeout(totalExpectedLength.timeoutId);
                             activeUploadsLength.delete(`${verifiedUser}:${pathname}`);
 
                             // strip the endpoint namespace and clean up special character encoding
