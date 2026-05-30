@@ -53,9 +53,15 @@ module.exports = new Command({
 			const secureToken = generateLoginToken(fbUser);
 			const loginLink = `${externalDomain}/proxylogin?token=${secureToken}`
 
-			await message.author.send(`Here is your secure, single-use access link (valid for 10 minutes):\n<${loginLink}>`);
-            
-            await response.edit(`A secure login link was sent to your DMs!`).catch(() => {});
+			await message.author.send([
+				`Here is your secure, single-use link to manage your audio files:`,
+				'',
+				`:open_file_folder: **[Open File Manager](${loginLink})**`,
+				'',
+				`*This link is valid for 10 minutes and will expire after first use. Do not share.*`
+			].join('\n'));
+
+            await response.edit(`A secure login link was sent to your DMs.`).catch(() => {});
 		}
 		catch (error) {
 			consoleLog(`[ERR] Failed to generate filebrowser access:`, error);
