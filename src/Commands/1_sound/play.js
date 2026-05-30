@@ -11,8 +11,8 @@ const helpText =
 `This command allows you to play a specific sound from the local library.
 You can search for a sound by its exact file path, its exact file name, or by using a search term. If the exact file isn't found, the bot will intelligently try to find the closest match.
  
-To play a sound belonging to a specific user, you can simply tag them.
-Example: \`${prefix}play @user\`
+To play a sound belonging to a specific user, you can simply tag them, or for yourself, use the \`-m\` or \`--me\` flag.
+Example: \`${prefix}play @user\` or \`${prefix}play --me\`
 
 You can filter your search using the following flags anywhere in your command:
 - \`-j\` or \`--join\` - Strictly searches for sounds marked as "join" sounds.
@@ -41,11 +41,13 @@ module.exports = new Command({
 	async run(message, args, client) {
         let joinFlag = false;
         let leaveFlag = false;
+        let meFlag = false;
         const cleanedArgs = [];
 
         for (const arg of args) {
             if (arg == '-j' || arg == '--join') joinFlag = true;
             else if (arg == '-l' || arg == '--leave') leaveFlag = true;
+            else if (arg == '-m' || arg == '--me') meFlag = true;
             else cleanedArgs.push(arg);
         }
 
@@ -55,7 +57,7 @@ module.exports = new Command({
 
         const senderVoiceChannel = message.member.voice.channel;
 
-        if (!args[0]) return await message.channel.send(`${warning} ${missingArguments}`);
+        if (!args[0] && !meFlag) return await message.channel.send(`${warning} ${missingArguments}`);
         if (!senderVoiceChannel) return await message.channel.send(`${warning} ${noChannel}`);
         if (senderVoiceChannel.id == message.guild.afkChannelId) return await message.channel.send(`${warning} ${afkChannel}`);
 
@@ -65,8 +67,8 @@ module.exports = new Command({
         const response = await message.channel.send(`${loading} Loading \`[${searchString}]\``);
 
 
-        if (args[0].startsWith('<@') && args[0].endsWith('>')) {
-            const userId = args[0].replace(/[<@!>]/g, '');
+        if (meFlag || (args[0].startsWith('<@') && args[0].endsWith('>'))) {
+            const userId = meFlag ? message.author.id : args[0].replace(/[<@!>]/g, '');
             const searchType = leaveFlag && !joinFlag ? 'leave' : 'join'; // aka default to join
             const file = await getUserSoundFile(client, userId, searchType);
             if (!file) {
