@@ -10,10 +10,10 @@ module.exports = new Command({
 	description: 'Safely shuts down the bot',
 	async run(message, args, client) {
 		const senderId = message.author.id;
-        if (senderId != ownerID && !devIDs.includes(senderId)) return message.channel.send(`${error} ${invalidPermissions}`);
+        if (senderId != ownerID && !devIDs.includes(senderId)) return await message.channel.send(`${error} ${invalidPermissions}`);
         consoleLog('[INFO] Powering off...');
         await message.channel.send(`${info} Shutting down...`);
-        client.destroy();
+        await client.destroy();
         process.exit(0);
 }
 });

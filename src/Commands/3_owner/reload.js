@@ -11,12 +11,12 @@ module.exports = new Command({
 	description: 'Reloads the status and activity to default.',
 	async run(message, args, client) {
 		const senderId = message.author.id;
-        if (senderId != ownerID && !devIDs.includes(senderId)) return message.channel.send(`${error} ${invalidPermissions}`);
+        if (senderId != ownerID && !devIDs.includes(senderId)) return await message.channel.send(`${error} ${invalidPermissions}`);
         client.user.setStatus(status);
         client.user.setActivity(
 			game,
 			{ type: ActivityType.Playing }
 		);
-		message.channel.send(`${success} Reloaded!`);
+		await message.channel.send(`${success} Reloaded!`);
 	}
 });

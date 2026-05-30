@@ -10,14 +10,14 @@ module.exports = new Command({
 	description: 'Sets the status the bot displays',
 	async run(message, args, client) {
 		const senderId = message.author.id;
-        if (senderId != ownerID && !devIDs.includes(senderId)) return message.channel.send(`${error} ${invalidPermissions}`);
+        if (senderId != ownerID && !devIDs.includes(senderId)) return await message.channel.send(`${error} ${invalidPermissions}`);
 		if ( [ 'online', 'idle', 'dnd', 'invisible' ].includes(args[0].toLowerCase()) ) {
 			client.user.setStatus(args[0]);
-        	message.channel.send(`${success} Status set to \`${args[0]}\``);
+        	return await message.channel.send(`${success} Status set to \`${args[0]}\``);
 		}
         else {
 			client.user.setStatus(status);
-			return message.channel.send(`${success} Status set to \`${status}\` (default)`);
+			return await message.channel.send(`${success} Status set to \`${status}\` (default)`);
 		}
 	}
 });
