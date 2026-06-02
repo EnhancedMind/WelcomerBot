@@ -41,42 +41,46 @@ module.exports = new Command({
 	async run(message, args, client) {
         let joinFlag = false;
         let leaveFlag = false;
-        let meFlag = false;
+        let userIdArg = null;
         const cleanedArgs = [];
 
         for (const arg of args) {
             if (arg == '-j' || arg == '--join') joinFlag = true;
             else if (arg == '-l' || arg == '--leave') leaveFlag = true;
-            else if (arg == '-m' || arg == '--me') meFlag = true;
+            else if ((arg == '-m' || arg == '--me') && !userIdArg) userIdArg = message.author.id;
+            else if (arg.startsWith('<@') && arg.endsWith('>') && !userIdArg) userIdArg = arg.replace(/[<@!>]/g, '');
             else cleanedArgs.push(arg);
         }
 
+        let userGlobalName = null;
+        if (userIdArg) userGlobalName = (await client.users.fetch(userIdArg)).globalName || (await client.users.fetch(userIdArg)).username;
+
         args = cleanedArgs; // overwrite args with args without join and leave flags
         const searchString = args.join(' ');
+        const searchStringMessage = userGlobalName ? `Sound for ${userGlobalName}` : `\`[${args.join(' ')}]\``;
 
 
         const senderVoiceChannel = message.member.voice.channel;
 
-        if (!args[0] && !meFlag) return await message.channel.send(`${warning} ${missingArguments}`);
+        if (!args[0] && !userIdArg) return await message.channel.send(`${warning} ${missingArguments}`);
         if (!senderVoiceChannel) return await message.channel.send(`${warning} ${noChannel}`);
         if (senderVoiceChannel.id == message.guild.afkChannelId) return await message.channel.send(`${warning} ${afkChannel}`);
 
         const currentConnection = getVoiceConnection(message.guild.id);
         if (currentConnection && currentConnection.joinConfig.channelId != senderVoiceChannel.id) return await message.channel.send(`${warning} ${wrongChannel}`);
 
-        const response = await message.channel.send(`${loading} Loading \`[${searchString}]\``);
+        const response = await message.channel.send(`${loading} Loading ${searchStringMessage}`);
 
 
-        if (meFlag || (args[0].startsWith('<@') && args[0].endsWith('>'))) {
-            const userId = meFlag ? message.author.id : args[0].replace(/[<@!>]/g, '');
+        if (userIdArg) {
             const searchType = leaveFlag && !joinFlag ? 'leave' : 'join'; // aka default to join
-            const file = await getUserSoundFile(client, userId, searchType);
+            const file = await getUserSoundFile(client, userIdArg, searchType);
             if (!file) {
-                response.edit(`${error} \`${args[0]}\` doesn't exist.`).catch(() => {});
+                response.edit(`${error} ${searchStringMessage} wasn't found.`).catch(() => {});
                 return;
             }
             client.playerManager.play(client, senderVoiceChannel, { path: file.path });
-            response.edit(`${success} Playing sound for **${(await client.users.fetch(userId)).globalName} - \`${file.filename}\`**`).catch(() => {});
+            response.edit(`${success} Playing sound for **${userGlobalName} - \`${file.filename}\`**`).catch(() => {});
             return;
         }
 
@@ -101,7 +105,7 @@ module.exports = new Command({
                 catch {}
             }
 
-            response.edit(`${error} \`${searchString}\` wasn't found.`).catch(() => {});
+            response.edit(`${error} ${searchStringMessage} wasn't found.`).catch(() => {});
             return;
         }
 
