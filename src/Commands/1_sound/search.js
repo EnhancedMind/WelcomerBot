@@ -19,6 +19,8 @@ You can filter your search using the following flags anywhere in your command:
 - \`-l\` or \`--leave\` - Strictly searches for sounds marked as "leave" sounds.
 The flags are additive, and useless if you use both :D.
 
+- \`-p\` or \`--path\` - Displays the file path of the search result along the file name.
+
 **Search Priority & Behavior:**
 If multiple files have the same name or similar search results, the bot prioritizes files in this order:
 1. Your personal files
@@ -41,11 +43,13 @@ module.exports = new Command({
     async run(message, args, client) {
         let joinFlag = false;
         let leaveFlag = false;
+        let pathFlag = false;
         const cleanedArgs = [];
 
         for (const arg of args) {
             if (arg == '-j' || arg == '--join') joinFlag = true;
             else if (arg == '-l' || arg == '--leave') leaveFlag = true;
+            else if (arg == '-p' || arg == '--path') pathFlag = true;
             else cleanedArgs.push(arg);
         }
 
@@ -75,7 +79,10 @@ module.exports = new Command({
         const embed = new EmbedBuilder()
             .setColor(0x3399FF)
             .setTitle('Search Results')
-            .setDescription(results.map((item, index) => `${emojiListSource[index]}**\`${item.item.filename}\`**`).join('\n'));
+
+        for (const [index, item] of results.entries()) {
+            embed.addFields({ name: `${emojiListSource[index]} \`${item.item.filename}\``, value: pathFlag ? `\`${item.item.path}\`` : '' });
+        }
 
         response.edit({ content: `${success} Search results for \`${args.join(' ')}\`:`, embeds: [embed] }).catch(() => {});
 
