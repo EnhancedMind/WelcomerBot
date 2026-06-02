@@ -105,13 +105,13 @@ module.exports = new Command({
             const index = emojiList.indexOf(reaction.emoji.name);
             if (index == emojiList.length - 1) {
                 response.edit({ content:`${success} Cancelled search.`, embeds: [] }).catch(() => {});
-                collector.stop().catch(() => {});
+                collector.stop();
                 return;
             }
 
             client.playerManager.play(client, senderVoiceChannel, { path: results[index].item.path });
             response.edit({ content: `${success} Playing **\`${results[index].item.filename}\`** (${searchResult.reason})`, embeds: [] }).catch(() => {});
-            collector.stop().catch(() => {});
+            collector.stop();
         });
 
         collector.on('end', async (_, reason) => {
