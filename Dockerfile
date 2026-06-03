@@ -12,13 +12,6 @@ RUN apt-get update && \
     apt-get install -y ffmpeg && \
     rm -rf /var/lib/apt/lists/*
 
-# Get build args from github action and pass them to ENV
-ARG COMMIT_SHA="unknown"
-ARG BUILD_NUMBER="0"
-
-ENV COMMIT_SHA=${COMMIT_SHA}
-ENV BUILD_NUMBER=${BUILD_NUMBER}
-
 WORKDIR /app
 
 COPY package*.json ./
@@ -26,6 +19,14 @@ COPY package*.json ./
 RUN npm install --no-audit --no-fund
 
 COPY --chown=node:node . .
+
+# Get build args from github action and pass them to ENV
+ARG COMMIT_SHA="unknown"
+ARG BUILD_NUMBER="0"
+
+ENV COMMIT_SHA=${COMMIT_SHA}
+ENV BUILD_NUMBER=${BUILD_NUMBER}
+
 
 USER node
 

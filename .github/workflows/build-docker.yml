@@ -93,6 +93,8 @@ jobs:
           build-args: |
             COMMIT_SHA=${{ steps.meta.outputs.SHA_SHORT }}
             BUILD_NUMBER=${{ steps.meta.outputs.BUILD_NUMBER }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       # 8. Clean up old untagged container versions using the marketplace action
       - name: Clean untagged images from GHCR
