@@ -9,9 +9,18 @@ const Client = require('./Client');
 function RunFunction(message, args, client) {}
 
 
+/**
+ * @typedef {Object} CommandOptions
+ * @property {string} name - The main name of the command.
+ * @property {string[]} [aliases] - Alternative triggers for the command.
+ * @property {string} [category] - The group this command belongs to.
+ * @property {string} [syntax] - How to use the command (e.g. 'kick <user> <reason>').
+ * @property {string} description - A brief explanation of what the command does.
+ * @property {string} [help] - Longer, detailed help information.
+ * @property {RunFunction} run - The actual code execution block.
+ */
 class Command {
 	/**
-	 * @typedef {{name: string, description: string, run: RunFunction}} CommandOptions
 	 * @param {CommandOptions} options
 	 */
 	constructor(options) {

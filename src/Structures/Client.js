@@ -29,15 +29,36 @@ class Client extends Discord.Client {
 		 */
 		this.commands = new Discord.Collection();
 		/**
-		 * @type {Discord.Collection<Discord.User.Id, [{ path: string, filename: string, chance: number, chanceOrigin:string, join:boolean, leave:boolean, once: boolean, valid: boolean}] >}
+		 * @typedef {Object} SoundFileConfig
+		 * @property {string} path - The path to the audio file.
+		 * @property {string} filename - The name of the file.
+		 * @property {number} chance - The playback probability.
+		 * @property {string} chanceOrigin - Where the chance value came from.
+		 * @property {boolean} join - Play on voice join.
+		 * @property {boolean} leave - Play on voice leave.
+		 * @property {boolean} once - Only play this once.
+		 * @property {boolean} valid - If the file is valid and to be played.
+		 * @type {Discord.Collection<Discord.Snowflake, SoundFileConfig[]>}
 		 */
 		this.soundFiles = new Discord.Collection();
 		/** 
-		 * @type {{ guild: Discord.Collection<Discord.User.Id, { enabledJoin: boolean, enabledLeave: boolean, enabledDefaultJoin: boolean, enabledDefaultLeave: boolean }>, user: Discord.Collection<Discord.User.Id, { enabledJoin: boolean, enabledLeave: boolean, enabledDefaultJoin: boolean, enabledDefaultLeave: boolean }> }} 
-		*/
+		 * @typedef {Object} FeatureSettings
+		 * @property {boolean} enabledJoin
+		 * @property {boolean} enabledLeave
+		 * @property {boolean} enabledDefaultJoin
+		 * @property {boolean} enabledDefaultLeave
+		 * @type {{ 
+		 * guild: Discord.Collection<Discord.Snowflake, FeatureSettings>, 
+		 * user: Discord.Collection<Discord.Snowflake, FeatureSettings> 
+		 * }
+		 */
 		this.settings = { guild: new Discord.Collection(), user: new Discord.Collection() };
 		/**
-		 * 
+		 * @typedef {Object} PlayerManager
+		 * @property {Discord.Collection<Discord.Snowflake, PlayerSession>} activeConnections - Map of guild IDs to their active voice connection sessions.
+		 * @property {Function} play - Function to handle playing a sound file into a voice channel, managing connections and sessions.
+		 * @property {Function} disconnect - Function to handle cleanly disconnecting from a voice channel and cleaning up the session.
+		 * @type {PlayerManager}
 		 */
 		this.playerManager = require('./playerManager.js');
 	}

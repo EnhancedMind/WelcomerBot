@@ -1,12 +1,26 @@
-const { Collection, VoiceChannel, Client } = require('discord.js');
-const { createAudioPlayer, createAudioResource, joinVoiceChannel, AudioPlayerStatus, VoiceConnectionStatus, entersState } = require('@discordjs/voice');
+const { Collection, VoiceChannel } = require('discord.js');
+const { createAudioPlayer, createAudioResource, joinVoiceChannel, VoiceConnection, AudioPlayer, AudioPlayerStatus, VoiceConnectionStatus, entersState } = require('@discordjs/voice');
 const { spawn } = require('child_process');
 const path = require('path');
 
 const { player: { playIntoEmptyChannel, selfDeaf, debug, loudnessNormalization, bitrate } } = require('../../config/config.json');
+const Client = require('./Client.js');
 const { consoleLog } = require('../Data/Log.js');
 const { invalidateSoundFile } = require('../Structures/musicFilesManager.js');
 
+
+/**
+ * @typedef {Object} PlayerSession
+ * @property {VoiceConnection} connection - The active voice connection for the guild.
+ * @property {AudioPlayer} player - The audio player instance subscribed to the connection.
+ * @property {ChildProcess|null} ffmpegProcess - The current FFmpeg process handling audio transcoding, if any.
+ * @property {NodeJS.Timeout|null} startupTimeout - Timer for delayed playback startup, used to manage connection establishment.
+ * @property {NodeJS.Timeout|null} disconnectTimeout - Timer for delayed disconnection after playback finishes, to not seem like the playback was cut off.
+ * @property {NodeJS.Timeout|null} checkInterval - Interval timer for periodically checking if the bot is still in a voice channel, used to clean up sessions if the bot was kicked.
+ * @property {string|null} fileToInvalidate - The path of the sound file to invalidate after playback finishes, used for one-time play files.
+ * @property {boolean} isPreparing - Flag indicating whether the session is currently in the preparation phase before playback starts, used to prevent idle disconnections during startup.
+ * @type {Discord.Collection<Discord.Snowflake, PlayerSession>}
+ */
 const activeConnections = new Collection();
 
 
