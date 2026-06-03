@@ -25,48 +25,48 @@ Developer arguments:
 `
 
 module.exports = new Command({
-	name: 'webmanage',
-	aliases: [ 'wm', 'web' ],
-	category: 'sound',
-	syntax: 'webmanage [flags]',
-	description: 'Generates a private, single-use link for FileBrowser instance connected to this bot\'s sound file system.',
-	help: helpText,
-	async run(message, args, client) {
-		const senderId = message.author.id;
+    name: 'webmanage',
+    aliases: [ 'wm', 'web' ],
+    category: 'sound',
+    syntax: 'webmanage [flags]',
+    description: 'Generates a private, single-use link for FileBrowser instance connected to this bot\'s sound file system.',
+    help: helpText,
+    async run(message, args, client) {
+        const senderId = message.author.id;
 
-		const adminFlag = args.includes('--admin') || args.includes('-a');
-		const devFlag = args.includes('--dev') || args.includes('-d');
+        const adminFlag = args.includes('--admin') || args.includes('-a');
+        const devFlag = args.includes('--dev') || args.includes('-d');
 
-		if (adminFlag && senderId != ownerID) return await message.channel.send(`${error} ${invalidPermissions} (Bot owner)`);
-		if (devFlag && senderId != ownerID && !devIDs.includes(senderId)) return await message.channel.send(`${error} ${invalidPermissions} (Bot developer)`);
+        if (adminFlag && senderId != ownerID) return await message.channel.send(`${error} ${invalidPermissions} (Bot owner)`);
+        if (devFlag && senderId != ownerID && !devIDs.includes(senderId)) return await message.channel.send(`${error} ${invalidPermissions} (Bot developer)`);
 
-		const userDirPath = adminFlag || devFlag ? '.' : path.relative(topMusicDir, await getUserPath(client, senderId));
+        const userDirPath = adminFlag || devFlag ? '.' : path.relative(topMusicDir, await getUserPath(client, senderId));
 
-		const fbUser = adminFlag ? 'admin' : devFlag ? 'developer' : senderId;
+        const fbUser = adminFlag ? 'admin' : devFlag ? 'developer' : senderId;
 
-		if (!userDirPath) return await message.channel.send(`${error} Your user directory could not be determined. Please notify the bot administrator.`);
+        if (!userDirPath) return await message.channel.send(`${error} Your user directory could not be determined. Please notify the bot administrator.`);
 
-		const response = await message.channel.send(`Preparing your file access layer...`);
+        const response = await message.channel.send(`Preparing your file access layer...`);
 
-		try {
-			if (!adminFlag) await ensureUserExists(fbUser, userDirPath);
+        try {
+            if (!adminFlag) await ensureUserExists(fbUser, userDirPath);
 
-			const secureToken = generateLoginToken(fbUser);
-			const loginLink = `${externalDomain}/proxylogin?token=${secureToken}`
+            const secureToken = generateLoginToken(fbUser);
+            const loginLink = `${externalDomain}/proxylogin?token=${secureToken}`
 
-			await message.author.send([
-				`Here is your secure, single-use link to manage your audio files:`,
-				'',
-				`:open_file_folder: **[Open File Manager](${loginLink})**`,
-				'',
-				`*This link is valid for 10 minutes and will expire after first use. Do not share.*`
-			].join('\n'));
+            await message.author.send([
+                `Here is your secure, single-use link to manage your audio files:`,
+                '',
+                `:open_file_folder: **[Open File Manager](${loginLink})**`,
+                '',
+                `*This link is valid for 10 minutes and will expire after first use. Do not share.*`
+            ].join('\n'));
 
             await response.edit(`A secure login link was sent to your DMs.`).catch(() => {});
-		}
-		catch (error) {
-			consoleLog(`[ERR] Failed to generate filebrowser access:`, error);
+        }
+        catch (error) {
+            consoleLog(`[ERR] Failed to generate filebrowser access:`, error);
             await message.channel.send(`There was an internal error preparing your file access layer.`);
-		}
-	}
+        }
+    }
 });

@@ -37,7 +37,7 @@ Examples:
 module.exports = new Command({
     name: 'search',
     aliases: [ 'sc' ],
-	category: 'sound',
+    category: 'sound',
     syntax: 'search <query> [flags]',
     description: 'Searches sound files for a provided query.',
     help: helpText,

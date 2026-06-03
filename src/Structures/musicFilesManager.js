@@ -16,7 +16,7 @@ const musicDirComparison = topMusicDir.split('/').join(path.sep).substring(2);
 
 /**
  * Syncs the sound files from the music directory to the client instance database.
- * @param {Client} client - The client instance.	
+ * @param {Client} client - The client instance.
  * @returns {Promise<void>} - A promise that resolves when the sound files are synced.
  */
 async function syncSoundFiles (client) {

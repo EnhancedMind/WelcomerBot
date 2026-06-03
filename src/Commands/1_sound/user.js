@@ -5,12 +5,12 @@ const { bot: { ownerID, devIDs }, emoji: { success, error }, response: { invalid
 
 
 module.exports = new Command({
-	name: 'user',
+    name: 'user',
     aliases: [ ' ' ],
-	category: 'sound',
+    category: 'sound',
     syntax: 'user <action> <optionalType> <optionalType> <optionalType> <optionalType> <userIDOwnerOnly>',
-	description: 'Sets whether the bot is enabled for the user or not. Can only set the settings for yourself unless you are the owner of the bot.',
-	async run(message, args, client) {
+    description: 'Sets whether the bot is enabled for the user or not. Can only set the settings for yourself unless you are the owner of the bot.',
+    async run(message, args, client) {
         let member = message.author.id;
         for (const arg of args) {
             const modifiedArg = arg.replace(/[<@!>]/g, '');
@@ -63,5 +63,5 @@ module.exports = new Command({
         }
         
         await message.channel.send(`${success} The current settings for this user are:\n\`\`\`\n${JSON.stringify(getSetting(client, 'user', member), null, 4)} \n\`\`\``);
-	}
+    }
 });

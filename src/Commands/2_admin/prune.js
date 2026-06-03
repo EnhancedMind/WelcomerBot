@@ -4,15 +4,15 @@ const { PermissionsBitField } = require('discord.js');
 const { bot: { prefix, ownerID, devIDs }, emoji: { success, warning }, response: { missingArguments, invalidPermissions, invalidNumber } } = require('../../../config/config.json');
 
 module.exports = new Command({
-	name: 'prune',
+    name: 'prune',
     aliases: [ 'purge', 'clean' ],
-	category: 'admin',
+    category: 'admin',
     syntax: 'prune <amount>',
-	description: 'Deletes the amount of messages send by the bot and the commands used to invoke the bot. Requires Manage Messages permission.',
-	async run(message, args, client) {
+    description: 'Deletes the amount of messages send by the bot and the commands used to invoke the bot. Requires Manage Messages permission.',
+    async run(message, args, client) {
         const senderId = message.author.id;
         const permissionFail = senderId != ownerID && !devIDs.includes(senderId) && !message.member.permissions.has(PermissionsBitField.Flags.ManageMessages);
-		if (permissionFail) return await message.channel.send(`${warning} ${invalidPermissions} (Manage Messages)`);
+        if (permissionFail) return await message.channel.send(`${warning} ${invalidPermissions} (Manage Messages)`);
         if (!args[0]) return await message.channel.send(`${warning} ${missingArguments}`);
         if (isNaN(args[0])) return await message.channel.send(`${warning} ${invalidNumber}`);
         if (args[0] > 100 || args[0] < 1) return await message.channel.send(`${warning} Outside of number range!`);
@@ -41,5 +41,5 @@ module.exports = new Command({
             response.delete().catch(() => {});
             message.delete().catch(() => {});
         }, 3750);
-	}
+    }
 });

@@ -17,13 +17,13 @@ module.exports = new Event('messageCreate', async (client, message) => {
     const cmd = args.shift().toLowerCase();
     const command = client.commands.get(cmd) || client.commands.find(a => a.aliases && a.aliases.includes(cmd));
     if (!notValidCommand && !command) return;
-	if (!command) return message.channel.send(`**${cmd}** is not a valid command!`);
+    if (!command) return message.channel.send(`**${cmd}** is not a valid command!`);
     if (args[0] == '--help' || args[0] == '-h') return message.channel.send(command.help ? command.help : command.description);
 
     try {
         await command.run(message, args, client);
     }
-	catch (err) {
+    catch (err) {
         consoleLog(`[ERR] Failed running command "${command.name}":`, err);
         try {
             const errName = err?.name || 'Error';

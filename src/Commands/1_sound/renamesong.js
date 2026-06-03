@@ -1,10 +1,10 @@
 const Command = require('../../Structures/Command.js');
 
 const { 
-	bot: { prefix, ownerID, devIDs }, 
-	emoji: { success, warning }, 
-	response: { missingArguments }, 
-	player: { maxTime, allowedExtensions }
+    bot: { prefix, ownerID, devIDs }, 
+    emoji: { success, warning }, 
+    response: { missingArguments }, 
+    player: { maxTime, allowedExtensions }
 } = require('../../../config/config.json')
 
 const { rename } = require('fs/promises');
@@ -29,62 +29,62 @@ This command only renames and moves files, it does NOT create directories.
 `;
 
 module.exports = new Command({
-	name: 'renamesong',
-	aliases: [ 'renamefile', 'mv' ],
-	category: 'sound',
-	syntax: 'renamesong <origin> <destination>',
-	description: `This command allows you rename/move your songs`,
-	help: helpText,
-	async run(message, args, client) {
-		const channel = message.channel;
-		const senderId = message.author.id;
+    name: 'renamesong',
+    aliases: [ 'renamefile', 'mv' ],
+    category: 'sound',
+    syntax: 'renamesong <origin> <destination>',
+    description: `This command allows you rename/move your songs`,
+    help: helpText,
+    async run(message, args, client) {
+        const channel = message.channel;
+        const senderId = message.author.id;
 
-		if(args.length < 2) {
-			return await channel.send(`${warning} ${missingArguments}`);
-		}
-		let origin = args[0];
-		let destination = args[1];
+        if(args.length < 2) {
+            return await channel.send(`${warning} ${missingArguments}`);
+        }
+        let origin = args[0];
+        let destination = args[1];
 
-		if(path.dirname(origin) === '.') {
-			const songs = client.soundFiles.get(senderId);
-			let foundPath = false;
-			for(const song of songs) { // Find the path to the song
-				if(song.filename === origin) {
-					origin = song.path;
-					foundPath = true;
-					break;
-				}
-			}
+        if(path.dirname(origin) === '.') {
+            const songs = client.soundFiles.get(senderId);
+            let foundPath = false;
+            for(const song of songs) { // Find the path to the song
+                if(song.filename === origin) {
+                    origin = song.path;
+                    foundPath = true;
+                    break;
+                }
+            }
 
-			if(!foundPath) {
-				return await channel.send(`${warning} file \`${origin}\` doesn't exist in your library!`);
-			}
-		}
-		if(path.dirname(destination) === '.') destination = path.join(path.dirname(origin), destination); // Make destination into a path from base
+            if(!foundPath) {
+                return await channel.send(`${warning} file \`${origin}\` doesn't exist in your library!`);
+            }
+        }
+        if(path.dirname(destination) === '.') destination = path.join(path.dirname(origin), destination); // Make destination into a path from base
 
-		if(!origin.startsWith(musicDirComparison)) return await channel.send(`${warning}${warning}${warning} you tried to make changes outside the music database${warning}${warning}${warning}\nAttempted move from: \`${origin}\``);
-		if(!destination.startsWith(musicDirComparison)) return await channel.send(`${warning}${warning}${warning} you tried to make changes outside the music database${warning}${warning}${warning}\nAttempted move to: \`${destination}\``);
+        if(!origin.startsWith(musicDirComparison)) return await channel.send(`${warning}${warning}${warning} you tried to make changes outside the music database${warning}${warning}${warning}\nAttempted move from: \`${origin}\``);
+        if(!destination.startsWith(musicDirComparison)) return await channel.send(`${warning}${warning}${warning} you tried to make changes outside the music database${warning}${warning}${warning}\nAttempted move to: \`${destination}\``);
 
-		if (!(await exists(origin))) return await channel.send(`${warning} file \`${origin}\` doesn't exist!`);
-		if (await exists(destination)) return await channel.send(`${warning} file \`${destination}\` already exists!`);
+        if (!(await exists(origin))) return await channel.send(`${warning} file \`${origin}\` doesn't exist!`);
+        if (await exists(destination)) return await channel.send(`${warning} file \`${destination}\` already exists!`);
 
-		if (!(await exists(path.dirname(destination)))) return await channel.send(`${warning} directory \`${path.dirname(destination)}\` for destination doesn't exist!`);
+        if (!(await exists(path.dirname(destination)))) return await channel.send(`${warning} directory \`${path.dirname(destination)}\` for destination doesn't exist!`);
 
-		const permissionFail = senderId != ownerID && !devIDs.includes(senderId);
-		if (permissionFail) {
-			if (origin.startsWith(`${defaultDirComparison}${path.sep}`) || destination.startsWith(`${defaultDirComparison}${path.sep}`)) {
-				return await channel.send(`${warning} You do not have the permission to change songs for default! (Developer)`);
-			}
-			else if (origin.startsWith(`${everyoneDirComparison}${path.sep}`) || destination.startsWith(`${everyoneDirComparison}${path.sep}`)) {
-				return await channel.send(`${warning} You do not have the permission to change songs for everyone! (Developer)`);
-			}
-			else if (!origin.startsWith(`${userDirComparison}${path.sep}${senderId}`)) {
-				return await channel.send(`${warning} You do not have the permission to change songs for other users! (Developer)`);
-			}
-		}
+        const permissionFail = senderId != ownerID && !devIDs.includes(senderId);
+        if (permissionFail) {
+            if (origin.startsWith(`${defaultDirComparison}${path.sep}`) || destination.startsWith(`${defaultDirComparison}${path.sep}`)) {
+                return await channel.send(`${warning} You do not have the permission to change songs for default! (Developer)`);
+            }
+            else if (origin.startsWith(`${everyoneDirComparison}${path.sep}`) || destination.startsWith(`${everyoneDirComparison}${path.sep}`)) {
+                return await channel.send(`${warning} You do not have the permission to change songs for everyone! (Developer)`);
+            }
+            else if (!origin.startsWith(`${userDirComparison}${path.sep}${senderId}`)) {
+                return await channel.send(`${warning} You do not have the permission to change songs for other users! (Developer)`);
+            }
+        }
 
-		await rename(origin, destination);
-		await channel.send(`Song succesfully renamed \nFrom: \`${origin}\`\nTo: \`${destination}\``);
-		await syncSoundFiles(client);
-	}
+        await rename(origin, destination);
+        await channel.send(`Song succesfully renamed \nFrom: \`${origin}\`\nTo: \`${destination}\``);
+        await syncSoundFiles(client);
+    }
 });

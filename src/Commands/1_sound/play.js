@@ -34,13 +34,13 @@ Examples:
 
 
 module.exports = new Command({
-	name: 'play',
+    name: 'play',
     aliases: [ 'p' ],
-	category: 'sound',
+    category: 'sound',
     syntax: 'play <file/search> [flags]',
-	description: `Plays a song from local storage. Tag a person to select their sound like if they were to join or place the path from the \`${prefix}playable\` command`,
+    description: `Plays a song from local storage. Tag a person to select their sound like if they were to join or place the path from the \`${prefix}playable\` command`,
     help: helpText,
-	async run(message, args, client) {
+    async run(message, args, client) {
         const parsed = parseArgs({
             args: args,
             strict: false,

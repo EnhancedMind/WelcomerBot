@@ -7,15 +7,15 @@ const { bot: { ownerID, devIDs }, emoji: { success, warning }, response: { missi
 const emojiList = [ '✅', '❌' ];
 
 module.exports = new Command({
-	name: 'forceprune',
+    name: 'forceprune',
     aliases: [ ' ' ],
-	category: 'admin',
+    category: 'admin',
     syntax: 'forceprune <amount> <confirm>',
-	description: 'Deletes the amount of messages **!ALL MESSAGES!** Requires Administrator permission.',
-	async run(message, args, client) {
+    description: 'Deletes the amount of messages **!ALL MESSAGES!** Requires Administrator permission.',
+    async run(message, args, client) {
         const senderId = message.author.id;
         const permissionFail = senderId != ownerID && !devIDs.includes(senderId) && !message.member.permissions.has(PermissionsBitField.Flags.Administrator);
-		if (permissionFail) return await message.channel.send(`${warning} ${invalidPermissions} (Administrator)`);
+        if (permissionFail) return await message.channel.send(`${warning} ${invalidPermissions} (Administrator)`);
         if (!args[0]) return await message.channel.send(`${warning} ${missingArguments}`);
         if (isNaN(args[0])) return await message.channel.send(`${warning} ${invalidNumber}`);
         if (args[0] > 99 || args[0] < 1) return await message.channel.send(`${warning} Outside of number range!`);
@@ -57,5 +57,5 @@ module.exports = new Command({
                     break;
             }
         });
-	}
+    }
 });

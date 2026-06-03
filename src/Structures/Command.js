@@ -20,18 +20,18 @@ function RunFunction(message, args, client) {}
  * @property {RunFunction} run - The actual code execution block.
  */
 class Command {
-	/**
-	 * @param {CommandOptions} options
-	 */
-	constructor(options) {
-		this.name = options.name;
-		this.aliases = options.aliases;
-		this.category = options.category;
-		this.syntax = options.syntax;
-		this.description = options.description;
-		this.help = options.help;
-		this.run = options.run;
-	}
+    /**
+     * @param {CommandOptions} options
+     */
+    constructor(options) {
+        this.name = options.name;
+        this.aliases = options.aliases;
+        this.category = options.category;
+        this.syntax = options.syntax;
+        this.description = options.description;
+        this.help = options.help;
+        this.run = options.run;
+    }
 }
 
 module.exports = Command;

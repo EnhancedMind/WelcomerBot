@@ -5,14 +5,14 @@ const { syncSoundFiles } = require('../../Structures/musicFilesManager.js');
 
 
 module.exports = new Command({
-	name: 'sync',
-	aliases: [ 'refresh' ],
-	category: 'sound',
-	description: 'Updates the sound database.',
-	async run(message, args, client) {
-		const response = await message.channel.send(`${loading} Syncing sound files...`);
-		await syncSoundFiles(client);
+    name: 'sync',
+    aliases: [ 'refresh' ],
+    category: 'sound',
+    description: 'Updates the sound database.',
+    async run(message, args, client) {
+        const response = await message.channel.send(`${loading} Syncing sound files...`);
+        await syncSoundFiles(client);
 
-		response.edit(`${success} Sound database updated!`).catch(() => {});
-	}
+        response.edit(`${success} Sound database updated!`).catch(() => {});
+    }
 });

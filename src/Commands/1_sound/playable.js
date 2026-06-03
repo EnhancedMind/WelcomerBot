@@ -22,43 +22,43 @@ You can use the following arguments to modify this behaviour:
 `;
 
 module.exports = new Command({
-	name: 'playable',
-	aliases: [ 'pl', 'pls' ],
-	category: 'sound',
-	syntax: 'playable [--json] [--user/--personal [@user]] [--join] [--leave] pagenumber',
-	description: `Lists all the files that can be played. Use \`${prefix}playable --json\` to get the output as JSON data.`,
-	help: helpText,
-	async run(message, args, client) {
-		const jsonFlag = args.includes('--json')
+    name: 'playable',
+    aliases: [ 'pl', 'pls' ],
+    category: 'sound',
+    syntax: 'playable [--json] [--user/--personal [@user]] [--join] [--leave] pagenumber',
+    description: `Lists all the files that can be played. Use \`${prefix}playable --json\` to get the output as JSON data.`,
+    help: helpText,
+    async run(message, args, client) {
+        const jsonFlag = args.includes('--json')
 
-		const page = resolvePage(message, args);
-		const [ array, taggedUser, personalFlag, noPathFlag ] = await resolveUserFlag(message, args, client);
+        const page = resolvePage(message, args);
+        const [ array, taggedUser, personalFlag, noPathFlag ] = await resolveUserFlag(message, args, client);
 
-		if(array === undefined) return; // Flag had an issue
+        if(array === undefined) return; // Flag had an issue
 
-		if(array.length == 0 && taggedUser === undefined) { // User array failed
-			const defaultAndEveryone = [];
-			const users = [];
+        if(array.length == 0 && taggedUser === undefined) { // User array failed
+            const defaultAndEveryone = [];
+            const users = [];
 
-			// Put everyone and default before user sounds
-			for(const [key, value] of client.soundFiles) { 
-				if(key == 'default' || key == 'everyone') {
-					defaultAndEveryone.push(...value);
-				}
-				else {
-					users.push(...value);
-				}
-			}
-			array.push(...defaultAndEveryone,...users);
-		}
+            // Put everyone and default before user sounds
+            for(const [key, value] of client.soundFiles) { 
+                if(key == 'default' || key == 'everyone') {
+                    defaultAndEveryone.push(...value);
+                }
+                else {
+                    users.push(...value);
+                }
+            }
+            array.push(...defaultAndEveryone,...users);
+        }
 
-		if(jsonFlag) {
-			exportPlayableToJson(message, client, array, taggedUser);
-		}
-		else {
-			printPlayable(message, client, array, taggedUser, personalFlag, page, noPathFlag);
-		}
-	}
+        if(jsonFlag) {
+            exportPlayableToJson(message, client, array, taggedUser);
+        }
+        else {
+            printPlayable(message, client, array, taggedUser, personalFlag, page, noPathFlag);
+        }
+    }
 });
 
 /**
@@ -68,19 +68,19 @@ module.exports = new Command({
  * @returns {void}
  */
 function resolvePage(message, args) {
-	let page = 0;
-	for(const arg of args) {
-		if(/^\d+$/.test(arg)) {
-			page = parseInt(arg);
-			
-		}
-	}
+    let page = 0;
+    for(const arg of args) {
+        if(/^\d+$/.test(arg)) {
+            page = parseInt(arg);
+            
+        }
+    }
 
-	if (isNaN(page)) {
-		page = 0;
-	}
+    if (isNaN(page)) {
+        page = 0;
+    }
 
-	return page-1;
+    return page-1;
 }
 
 /**
@@ -91,60 +91,60 @@ function resolvePage(message, args) {
  * @returns {[object[], Discord.user, boolean]} - [array with user's songs if flagged, the user, if the flag was 'personal']
  */
 async function resolveUserFlag(message, args, client) {
-	const senderId = message.author.id;
-	let userFlagIdx = args.indexOf('--user');
-	if (userFlagIdx === -1) {
-		userFlagIdx = args.indexOf('-u'); // Fallback to shorthand if longhand wasn't used
-	}
+    const senderId = message.author.id;
+    let userFlagIdx = args.indexOf('--user');
+    if (userFlagIdx === -1) {
+        userFlagIdx = args.indexOf('-u'); // Fallback to shorthand if longhand wasn't used
+    }
 
-	let personalFlagIdx = args.indexOf('--personal');
-	if (personalFlagIdx === -1) {
-		personalFlagIdx = args.indexOf('-p');
-	}
+    let personalFlagIdx = args.indexOf('--personal');
+    if (personalFlagIdx === -1) {
+        personalFlagIdx = args.indexOf('-p');
+    }
 
-	const leaveFlag = args.includes('--leave') || args.includes('-l');
-	const joinFlag = args.includes('--join') || args.includes('-j');
-	const noPathFlag = args.includes('--no-path') || args.includes('-P');
-	const eventFlag = leaveFlag || joinFlag;
+    const leaveFlag = args.includes('--leave') || args.includes('-l');
+    const joinFlag = args.includes('--join') || args.includes('-j');
+    const noPathFlag = args.includes('--no-path') || args.includes('-P');
+    const eventFlag = leaveFlag || joinFlag;
 
-	if(userFlagIdx === -1 && personalFlagIdx === -1) return [ [], undefined, undefined, noPathFlag ]; // No flags => [] to list everything
-	if(userFlagIdx !== -1 && personalFlagIdx !== -1) { // Use of both at the same time is invalid
-		await message.channel.send({ content: `Both user and personal flags can't be triggered at the same time!`});
-		return [ undefined, undefined, undefined, undefined ];
-	}
+    if(userFlagIdx === -1 && personalFlagIdx === -1) return [ [], undefined, undefined, noPathFlag ]; // No flags => [] to list everything
+    if(userFlagIdx !== -1 && personalFlagIdx !== -1) { // Use of both at the same time is invalid
+        await message.channel.send({ content: `Both user and personal flags can't be triggered at the same time!`});
+        return [ undefined, undefined, undefined, undefined ];
+    }
 
-	const flagIdx = (userFlagIdx !== -1) ? userFlagIdx : personalFlagIdx;
-	let taggedUser = undefined;
+    const flagIdx = (userFlagIdx !== -1) ? userFlagIdx : personalFlagIdx;
+    let taggedUser = undefined;
 
-	if (args.length > flagIdx+1) { // If the user tag has an argument
-		const nextVal = (args[flagIdx+1].startsWith('-')) ? `<@${senderId}>` : args[flagIdx+1]; // If no tag, use the sender
-		const mentionMatches = nextVal.match(/^<@([0-9]{18,19})>/); // Extract the user id
+    if (args.length > flagIdx+1) { // If the user tag has an argument
+        const nextVal = (args[flagIdx+1].startsWith('-')) ? `<@${senderId}>` : args[flagIdx+1]; // If no tag, use the sender
+        const mentionMatches = nextVal.match(/^<@([0-9]{18,19})>/); // Extract the user id
 
-		if (!mentionMatches) {
-			await message.channel.send({ content: `Invalid user argument ${nextVal}`});
-			return [ undefined, undefined, undefined, undefined ];
-		}
-		taggedUser = mentionMatches[1];
-	}
-	else { // If not, just make the sender the argument
-		taggedUser = senderId;
-	}
+        if (!mentionMatches) {
+            await message.channel.send({ content: `Invalid user argument ${nextVal}`});
+            return [ undefined, undefined, undefined, undefined ];
+        }
+        taggedUser = mentionMatches[1];
+    }
+    else { // If not, just make the sender the argument
+        taggedUser = senderId;
+    }
 
-	// Just user flag was triggered
-	if(userFlagIdx !== -1) {
-		const joinArray = (joinFlag || !eventFlag) ? await getUserSoundArray(client, taggedUser, 'join', message.guildId) : [];
-		const leaveArray = (leaveFlag || !eventFlag) ? await getUserSoundArray(client, taggedUser, 'leave', message.guildId) : [];
-		const array = [...joinArray,...leaveArray];
-		return [ array, taggedUser, false, noPathFlag ];
-	}
+    // Just user flag was triggered
+    if(userFlagIdx !== -1) {
+        const joinArray = (joinFlag || !eventFlag) ? await getUserSoundArray(client, taggedUser, 'join', message.guildId) : [];
+        const leaveArray = (leaveFlag || !eventFlag) ? await getUserSoundArray(client, taggedUser, 'leave', message.guildId) : [];
+        const array = [...joinArray,...leaveArray];
+        return [ array, taggedUser, false, noPathFlag ];
+    }
 
-	//personal flag was triggered
-	const array = (await getUserSoundArray(client, taggedUser,'all', message.guildId)).filter(song => {return song.path.startsWith(userDirComparison)});
-	if(eventFlag) {
-		if(joinFlag) return [ array.filter(song => song.join), taggedUser, true, noPathFlag ];
-		else if(leaveFlag) return [ array.filter(song => song.leave), taggedUser, true, noPathFlag ];
-	}
-	return [ array, taggedUser, true, noPathFlag ];
+    //personal flag was triggered
+    const array = (await getUserSoundArray(client, taggedUser,'all', message.guildId)).filter(song => {return song.path.startsWith(userDirComparison)});
+    if(eventFlag) {
+        if(joinFlag) return [ array.filter(song => song.join), taggedUser, true, noPathFlag ];
+        else if(leaveFlag) return [ array.filter(song => song.leave), taggedUser, true, noPathFlag ];
+    }
+    return [ array, taggedUser, true, noPathFlag ];
 }
 
 /**
@@ -156,13 +156,13 @@ async function resolveUserFlag(message, args, client) {
  * @returns {null}
  */
 async function exportPlayableToJson(message, client, array, taggedUser) {
-	const jsonString = JSON.stringify(array, null, 2);
-	const buffer = Buffer.from(jsonString, 'utf-8');
-	const filePrefix = (taggedUser) ? `${(await client.users.fetch(taggedUser)).globalName}_` : ''; 
-	const attachment = new AttachmentBuilder(buffer, { name: `${filePrefix}soundFiles.json` });
+    const jsonString = JSON.stringify(array, null, 2);
+    const buffer = Buffer.from(jsonString, 'utf-8');
+    const filePrefix = (taggedUser) ? `${(await client.users.fetch(taggedUser)).globalName}_` : ''; 
+    const attachment = new AttachmentBuilder(buffer, { name: `${filePrefix}soundFiles.json` });
 
-	message.channel.send({ content: 'Here is the JSON data:', files: [attachment] });
-	return;	
+    message.channel.send({ content: 'Here is the JSON data:', files: [attachment] });
+    return;    
 }
 
 /**
@@ -177,71 +177,71 @@ async function exportPlayableToJson(message, client, array, taggedUser) {
  * @returns {null}
  */
 async function printPlayable(message, client, array, taggedUser, personal, page, noPathFlag) {
-	let userCount = 0;
-	let everyoneCount = 0;
-	let defaultCount = 0;
-	
-	for(const song of array) {
-		if(song.path.startsWith(userDirComparison)) userCount++;
-		if(song.path.startsWith(everyoneDirComparison)) everyoneCount++;
-		if(song.path.startsWith(defaultDirComparison)) defaultCount++;
-	}
+    let userCount = 0;
+    let everyoneCount = 0;
+    let defaultCount = 0;
+    
+    for(const song of array) {
+        if(song.path.startsWith(userDirComparison)) userCount++;
+        if(song.path.startsWith(everyoneDirComparison)) everyoneCount++;
+        if(song.path.startsWith(defaultDirComparison)) defaultCount++;
+    }
 
-	let targetsName = "DEBUG";
-	const embeds = [];
-	let embedHeadline;
-	
-	if(personal) {
-		targetsName = (await client.users.fetch(taggedUser)).globalName;
-		embedHeadline = `${targetsName}'s personal files!`;
-	}
-	else if(taggedUser) {
-		targetsName = (await client.users.fetch(taggedUser)).globalName;
-		embedHeadline = `${targetsName}'s active files!`;
-	}
-	else {
-		embedHeadline = `All playable files!`;
-	}
+    let targetsName = "DEBUG";
+    const embeds = [];
+    let embedHeadline;
+    
+    if(personal) {
+        targetsName = (await client.users.fetch(taggedUser)).globalName;
+        embedHeadline = `${targetsName}'s personal files!`;
+    }
+    else if(taggedUser) {
+        targetsName = (await client.users.fetch(taggedUser)).globalName;
+        embedHeadline = `${targetsName}'s active files!`;
+    }
+    else {
+        embedHeadline = `All playable files!`;
+    }
 
-	let j = -1;
-	for (let i = 0; i < array.length; i++) {
-		if (i % 15 == 0) {
-			j++;
-			embeds[j] = new EmbedBuilder()
-				.setColor(0x3399FF)
-				.setAuthor({
-					name: embedHeadline,
-					url: homepage,
-					iconURL: client.user.displayAvatarURL({ size: 1024, dynamic: true })
-				});
-		}
-		embeds[j].addFields({
-			name: `\`${array[i].filename}\``,
-			value: noPathFlag ? '' : `> \`${array[i].path}\``,
-		});
-	}
+    let j = -1;
+    for (let i = 0; i < array.length; i++) {
+        if (i % 15 == 0) {
+            j++;
+            embeds[j] = new EmbedBuilder()
+                .setColor(0x3399FF)
+                .setAuthor({
+                    name: embedHeadline,
+                    url: homepage,
+                    iconURL: client.user.displayAvatarURL({ size: 1024, dynamic: true })
+                });
+        }
+        embeds[j].addFields({
+            name: `\`${array[i].filename}\``,
+            value: noPathFlag ? '' : `> \`${array[i].path}\``,
+        });
+    }
 
-	if(embeds.length === 0) {
-		embeds[0] = new EmbedBuilder()
-		.setColor(0x3399FF)
-		.setAuthor({
-			name: embedHeadline,
-			url: homepage,
-			iconURL: client.user.displayAvatarURL({ size: 1024, dynamic: true })
-		});
-	}
-		
-	if(personal) {
-		embeds[0].setDescription(`**Here are all the personal files of ${targetsName}:**\n\`\`\`🎶 Personal files: ${userCount}\`\`\``);
-	}
-	else if(taggedUser) {
-		embeds[0].setDescription(`**Here are all the files that may play for ${targetsName}:**\n\`\`\`🎶 Everyone files: ${everyoneCount}\n🎶 Default files: ${defaultCount}\n🎶 User files: ${userCount}\`\`\``);
-	}
-	else {
-		embeds[0].setDescription(`**Here are all the files that can be played by the bot:**\n\`\`\`🎶 Everyone files: ${everyoneCount}\n🎶 Default files: ${defaultCount}\n🎶 User files: ${userCount}\`\`\``);
-	}
+    if(embeds.length === 0) {
+        embeds[0] = new EmbedBuilder()
+        .setColor(0x3399FF)
+        .setAuthor({
+            name: embedHeadline,
+            url: homepage,
+            iconURL: client.user.displayAvatarURL({ size: 1024, dynamic: true })
+        });
+    }
+        
+    if(personal) {
+        embeds[0].setDescription(`**Here are all the personal files of ${targetsName}:**\n\`\`\`🎶 Personal files: ${userCount}\`\`\``);
+    }
+    else if(taggedUser) {
+        embeds[0].setDescription(`**Here are all the files that may play for ${targetsName}:**\n\`\`\`🎶 Everyone files: ${everyoneCount}\n🎶 Default files: ${defaultCount}\n🎶 User files: ${userCount}\`\`\``);
+    }
+    else {
+        embeds[0].setDescription(`**Here are all the files that can be played by the bot:**\n\`\`\`🎶 Everyone files: ${everyoneCount}\n🎶 Default files: ${defaultCount}\n🎶 User files: ${userCount}\`\`\``);
+    }
 
-	paginator(message, embeds, null, page).catch(async (err) => {
-		await message.channel.send('The paginator failed.');
-	});;
+    paginator(message, embeds, null, page).catch(async (err) => {
+        await message.channel.send('The paginator failed.');
+    });;
 }

@@ -1,11 +1,11 @@
 const Command = require('../../Structures/Command');
 
 const { 
-	bot: { prefix, ownerID, devIDs }, 
-	emoji: { success, info, warning }, 
-	response: { missingArguments }, 
-	player: { maxTime, allowedExtensions },
-	directories: {userMusicDir, defaultMusicDir, everyoneMusicDir, tempMusicDir}
+    bot: { prefix, ownerID, devIDs }, 
+    emoji: { success, info, warning }, 
+    response: { missingArguments }, 
+    player: { maxTime, allowedExtensions },
+    directories: {userMusicDir, defaultMusicDir, everyoneMusicDir, tempMusicDir}
 } = require('../../../config/config.json');
 
 const https = require('https');
@@ -38,45 +38,45 @@ This command supports the following arguments for developers:
 `;
 
 module.exports = new Command({
-	name: 'addsong',
-	aliases: [ 'setsong' ],
-	category: 'sound',
-	syntax: 'addsong [--default/--user @user/--everyone] ^fileInAttachment',
-	description: `Adds the song sent in the attachment as your join song. For more info type \`${prefix}addsong -help\``,
-	help: helpText,
-	async run(message, args, client) {
-		const channel = message.channel;
-		const senderId = message.author.id;
+    name: 'addsong',
+    aliases: [ 'setsong' ],
+    category: 'sound',
+    syntax: 'addsong [--default/--user @user/--everyone] ^fileInAttachment',
+    description: `Adds the song sent in the attachment as your join song. For more info type \`${prefix}addsong -help\``,
+    help: helpText,
+    async run(message, args, client) {
+        const channel = message.channel;
+        const senderId = message.author.id;
 
-		if (!message.attachments.size) return await channel.send(`${warning} ${missingArguments} (No attachment found)`);
-		const permissionFail = senderId != ownerID && !devIDs.includes(senderId);
+        if (!message.attachments.size) return await channel.send(`${warning} ${missingArguments} (No attachment found)`);
+        const permissionFail = senderId != ownerID && !devIDs.includes(senderId);
 
-		if (args[0] == '--default' || args[0] == '-d') {
-			if (permissionFail) return await channel.send(`${warning} You do not have the permission to add songs to default! (Developer)`);
-			await addSongCore(message, client, defaultMusicDir);
-		}
-		else if (args[0] == '--everyone' || args[0] == '-e') {
-			if (permissionFail) return await channel.send(`${warning} You do not have the permission to add songs to everyone! (Developer)`);
-			await addSongCore(message, client, everyoneMusicDir);
-		}
-		else if (args[0] == '--user' || args[0] == '-u') {
-			if (permissionFail) return await channel.send(`${warning} You do not have the permission to add songs to other users! (Developer)`);
+        if (args[0] == '--default' || args[0] == '-d') {
+            if (permissionFail) return await channel.send(`${warning} You do not have the permission to add songs to default! (Developer)`);
+            await addSongCore(message, client, defaultMusicDir);
+        }
+        else if (args[0] == '--everyone' || args[0] == '-e') {
+            if (permissionFail) return await channel.send(`${warning} You do not have the permission to add songs to everyone! (Developer)`);
+            await addSongCore(message, client, everyoneMusicDir);
+        }
+        else if (args[0] == '--user' || args[0] == '-u') {
+            if (permissionFail) return await channel.send(`${warning} You do not have the permission to add songs to other users! (Developer)`);
 
-			let userId;
-			if (args[1].startsWith('<@') && args[1].endsWith('>')) {
-				userId = args[1].replace(/[<@!>]/g, '');
-				const userPath = await getUserPath(client, userId);
-				await addSongCore(message, client, userPath)
-			}
-			else {
-				return await channel.send(`${warning} user ${args[1]} is not a valid user.`);
-			}
-		}
-		else { // Typical user file
-			const userPath = await getUserPath(client, senderId);
-			await addSongCore(message, client, userPath)
-		}
-	}
+            let userId;
+            if (args[1].startsWith('<@') && args[1].endsWith('>')) {
+                userId = args[1].replace(/[<@!>]/g, '');
+                const userPath = await getUserPath(client, userId);
+                await addSongCore(message, client, userPath)
+            }
+            else {
+                return await channel.send(`${warning} user ${args[1]} is not a valid user.`);
+            }
+        }
+        else { // Typical user file
+            const userPath = await getUserPath(client, senderId);
+            await addSongCore(message, client, userPath)
+        }
+    }
 });
 
 /**
@@ -87,94 +87,94 @@ module.exports = new Command({
  * @returns {void}
  */
 async function addSongCore(message, client, targetDir) {
-	const allAttachments = message.attachments;
-	const channel = message.channel;
-	const senderId = message.author.id;
+    const allAttachments = message.attachments;
+    const channel = message.channel;
+    const senderId = message.author.id;
 
-	const response = await channel.send(`${info} Working...`)
+    const response = await channel.send(`${info} Working...`)
 
-	const channelResponse = [];
+    const channelResponse = [];
 
-	// Modifying settings if they are disabled
-	let settingModified = false;
-	const setting = getSetting(client, 'user', senderId);
+    // Modifying settings if they are disabled
+    let settingModified = false;
+    const setting = getSetting(client, 'user', senderId);
 
-	for(const [_, attachment] of allAttachments) {
-		const fileName = attachment.title ? `${attachment.title}${path.extname(attachment.name)}` : attachment.name;
+    for(const [_, attachment] of allAttachments) {
+        const fileName = attachment.title ? `${attachment.title}${path.extname(attachment.name)}` : attachment.name;
 
-		if (!allowedExtensions.some(ext => fileName.endsWith(ext))) {
-			channelResponse.push(`${warning} Invalid file type in \`${fileName}\`! Supported types: ${allowedExtensions.join(', ')}`);
-			continue;
-		}
+        if (!allowedExtensions.some(ext => fileName.endsWith(ext))) {
+            channelResponse.push(`${warning} Invalid file type in \`${fileName}\`! Supported types: ${allowedExtensions.join(', ')}`);
+            continue;
+        }
 
-		const filePath = path.join(targetDir,fileName);
-		if (await exists(filePath))  {
-			channelResponse.push(`${warning} A file with the name \`${fileName}\` already exists! Please rename the file and try again.`);
-			continue;
-		}
-		const tempPath = path.join(tempMusicDir,fileName);
-		if (!(await exists(`${tempMusicDir}`))) await mkdir(`${tempMusicDir}`, { recursive: true });
+        const filePath = path.join(targetDir,fileName);
+        if (await exists(filePath))  {
+            channelResponse.push(`${warning} A file with the name \`${fileName}\` already exists! Please rename the file and try again.`);
+            continue;
+        }
+        const tempPath = path.join(tempMusicDir,fileName);
+        if (!(await exists(`${tempMusicDir}`))) await mkdir(`${tempMusicDir}`, { recursive: true });
 
-		await new Promise((resolve) => https.get(attachment.url, (res) => res.pipe(createWriteStream(tempPath)).on('finish', () => resolve())));
+        await new Promise((resolve) => https.get(attachment.url, (res) => res.pipe(createWriteStream(tempPath)).on('finish', () => resolve())));
 
-		let duration;
-		try {
-			duration = await getFileDuration(tempPath);
-		}
-		catch (err) {
-			consoleLog(`[ERR] Failed analyzing ${fileName}:`, err);
-			channelResponse.push(`${warning} Failed to analyze \`${fileName}\`. The file might be corrupted.`);
-			await rm(tempPath, { force: true }).catch(() => {});
-			continue;
-		}
+        let duration;
+        try {
+            duration = await getFileDuration(tempPath);
+        }
+        catch (err) {
+            consoleLog(`[ERR] Failed analyzing ${fileName}:`, err);
+            channelResponse.push(`${warning} Failed to analyze \`${fileName}\`. The file might be corrupted.`);
+            await rm(tempPath, { force: true }).catch(() => {});
+            continue;
+        }
 
-		if (duration > maxTime) {
-			await rm(tempPath, { force: true }).catch(() => {});
-			channelResponse.push(`${warning} The song \`${fileName}\` is too long! Max length: ${maxTime} seconds`);
-			continue;
-		}
+        if (duration > maxTime) {
+            await rm(tempPath, { force: true }).catch(() => {});
+            channelResponse.push(`${warning} The song \`${fileName}\` is too long! Max length: ${maxTime} seconds`);
+            continue;
+        }
 
-		try {
-			await rename(tempPath, filePath);
-		}
-		catch (err) {
-			channelResponse.push(`${warning} Failed to move \`${fileName}\`. Terminating...`);
-			continue;
-		}
-		channelResponse.push(`${success} Successfully uploaded \`${fileName}\`!`);
+        try {
+            await rename(tempPath, filePath);
+        }
+        catch (err) {
+            channelResponse.push(`${warning} Failed to move \`${fileName}\`. Terminating...`);
+            continue;
+        }
+        channelResponse.push(`${success} Successfully uploaded \`${fileName}\`!`);
 
-		if (!setting) continue;
-		if (!setting.enabledJoin && (fileName.includes('$join') || !fileName.includes('$leave')) ) {
-			setSetting(client, 'user', senderId, 'enabledJoin', true);
-			settingModified = true;
-		}
-		else if (!setting.enabledLeave && fileName.includes('$leave')) {
-			setSetting(client, 'user', senderId, 'enabledLeave', true);
-			settingModified = true;
-		}
-	}
+        if (!setting) continue;
+        if (!setting.enabledJoin && (fileName.includes('$join') || !fileName.includes('$leave')) ) {
+            setSetting(client, 'user', senderId, 'enabledJoin', true);
+            settingModified = true;
+        }
+        else if (!setting.enabledLeave && fileName.includes('$leave')) {
+            setSetting(client, 'user', senderId, 'enabledLeave', true);
+            settingModified = true;
+        }
+    }
 
-	await syncSoundFiles(client);
+    await syncSoundFiles(client);
 
-	if (settingModified) {
-		try {
-			await writeSettingsFile(client);
-			channelResponse.push(`${success} Your settings have been updated to play the sound!`);
-		}
-		catch {
-			channelResponse.push(`${warning} An error occurred while writing the settings file, your sound is activated only until the bot restarts!`);
-		}
-	}
+    if (settingModified) {
+        try {
+            await writeSettingsFile(client);
+            channelResponse.push(`${success} Your settings have been updated to play the sound!`);
+        }
+        catch {
+            channelResponse.push(`${warning} An error occurred while writing the settings file, your sound is activated only until the bot restarts!`);
+        }
+    }
 
-	// ensure message is not empty
-	if (channelResponse.length === 0) {
+    // ensure message is not empty
+    if (channelResponse.length === 0) {
         channelResponse.push(`${warning} No valid files were processed, or other problem occured.`);
     }
 
-	try {
-		await response.edit(channelResponse.join('\n'));
-	}
-	catch (_) {
-		await channel.send(channelResponse.join('\n')).catch(() => {});
-	}
+    try {
+        await response.edit(channelResponse.join('\n'));
+    }
+    catch (_) {
+        await channel.send(channelResponse.join('\n')).catch(() => {});
+    }
 }
