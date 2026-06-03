@@ -214,7 +214,7 @@ async function printPlayable(message, client, array, taggedUser, personal, page)
 		}
 		embeds[j].addFields({
 			name: `\`${array[i].filename}\``,
-			value: `\`${array[i].path}\``,
+			value: `> \`${array[i].path}\``,
 		});
 	}
 

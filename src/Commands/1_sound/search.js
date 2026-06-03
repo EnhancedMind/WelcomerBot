@@ -82,7 +82,7 @@ module.exports = new Command({
             .setTitle('Search Results')
 
         for (const [index, item] of results.entries()) {
-            embed.addFields({ name: `${emojiListSource[index]} \`${item.item.filename}\``, value: pathFlag ? `\`${item.item.path}\`` : '' });
+            embed.addFields({ name: `${emojiListSource[index]} \`${item.item.filename}\``, value: pathFlag ? `> \`${item.item.path}\`` : '' });
         }
 
         response.edit({ content: `${success} Search results for \`${args.join(' ')}\`:`, embeds: [embed] }).catch(() => {});
