@@ -9,11 +9,23 @@ on:
         type: string
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
+  build-platforms:
+    name: Build platform-specific images
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
-      packages: write # Required to allow the cleanup action to delete package versions
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            arch: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -21,58 +33,31 @@ jobs:
           fetch-depth: 0
           filter: blob:none
 
-      # 1. Grab the version from package.json if no version input was passed down
-      - name: Get version from package.json
-        if: "${{ inputs.version == '' }}"
-        id: package-version
-        uses: martinbeentjes/npm-get-version-action@v1.3.1
-
-      # extract short SHA and absolute total commit count for build metadata
-      - name: Generate Build Metadata
-        id: meta
+      # Prepare Git info, package version, and architecture-specific tags
+      - name: Prepare Build Metadata and Tags
+        id: prep
         run: |
+          REPO_LOWER="${RAW_REPO,,}"
           echo "SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           echo "BUILD_NUMBER=$(git rev-list --count HEAD)" >> $GITHUB_OUTPUT
 
-      # 2. Force the entire repository path (Owner/Repo) to lowercase for Docker compliance
-      - name: Lowercase repository path
-        id: string
-        run: |
-          echo "REPO_LOWER=${RAW_REPO,,}" >> $GITHUB_OUTPUT
-
-          # Also extract just the package/repo name itself (e.g., welcomerbot) for the cleanup step
-          PKG_NAME=$(echo "${RAW_REPO,,}" | cut -d'/' -f2)
-          echo "PKG_NAME=${PKG_NAME}" >> $GITHUB_OUTPUT
+          IMAGE_PATH="ghcr.io/${REPO_LOWER}"
+          
+          if [ -z "${{ inputs.version }}" ]; then
+            VERSION_NUM=$(jq -r .version package.json)
+            echo "DOCKER_TAGS=${IMAGE_PATH}:latest-dev-${{ matrix.arch }},${IMAGE_PATH}:v${VERSION_NUM}-dev-${{ matrix.arch }}" >> $GITHUB_OUTPUT
+          else
+            VERSION_NUM="${{ inputs.version }}"
+            echo "DOCKER_TAGS=${IMAGE_PATH}:latest-${{ matrix.arch }},${IMAGE_PATH}:v${VERSION_NUM}-${{ matrix.arch }}" >> $GITHUB_OUTPUT
+          fi
         env:
           RAW_REPO: ${{ github.repository }}
 
-      # 3. Determine the exact Docker tags based on how this workflow was triggered
-      - name: Set dynamic tags
-        id: docker-tags
-        run: |
-          IMAGE_PATH="ghcr.io/${{ steps.string.outputs.REPO_LOWER }}"
-          
-          if [ -z "${{ inputs.version }}" ]; then
-            # Standalone build fallback tags (e.g., ghcr.io/enhancedmind/welcomerbot:latest-dev)
-            VERSION_NUM="${{ steps.package-version.outputs.current-version }}"
-            echo "TAG_PRIMARY=${IMAGE_PATH}:latest-dev" >> $GITHUB_OUTPUT
-            echo "TAG_SECONDARY=${IMAGE_PATH}:v${VERSION_NUM}-dev" >> $GITHUB_OUTPUT
-          else
-            # Official Release tags passed from release.yml (e.g., ghcr.io/enhancedmind/welcomerbot:latest)
-            VERSION_NUM="${{ inputs.version }}"
-            echo "TAG_PRIMARY=${IMAGE_PATH}:latest" >> $GITHUB_OUTPUT
-            echo "TAG_SECONDARY=${IMAGE_PATH}:v${VERSION_NUM}" >> $GITHUB_OUTPUT
-          fi
-
-      # 4. Set up hardware emulation (QEMU) for Raspberry Pi (ARM) compilation
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
-
-      # 5. Set up Docker Buildx for multi-architecture building
+      # Set up Docker Buildx for multi-architecture building
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      # 6. Log in to GitHub Container Registry (GHCR)
+      # Log in to GitHub Container Registry (GHCR)
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
         with:
@@ -80,26 +65,73 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 7. Build the image for standard PC and Raspberry Pi 4, then push to GHCR using the calculated tags
+      # Build natively on the assigned host architecture
       - name: Build and push Docker image
         uses: docker/build-push-action@v7
         with:
           context: .
           push: true
-          platforms: linux/amd64, linux/arm64
-          tags: |
-            ${{ steps.docker-tags.outputs.TAG_PRIMARY }}
-            ${{ steps.docker-tags.outputs.TAG_SECONDARY }}
+          platforms: ${{ matrix.platform }}
+          tags: ${{ steps.prep.outputs.DOCKER_TAGS }}
           build-args: |
-            COMMIT_SHA=${{ steps.meta.outputs.SHA_SHORT }}
-            BUILD_NUMBER=${{ steps.meta.outputs.BUILD_NUMBER }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            COMMIT_SHA=${{ steps.prep.outputs.SHA_SHORT }}
+            BUILD_NUMBER=${{ steps.prep.outputs.BUILD_NUMBER }}
+          # Scoping ensures the amd64 and arm64 caches don't overwrite each other
+          cache-from: type=gha,scope=build-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=build-${{ matrix.arch }}
 
-      # 8. Clean up old untagged container versions using the marketplace action
+
+  merge-manifests:
+    name: Merge platform images into unified multi-arch tag
+    needs: build-platforms
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # Required to allow the cleanup action to delete package versions
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      # 3. Assemble target multi-arch tags and map their architecture components
+      - name: Prepare Merge Metadata
+        id: merge-prep
+        run: |
+          REPO_LOWER="${RAW_REPO,,}"
+          echo "PKG_NAME=$(basename "${REPO_LOWER}")" >> $GITHUB_OUTPUT
+          
+          IMAGE_PATH="ghcr.io/${REPO_LOWER}"
+          
+          if [ -z "${{ inputs.version }}" ]; then
+            VERSION_NUM=$(jq -r .version package.json)
+            echo "TARGET_TAGS=-t ${IMAGE_PATH}:latest-dev -t ${IMAGE_PATH}:v${VERSION_NUM}-dev" >> $GITHUB_OUTPUT
+            echo "SOURCES=${IMAGE_PATH}:latest-dev-amd64 ${IMAGE_PATH}:latest-dev-arm64" >> $GITHUB_OUTPUT
+          else
+            VERSION_NUM="${{ inputs.version }}"
+            echo "TARGET_TAGS=-t ${IMAGE_PATH}:latest -t ${IMAGE_PATH}:v${VERSION_NUM}" >> $GITHUB_OUTPUT
+            echo "SOURCES=${IMAGE_PATH}:latest-amd64 ${IMAGE_PATH}:latest-arm64" >> $GITHUB_OUTPUT
+          fi
+        env:
+          RAW_REPO: ${{ github.repository }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Tie the independent tags together into a master multi-architecture manifest
+      - name: Create and push multi-arch manifest
+        run: |
+          docker buildx imagetools create ${{ steps.merge-prep.outputs.TARGET_TAGS }} ${{ steps.merge-prep.outputs.SOURCES }}
+
+      # Clean up old untagged image versions using the marketplace action
       - name: Clean untagged images from GHCR
         uses: dataaxiom/ghcr-cleanup-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          package: ${{ steps.string.outputs.PKG_NAME }}
+          package: ${{ steps.merge-prep.outputs.PKG_NAME }}
           delete-untagged: true
