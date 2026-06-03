@@ -17,6 +17,7 @@ You can use the following arguments to modify this behaviour:
 - \`--personal @user\` or \`-p @user\` - Lists all the songs in \`user\`'s library.
 - \`--join\` or \`-j\` - Lists all the songs marked for use when \`user\`'s joins. (only works for --user or --personal)
 - \`--leave\` or \`-l\` - Lists all the songs marked for use when \`user\`'s leaves. (only works for --user or --personal)
+- \`--no-path\` or \`-P\` - Hides the file paths and only shows the file names in the output.
 - \`pagenumber\` - Specify the page number to view (only works for printing in chat)
 `;
 
@@ -31,7 +32,7 @@ module.exports = new Command({
 		const jsonFlag = args.includes('--json')
 
 		const page = resolvePage(message, args);
-		const [array, taggedUser, personalFlag] = await resolveUserFlag(message, args, client);
+		const [ array, taggedUser, personalFlag, noPathFlag ] = await resolveUserFlag(message, args, client);
 
 		if(array === undefined) return; // Flag had an issue
 
@@ -55,7 +56,7 @@ module.exports = new Command({
 			exportPlayableToJson(message, client, array, taggedUser);
 		}
 		else {
-			printPlayable(message, client, array, taggedUser, personalFlag, page);
+			printPlayable(message, client, array, taggedUser, personalFlag, page, noPathFlag);
 		}
 	}
 });
@@ -103,12 +104,13 @@ async function resolveUserFlag(message, args, client) {
 
 	const leaveFlag = args.includes('--leave') || args.includes('-l');
 	const joinFlag = args.includes('--join') || args.includes('-j');
+	const noPathFlag = args.includes('--no-path') || args.includes('-P');
 	const eventFlag = leaveFlag || joinFlag;
 
-	if(userFlagIdx === -1 && personalFlagIdx === -1) return [[],undefined, undefined]; // No flags => [] to list everything
+	if(userFlagIdx === -1 && personalFlagIdx === -1) return [ [], undefined, undefined, noPathFlag ]; // No flags => [] to list everything
 	if(userFlagIdx !== -1 && personalFlagIdx !== -1) { // Use of both at the same time is invalid
-		message.channel.send({ content: `Both user and personal flags can't be triggered at the same time!`});
-		return [undefined, undefined, undefined];
+		await message.channel.send({ content: `Both user and personal flags can't be triggered at the same time!`});
+		return [ undefined, undefined, undefined, undefined ];
 	}
 
 	const flagIdx = (userFlagIdx !== -1) ? userFlagIdx : personalFlagIdx;
@@ -119,8 +121,8 @@ async function resolveUserFlag(message, args, client) {
 		const mentionMatches = nextVal.match(/^<@([0-9]{18,19})>/); // Extract the user id
 
 		if (!mentionMatches) {
-			message.channel.send({ content: `Invalid user argument ${nextVal}`});
-			return [undefined, undefined, undefined];
+			await message.channel.send({ content: `Invalid user argument ${nextVal}`});
+			return [ undefined, undefined, undefined, undefined ];
 		}
 		taggedUser = mentionMatches[1];
 	}
@@ -133,16 +135,16 @@ async function resolveUserFlag(message, args, client) {
 		const joinArray = (joinFlag || !eventFlag) ? await getUserSoundArray(client, taggedUser, 'join', message.guildId) : [];
 		const leaveArray = (leaveFlag || !eventFlag) ? await getUserSoundArray(client, taggedUser, 'leave', message.guildId) : [];
 		const array = [...joinArray,...leaveArray];
-		return [array, taggedUser, false];
+		return [ array, taggedUser, false, noPathFlag ];
 	}
 
 	//personal flag was triggered
 	const array = (await getUserSoundArray(client, taggedUser,'all', message.guildId)).filter(song => {return song.path.startsWith(userDirComparison)});
 	if(eventFlag) {
-		if(joinFlag) return [array.filter(song => song.join), taggedUser, true];
-		else if(leaveFlag) return [array.filter(song => song.leave), taggedUser, true];
+		if(joinFlag) return [ array.filter(song => song.join), taggedUser, true, noPathFlag ];
+		else if(leaveFlag) return [ array.filter(song => song.leave), taggedUser, true, noPathFlag ];
 	}
-	return [array, taggedUser, true];
+	return [ array, taggedUser, true, noPathFlag ];
 }
 
 /**
@@ -170,10 +172,11 @@ async function exportPlayableToJson(message, client, array, taggedUser) {
  * @param {object[]} array - The array of files to print.
  * @param {Discord.user|undefined} taggedUser - The user tagged in the arguments (if any).
  * @param {boolean} personal - If the display is of personal files.
- * @param {boolean} page - Page specified to display first.
+ * @param {Number} page - Page specified to display first.
+ * @param {boolean} noPathFlag - If the display should include file paths.
  * @returns {null}
  */
-async function printPlayable(message, client, array, taggedUser, personal, page) {
+async function printPlayable(message, client, array, taggedUser, personal, page, noPathFlag) {
 	let userCount = 0;
 	let everyoneCount = 0;
 	let defaultCount = 0;
@@ -214,7 +217,7 @@ async function printPlayable(message, client, array, taggedUser, personal, page)
 		}
 		embeds[j].addFields({
 			name: `\`${array[i].filename}\``,
-			value: `> \`${array[i].path}\``,
+			value: noPathFlag ? '' : `> \`${array[i].path}\``,
 		});
 	}
 
