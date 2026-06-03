@@ -6,6 +6,7 @@ const { bot: { ownerID, devIDs }, status: { status }, emoji: { success, error },
 module.exports = new Command({
 	name: 'setstatus',
 	aliases: [ ' ' ],
+	category: 'owner',
 	syntax: 'setstatus [ online | idle | dnd | invisible ]',
 	description: 'Sets the status the bot displays',
 	async run(message, args, client) {

@@ -6,6 +6,7 @@ const { bot: { prefix, ownerID, devIDs }, emoji: { success, warning }, response:
 module.exports = new Command({
 	name: 'prune',
     aliases: [ 'purge', 'clean' ],
+	category: 'admin',
     syntax: 'prune <amount>',
 	description: 'Deletes the amount of messages send by the bot and the commands used to invoke the bot. Requires Manage Messages permission.',
 	async run(message, args, client) {

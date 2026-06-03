@@ -31,6 +31,7 @@ This command only renames and moves files, it does NOT create directories.
 module.exports = new Command({
 	name: 'renamesong',
 	aliases: [ 'renamefile', 'mv' ],
+	category: 'sound',
 	syntax: 'renamesong <origin> <destination>',
 	description: `This command allows you rename/move your songs`,
 	help: helpText,

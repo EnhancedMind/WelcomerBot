@@ -8,6 +8,7 @@ const { bot: { ownerID, adminIDs, devIDs }, status: { status, game }, emoji: { s
 module.exports = new Command({
 	name: 'reload',
 	aliases: [ 'rld' ],
+	category: 'owner',
 	description: 'Reloads the status and activity to default.',
 	async run(message, args, client) {
 		const senderId = message.author.id;

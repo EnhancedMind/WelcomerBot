@@ -21,6 +21,7 @@ You can use the following arguments to modify this behaviour:
 module.exports = new Command({
     name: 'probability',
     aliases: [ 'prob', 'pr' ],
+	category: 'sound',
     syntax: 'probability [--user [@user]] [--join] [--leave]',
     description: `Lists the probability of each song playing for the sender or specified user for either joining or leaving.`,
     help: helpText,

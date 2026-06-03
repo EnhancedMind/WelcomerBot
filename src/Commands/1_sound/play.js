@@ -35,6 +35,7 @@ Examples:
 module.exports = new Command({
 	name: 'play',
     aliases: [ 'p' ],
+	category: 'sound',
     syntax: 'play <file/search> [flags]',
 	description: `Plays a song from local storage. Tag a person to select their sound like if they were to join or place the path from the \`${prefix}playable\` command`,
     help: helpText,

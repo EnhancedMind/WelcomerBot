@@ -27,6 +27,7 @@ Developer arguments:
 module.exports = new Command({
 	name: 'webmanage',
 	aliases: [ 'wm', 'web' ],
+	category: 'sound',
 	syntax: 'webmanage [flags]',
 	description: 'Generates a private, single-use link for FileBrowser instance connected to this bot\'s sound file system.',
 	help: helpText,

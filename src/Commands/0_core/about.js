@@ -8,6 +8,7 @@ const { version, homepage, developerpage } = require('../../../package.json');
 module.exports = new Command({
 	name: 'about',
 	aliases: [ ' ' ],
+	category: 'core',
 	description: 'Shows information about the bot.',
 	async run(message, args, client) {
 		const versionStringParts = [];

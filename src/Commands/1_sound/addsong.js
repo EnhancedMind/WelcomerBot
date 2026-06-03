@@ -40,6 +40,7 @@ This command supports the following arguments for developers:
 module.exports = new Command({
 	name: 'addsong',
 	aliases: [ 'setsong' ],
+	category: 'sound',
 	syntax: 'addsong [--default/--user @user/--everyone] ^fileInAttachment',
 	description: `Adds the song sent in the attachment as your join song. For more info type \`${prefix}addsong -help\``,
 	help: helpText,

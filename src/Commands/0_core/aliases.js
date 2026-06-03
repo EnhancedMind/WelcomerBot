@@ -1,57 +1,76 @@
 const Command = require('../../Structures/Command');
 
 const { EmbedBuilder } = require('discord.js');
-const { readdir } = require('fs/promises');
 const paginator = require('../../Structures/Paginator');
 const { homepage } = require('../../../package.json');
 
 
 module.exports = new Command({
-	name: 'aliases',
+    name: 'aliases',
     aliases: [ 'alias' ],
-	description: 'Shows the aliases for the commands',
-	async run(message, args, client) {
-        const cmdDir = await readdir('./src/Commands');
-
+    category: 'core',
+    description: 'Shows the aliases for the commands',
+    async run(message, args, client) {
         let page = 0;
-        // if args[0] is a number, set page to args[0]
-		if (args[0] && !isNaN(args[0])) page = args[0] - 1;
+        if (args[0] && !isNaN(args[0])) page = parseInt(args[0]) - 1;
 
-        let content = '';
-        cmdDir.forEach(dirs => {
-            content = content.concat(`\`${dirs[2].toUpperCase() + dirs.slice(3)} aliases\`, `);
+        const categories = {};
+        Array.from(client.commands.values()).forEach(cmd => {
+            const cat = cmd.category || 'core';
+            if (!categories[cat]) categories[cat] = [];
+            categories[cat].push(cmd);
         });
-        content = `\`Aliases\`, ${content.substring(16, content.length - 2)}`;
 
-        let pages = [];
-        let i = 0;
-        for (const dirs of cmdDir) {
-            pages[i] = new EmbedBuilder()
-                .setColor(0x3399FF)
-                .setAuthor({
-                    name: client.user.username,
-                    url: homepage,
-                    iconURL: client.user.displayAvatarURL({ size: 1024, dynamic: true })
-                })
-                .setTitle(`**${dirs[2].toUpperCase() + dirs.slice(3)} aliases!**`)
-                .addFields( [ { name: '**Pages**', value: content, inline: false } ] )
+        const categoryOrder = ['core', 'sound', 'admin', 'owner'];
 
-            if (i == 0) {
-                pages[0]
-                    .setTitle('**Aliases!**')
+        const categoryNames = Object.keys(categories).sort((a, b) => {
+            let indexA = categoryOrder.indexOf(a.toLowerCase());
+            let indexB = categoryOrder.indexOf(b.toLowerCase());
+
+            // if a category isnt listed in the hardcoded array, push it to the very end
+            if (indexA === -1) indexA = Infinity;
+            if (indexB === -1) indexB = Infinity;
+
+            return indexA - indexB;
+        });
+
+        const content = '\`Aliases\`, ' + categoryNames.slice(1).map(cat => `\`${cat[0].toUpperCase() + cat.slice(1)} aliases\``).join(', ');
+
+        const pages = [];
+
+        categoryNames.forEach((catName, i) => {
+            // chunk the commands into groups of 23, since the embed can have 25 fields, plus we need 1 for pages and 1 of first page for prefix
+            const chunks = [];
+            for (let i = 0; i < categories[catName].length; i += 23) {
+                chunks.push(categories[catName].slice(i, i + 23));
             }
 
-            (await readdir(`./src/Commands/${dirs}`))
-                .filter(file => file.endsWith('.js'))
-                .forEach(file => {
-                    const data = client.commands.get(file.substring(0, file.lastIndexOf('.')))
-                    pages[i].addFields( [ { name: `**${data.name[0].toUpperCase() + data.name.slice(1)}**`, value: `:wavy_dash:**\`${data.aliases.join('`**, **`')}\`**`, inline: false } ] );
-                });
-            i++
-        }
+            chunks.forEach((chunk, chunkIndex) => {
+                const embed = new EmbedBuilder()
+                    .setColor(0x3399FF)
+                    .setAuthor({
+                        name: client.user.username,
+                        url: homepage,
+                        iconURL: client.user.displayAvatarURL({ size: 1024, dynamic: true })
+                    })
+                    .setTitle(`**${catName[0].toUpperCase() + catName.slice(1)} aliases!${chunks.length > 1 ? ` (${chunkIndex + 1}/${chunks.length})` : ''}**`)
+                    .addFields( [ { name: '**Pages**', value: content, inline: false } ] )
+
+                if (pages.length == 0) {
+                    embed
+                        .setTitle('**Aliases!**')
+                }
+
+                chunk.forEach(cmd => {
+                        embed.addFields( [ { name: `**${cmd.name[0].toUpperCase() + cmd.name.slice(1)}**`, value: `> **\`${cmd.aliases.join('`**, **`')}\`**`, inline: false } ] );
+                    });
+
+                pages.push(embed);
+            });
+        });
 
         paginator(message, pages, null, page).catch(async (err) => {
             await message.channel.send('The paginator failed.');
         });
-	}
+    }
 });

@@ -7,6 +7,7 @@ const { bot: { token, ownerID, devIDs }, emoji: { success, error, loading }, res
 module.exports = new Command({
 	name: 'restart',
 	aliases: [ 'reboot' ],
+	category: 'owner',
 	description: "Restarts the bot's client",
 	async run(message, args, client) {
 		const senderId = message.author.id;

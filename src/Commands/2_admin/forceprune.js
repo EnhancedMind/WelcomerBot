@@ -9,6 +9,7 @@ const emojiList = [ '✅', '❌' ];
 module.exports = new Command({
 	name: 'forceprune',
     aliases: [ ' ' ],
+	category: 'admin',
     syntax: 'forceprune <amount> <confirm>',
 	description: 'Deletes the amount of messages **!ALL MESSAGES!** Requires Administrator permission.',
 	async run(message, args, client) {

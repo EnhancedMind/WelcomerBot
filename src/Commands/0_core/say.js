@@ -6,6 +6,7 @@ const { emoji: { warning }, response: { missingArguments } } = require('../../..
 module.exports = new Command({
 	name: 'say',
 	aliases: [ ' ' ],
+	category: 'core',
 	syntax: 'say <message>',
 	description: 'Repeats whatever shit you said, then quietly deletes your message',
 	async run(message, args, client) {

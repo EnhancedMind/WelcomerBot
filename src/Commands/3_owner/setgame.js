@@ -8,6 +8,7 @@ const { bot: { ownerID, devIDs }, status: { game }, emoji: { success, error }, r
 module.exports = new Command({
 	name: 'setgame',
 	aliases: [ ' ' ],
+	category: 'owner',
 	syntax: 'setgame <game>',
 	description: 'Sets the game the bot is playing',
 	async run(message, args, client) {

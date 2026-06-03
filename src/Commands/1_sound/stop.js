@@ -8,6 +8,7 @@ const { bot: { ownerID }, emoji: { success, warning }, response: { wrongChannel,
 module.exports = new Command({
 	name: 'stop',
 	aliases: [ 'dc', 'disconnect', 'fuckoff' ],
+	category: 'sound',
 	description: 'Stops and disconnects the audio player.',
 	async run(message, args, client) {
 		const connection = getVoiceConnection(message.guild.id);

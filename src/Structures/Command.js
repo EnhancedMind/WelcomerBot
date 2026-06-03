@@ -17,6 +17,7 @@ class Command {
 	constructor(options) {
 		this.name = options.name;
 		this.aliases = options.aliases;
+		this.category = options.category;
 		this.syntax = options.syntax;
 		this.description = options.description;
 		this.help = options.help;

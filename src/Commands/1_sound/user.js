@@ -7,6 +7,7 @@ const { bot: { ownerID, devIDs }, emoji: { success, error }, response: { invalid
 module.exports = new Command({
 	name: 'user',
     aliases: [ ' ' ],
+	category: 'sound',
     syntax: 'user <action> <optionalType> <optionalType> <optionalType> <optionalType> <userIDOwnerOnly>',
 	description: 'Sets whether the bot is enabled for the user or not. Can only set the settings for yourself unless you are the owner of the bot.',
 	async run(message, args, client) {

@@ -8,6 +8,7 @@ const { bot: { ownerID }, emoji: { success, error }, response: { invalidPermissi
 module.exports = new Command({
 	name: 'guild',
     aliases: [ 'server' ],
+	category: 'sound',
     syntax: 'guild <action> <optionalType> <optionalType> <optionalType> <optionalType>',
 	description: 'Sets whether the bot is enabled in the guild or not. Requires Manage Server permission.',
 	async run(message, args, client) {
