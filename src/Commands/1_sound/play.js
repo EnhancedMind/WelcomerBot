@@ -3,6 +3,7 @@ const Command = require('../../Structures/Command.js');
 const { getVoiceConnection } = require('@discordjs/voice');
 const { stat } = require('fs/promises');
 const path = require('path');
+const { parseArgs } = require('node:util');
 
 const { getUserSoundFile, searchSoundFiles } = require('../../Structures/musicFilesManager.js');
 const { bot: { prefix }, emoji: { success, warning, error, loading }, response: { missingArguments, noChannel, wrongChannel, afkChannel }, player: { allowedExtensions } } = require('../../../config/config.json');
@@ -17,7 +18,7 @@ Example: \`${prefix}play @user\` or \`${prefix}play --me\`
 You can filter your search using the following flags anywhere in your command:
 - \`-j\` or \`--join\` - Strictly searches for sounds marked as "join" sounds.
 - \`-l\` or \`--leave\` - Strictly searches for sounds marked as "leave" sounds.
-For tagging join has priority, for fuzzy search they are additive, and useless if you use both :D.
+For tagging join has priority, for fuzzy search they are strict, the sound must explicitly have this attribute.
 
 **Search Priority & Behavior:**
 If multiple files have the same name or similar search results, the bot prioritizes files in this order:
@@ -40,23 +41,29 @@ module.exports = new Command({
 	description: `Plays a song from local storage. Tag a person to select their sound like if they were to join or place the path from the \`${prefix}playable\` command`,
     help: helpText,
 	async run(message, args, client) {
-        let joinFlag = false;
-        let leaveFlag = false;
-        let userIdArg = null;
-        const cleanedArgs = [];
+        const parsed = parseArgs({
+            args: args,
+            strict: false,
+            options: {
+                'join':  { type: 'boolean', short: 'j' },
+                'leave': { type: 'boolean', short: 'l' },
+                'me':    { type: 'boolean', short: 'm' }
+            }
+        });
+
+        const joinFlag = parsed.values.join || false;
+        const leaveFlag = parsed.values.leave || false;
+        let userIdArg = parsed.values.me ? message.author.id : null;
+        args = parsed.positionals;
 
         for (const arg of args) {
-            if (arg == '-j' || arg == '--join') joinFlag = true;
-            else if (arg == '-l' || arg == '--leave') leaveFlag = true;
-            else if ((arg == '-m' || arg == '--me') && !userIdArg) userIdArg = message.author.id;
-            else if (arg.startsWith('<@') && arg.endsWith('>') && !userIdArg) userIdArg = arg.replace(/[<@!>]/g, '');
-            else cleanedArgs.push(arg);
+            if (userIdArg) break;
+            if (arg.startsWith('<@') && arg.endsWith('>')) userIdArg = arg.replace(/[<@!>]/g, '');
         }
 
         let userGlobalName = null;
         if (userIdArg) userGlobalName = (await client.users.fetch(userIdArg)).globalName || (await client.users.fetch(userIdArg)).username;
 
-        args = cleanedArgs; // overwrite args with args without join and leave flags
         const searchString = args.join(' ');
         const searchStringMessage = userGlobalName ? `Sound for ${userGlobalName}` : `\`[${args.join(' ')}]\``;
 

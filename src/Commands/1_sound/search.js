@@ -2,9 +2,9 @@ const Command = require('../../Structures/Command');
 
 const { EmbedBuilder, ReactionCollector } = require('discord.js');
 const { getVoiceConnection } = require('@discordjs/voice');
+const { parseArgs } = require('node:util');
 
 const { searchSoundFiles } = require('../../Structures/musicFilesManager.js');
-
 const { bot: { prefix }, emoji: { success, warning, error, searching }, response: { missingArguments, noChannel, wrongChannel, afkChannel } } = require('../../../config/config.json');
 
 
@@ -17,7 +17,7 @@ You can search for a sound by its exact file path, its exact file name, or by us
 You can filter your search using the following flags anywhere in your command:
 - \`-j\` or \`--join\` - Strictly searches for sounds marked as "join" sounds.
 - \`-l\` or \`--leave\` - Strictly searches for sounds marked as "leave" sounds.
-The flags are additive, and useless if you use both :D.
+The flags are strict, the sound must explicitly have this attribute.
 
 - \`-p\` or \`--path\` - Displays the file path of the search result along the file name.
 
@@ -42,19 +42,21 @@ module.exports = new Command({
     description: 'Searches sound files for a provided query.',
     help: helpText,
     async run(message, args, client) {
-        let joinFlag = false;
-        let leaveFlag = false;
-        let pathFlag = false;
-        const cleanedArgs = [];
+        const parsed = parseArgs({
+            args: args,
+            strict: false,
+            options: {
+                'join':  { type: 'boolean', short: 'j' },
+                'leave': { type: 'boolean', short: 'l' },
+                'path':  { type: 'boolean', short: 'p' }
+            }
+        });
 
-        for (const arg of args) {
-            if (arg == '-j' || arg == '--join') joinFlag = true;
-            else if (arg == '-l' || arg == '--leave') leaveFlag = true;
-            else if (arg == '-p' || arg == '--path') pathFlag = true;
-            else cleanedArgs.push(arg);
-        }
+        const joinFlag = parsed.values.join || false;
+        const leaveFlag = parsed.values.leave || false;
+        const pathFlag = parsed.values.path || false;
 
-        args = cleanedArgs; // overwrite args with args without join and leave flags
+        args = parsed.positionals;
         const searchString = args.join(' ');
 
 
