@@ -146,8 +146,6 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
         "externalDomain": "https://example.com",
     },
     "logs": {
-        "resetLogOnStart": true,
-        "logToFile": false,
         "timeFormat": "en-US"
     }
 }
@@ -212,8 +210,6 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
 - `filebrowser.externalDomain`: the external domain provided in the user message, like "https://example.com"  
 <br>
 
-- `logs.resetLogOnStart`: whether to clear the session log on start or continue at the end of the file  
-- `logs.logToFile`: whether to log to a file or only to the console  
 - `logs.timeFormat`: the time format that will be used for the logs - [en-US](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/DateTimeFormat)  
 <br><br>
 

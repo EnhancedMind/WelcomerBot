@@ -13,7 +13,7 @@ const intents = new Discord.IntentsBitField([
 const { version, homepage } = require('../../package.json');
 
 const { readdirSync } = require('fs');
-const { initLog, fileLog, consoleLog } = require('../Data/Log');
+const { consoleLog } = require('../Data/Log');
 const { readSettingsFile } = require('./settingsManager.js');
 const { syncSoundFiles } = require('./musicFilesManager.js');
 const { initProxyServer } = require('./Web/server.js')
@@ -64,7 +64,7 @@ class Client extends Discord.Client {
     }
 
     async start() {
-        initLog();
+        consoleLog('[INFO] Starting client');
         await syncSoundFiles(this);
         await readSettingsFile(this);
 
@@ -79,7 +79,7 @@ class Client extends Discord.Client {
                          * @type {Command}
                          */
                         const command = require(`../Commands/${dirs}/${file}`);
-                        fileLog(`[INFO] Command ${command.name} loaded`);
+                        consoleLog(`[INFO] Command ${command.name} loaded`);
                         this.commands.set(command.name, command);
                     });
             });
@@ -91,7 +91,7 @@ class Client extends Discord.Client {
                  * @type {Event}
                  */
                 const event = require(`../Events/${file}`);
-                fileLog(`[INFO] Event ${event.event} loaded`)
+                consoleLog(`[INFO] Event ${event.event} loaded`)
                 this.on(event.event, event.run.bind(null, this));
             });
 

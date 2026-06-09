@@ -56,8 +56,6 @@
         "externalDomain": "https://example.com",
     },
     "logs": {
-        "resetLogOnStart": true,
-        "logToFile": false,
         "timeFormat": "en-US"
     }
 }
