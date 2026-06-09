@@ -5,7 +5,7 @@ const path = require('path');
 
 const { player: { playIntoEmptyChannel, selfDeaf, debug, loudnessNormalization, bitrate } } = require('../../config/config.json');
 const Client = require('./Client.js');
-const { consoleLog } = require('../Data/Log.js');
+const { consoleLog, consoleTrace } = require('../Data/Log.js');
 const { invalidateSoundFile } = require('../Structures/musicFilesManager.js');
 
 
@@ -32,9 +32,10 @@ const activeConnections = new Collection();
  * @param {number} delay Delayed execution buffer in milliseconds.
  */
 async function play(client, voiceChannel, file, delay = 0) {
+    if (!voiceChannel) return consoleTrace('[WARN] No voice channel provided to play function');
     const guildId = voiceChannel.guild.id;
     let session = activeConnections.get(guildId);
-    
+
     const me = voiceChannel.guild.members.me;
     const currentChannelId = me?.voice?.channelId;
 
@@ -54,7 +55,7 @@ async function play(client, voiceChannel, file, delay = 0) {
         if (session.disconnectTimeout) clearTimeout(session.disconnectTimeout);
         session.startupTimeout = null;
         session.disconnectTimeout = null;
-        
+
         // Obliterate the previous FFmpeg process immediately to avoid zombies, SIGKILL is used to ensure it dies even if it's waiting on I/O, SIGTERM can leave it hanging around
         if (session.ffmpegProcess) {
             session.ffmpegProcess.kill('SIGKILL');
@@ -233,7 +234,7 @@ function silentPurge(session) {
     if (session.startupTimeout) clearTimeout(session.startupTimeout);
     if (session.disconnectTimeout) clearTimeout(session.disconnectTimeout);
     if (session.checkInterval) clearInterval(session.checkInterval);
-    
+
     if (session.ffmpegProcess) {
         session.ffmpegProcess.kill('SIGKILL');
     }
