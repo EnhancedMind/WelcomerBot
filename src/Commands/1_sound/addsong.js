@@ -62,10 +62,11 @@ module.exports = new Command({
         else if (args[0] == '--user' || args[0] == '-u') {
             if (permissionFail) return await channel.send(`${warning} You do not have the permission to add songs to other users! (Developer)`);
 
-            let userId;
-            if (args[1].startsWith('<@') && args[1].endsWith('>')) {
-                userId = args[1].replace(/[<@!>]/g, '');
-                const userPath = await getUserPath(client, userId);
+            if (!args[1]) return await channel.send(`${warning} ${missingArguments} (No user specified)`);
+
+            const mentionMatch = args[1].match(/^<@!?([0-9]{18,19})>/);
+            if (mentionMatch) {
+                const userPath = await getUserPath(client, mentionMatch[1]);
                 await addSongCore(message, client, userPath)
             }
             else {

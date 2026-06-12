@@ -10,11 +10,16 @@ module.exports = new Event('messageCreate', async (client, message) => {
 
 
     let args;
-    if (message.content.startsWith(prefix)) args = message.content.substring(prefix.length).split(/ +/);
-    else if (message.content.startsWith(`<@${client.user.id}> `)) args = message.content.substring(client.user.id.length + 4).split(/ +/);
+    const prefixRegex = new RegExp(`^<@!?${client.user.id}>\\s`);
+    const mentionMatch = message.content.match(prefixRegex);
+    if (message.content.startsWith(prefix)) args = message.content.substring(prefix.length).trim().split(/ +/);
+    else if (mentionMatch) args = message.content.substring(mentionMatch[0].length).trim().split(/ +/);
     else return;
 
-    const cmd = args.shift().toLowerCase();
+    const cmdInput = args.shift();
+    if (!cmdInput) return;
+    const cmd = cmdInput.toLowerCase();
+
     const command = client.commands.get(cmd) || client.commands.find(a => a.aliases && a.aliases.includes(cmd));
     if (!notValidCommand && !command) return;
     if (!command) return message.channel.send(`**${cmd}** is not a valid command!`);

@@ -54,7 +54,7 @@ function resolveFlags(message, args, client) {
 
     if (args.length > userFlagIdx+1) { // If the user tag has an argument
         const nextVal = (args[userFlagIdx+1].startsWith('-')) ? `<@${senderId}>` : args[userFlagIdx+1]; // If no tag, use the sender
-        const mentionMatches = nextVal.match(/^<@([0-9]{18,19})>/); // Extract the user id
+        const mentionMatches = nextVal.match(/^<@!?([0-9]{18,19})>/); // Extract the user id
 
         if (!mentionMatches) {
             message.channel.send({ content: `Invalid user argument ${nextVal}`});

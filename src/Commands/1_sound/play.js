@@ -58,7 +58,8 @@ module.exports = new Command({
 
         for (const arg of args) {
             if (userIdArg) break;
-            if (arg.startsWith('<@') && arg.endsWith('>')) userIdArg = arg.replace(/[<@!>]/g, '');
+            const mentionMatch = arg.match(/^<@!?([0-9]{18,19})>/);
+            if (mentionMatch) userIdArg = mentionMatch[1];
         }
 
         let userGlobalName = null;
