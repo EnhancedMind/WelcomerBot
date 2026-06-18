@@ -23,7 +23,7 @@ You can use the following arguments to modify this behaviour:
 
 module.exports = new Command({
     name: 'playable',
-    aliases: [ 'pl', 'pls' ],
+    aliases: [ 'pl', 'pls', 'list' ],
     category: 'sound',
     syntax: 'playable [--json] [--user/--personal [@user]] [--join] [--leave] pagenumber',
     description: `Lists all the files that can be played. Use \`${prefix}playable --json\` to get the output as JSON data.`,
