@@ -146,7 +146,7 @@ function initializeDatabase() {
 
                 if (shouldDeleteJson && process.env.NODE_ENV == 'production') {
                     try {
-                        fs.rmSync(settingsFilePath);
+                        fs.rmSync(legacySettingsFilePath);
                         consoleLog(`[INFO] All settings migrated and legacy file removed cleanly.`);
                     }
                     catch (err) {
