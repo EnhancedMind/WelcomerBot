@@ -218,7 +218,7 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
 
 ## Instalation
 To use the project you will need:  
-[Node JS v20.12.0 or newer (current lts recommended)](https://nodejs.org/en/), but I recommend using the latest LTS version.  
+[Node JS v22.12.0 or newer (current lts recommended)](https://nodejs.org/en/), but I recommend using the latest LTS version.  
 You will also need ffmpeg and ffprobe installed on your system and added to the PATH. You can download them from [ffmpeg official website](https://ffmpeg.org/download.html). They are already included in the docker image.  
 <br>
 
