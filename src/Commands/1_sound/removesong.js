@@ -1,12 +1,17 @@
 const Command = require('../../Structures/Command');
 
-const { bot: { prefix, ownerID , devIDs}, emoji: { success, warning }, response: { missingArguments } } = require('../../../config/config.json')
+const { 
+    bot: { prefix, ownerID , devIDs}, 
+    emoji: { success, warning }, 
+    response: { missingArguments } 
+} = require('../../../config/config.json')
+
 const { rm } = require('fs/promises');
 const path = require('path');
 
 const { exists } = require('../../utils/fsUtils.js');
-const { invalidateSoundFile } = require('../../Structures/musicFilesManager.js');
-const { syncSoundFiles, defaultDirComparison, everyoneDirComparison, userDirComparison, musicDirComparison } = require('../../Structures/musicFilesManager.js');
+const { defaultDirComparison, everyoneDirComparison, userDirComparison, musicDirComparison, invalidateSoundFile } = require('../../Structures/musicFilesManager.js');
+const { db } = require('../../Structures/dbManager.js');
 
 const helpText = 
 `This command allows you to mark songs not be used or remove them completely.
@@ -40,19 +45,18 @@ module.exports = new Command({
         let file = (forceFlag) ? args[1] : args[0];
 
         if(path.dirname(file) === '.') {
-            const songs = client.soundFiles.get(senderId);
-            let foundPath = false;
-            for(const song of songs) { // Find the path to the song
-                if(song.filename === file) {
-                    file = song.path;
-                    foundPath = true;
-                    break;
-                }
-            }
+            const row = db.prepare(/*sql*/`
+                SELECT file_path 
+                FROM files 
+                WHERE target_id = ? AND file_name = ?
+                LIMIT 1
+            `).get(senderId, file);
 
-            if(!foundPath) {
+            if(!row) {
                 return await channel.send(`${warning} file \`${file}\` doesn't exist in your library!`);
             }
+
+            file = row.file_path;
         }
 
         if(!file.startsWith(musicDirComparison)) return await channel.send(`${warning}${warning}${warning} You tried to make changes outside the music database${warning}${warning}${warning}\nAttempted move from: \`${file}\``);
@@ -73,13 +77,20 @@ module.exports = new Command({
 
         if(forceFlag) {
             await rm(file);
+
+            db.prepare(/*sql*/`
+                UPDATE files 
+                SET deleted_at = ?, is_valid = 0 
+                WHERE file_path = ?
+            `).run(Math.floor(Date.now() / 1000), file);
+
             await channel.send(`${success} Successfully removed the file \`${file}\` from database`);
         }
         else {
-            await invalidateSoundFile(client, file);
-            await channel.send(`${success} Successfully invalidated the file \`${file}\`!`);
+            const invalidDetails = await invalidateSoundFile(file);
+
+            if (invalidDetails) await channel.send(`${success} Successfully invalidated the file \`${file}\`!`);
+            else await channel.send(`${warning} Failed to invalidate file \`${file}\`!`);
         }
-        
-        await syncSoundFiles(client);
     }
 });

@@ -21,9 +21,11 @@
   "dependencies": {
     "@discordjs/voice": "^0.19.2",
     "@snazzah/davey": "^0.1.7",
+    "better-sqlite3": "^12.11.1",
     "discord.js": "^14.26.4",
     "fuse.js": "^7.3.0",
     "libsodium-wrappers": "^0.8.4",
-    "opusscript": "^0.0.8"
+    "opusscript": "^0.0.8",
+    "xxhash-wasm": "^1.1.0"
   }
 }

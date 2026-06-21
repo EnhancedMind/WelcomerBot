@@ -3,15 +3,15 @@ const Command = require('../../Structures/Command.js');
 const { 
     bot: { prefix, ownerID, devIDs }, 
     emoji: { success, warning }, 
-    response: { missingArguments }, 
-    player: { maxTime, allowedExtensions }
+    response: { missingArguments }
 } = require('../../../config/config.json')
 
 const { rename } = require('fs/promises');
 const path = require('path');
 
 const { exists } = require('../../utils/fsUtils.js');
-const { syncSoundFiles, defaultDirComparison, everyoneDirComparison, userDirComparison, musicDirComparison } = require('../../Structures/musicFilesManager.js');
+const { defaultDirComparison, everyoneDirComparison, userDirComparison, musicDirComparison } = require('../../Structures/musicFilesManager.js');
+const { db } = require('../../Structures/dbManager.js');
 
 const helpText = 
 `This command allows you rename/move your songs which can also change their behaviour (for more about file behaviour use \`${prefix}addsong --help\`).
@@ -46,19 +46,18 @@ module.exports = new Command({
         let destination = args[1];
 
         if(path.dirname(origin) === '.') {
-            const songs = client.soundFiles.get(senderId);
-            let foundPath = false;
-            for(const song of songs) { // Find the path to the song
-                if(song.filename === origin) {
-                    origin = song.path;
-                    foundPath = true;
-                    break;
-                }
-            }
+            const row = db.prepare(/*sql*/`
+                SELECT file_path 
+                FROM files 
+                WHERE target_id = ? AND file_name = ?
+                LIMIT 1
+            `).get(senderId, origin);
 
-            if(!foundPath) {
+            if(!row) {
                 return await channel.send(`${warning} file \`${origin}\` doesn't exist in your library!`);
             }
+
+            origin = row.file_path;
         }
         if(path.dirname(destination) === '.') destination = path.join(path.dirname(origin), destination); // Make destination into a path from base
 
@@ -84,7 +83,9 @@ module.exports = new Command({
         }
 
         await rename(origin, destination);
+
         await channel.send(`Song succesfully renamed \nFrom: \`${origin}\`\nTo: \`${destination}\``);
-        await syncSoundFiles(client);
+
+        await syncSoundFiles();
     }
 });

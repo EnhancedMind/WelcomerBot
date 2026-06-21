@@ -11,7 +11,7 @@ module.exports = new Command({
     description: 'Updates the sound database.',
     async run(message, args, client) {
         const response = await message.channel.send(`${loading} Syncing sound files...`);
-        await syncSoundFiles(client);
+        await syncSoundFiles();
 
         response.edit(`${success} Sound database updated!`).catch(() => {});
     }

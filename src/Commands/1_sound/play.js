@@ -83,22 +83,21 @@ module.exports = new Command({
 
         if (userIdArg) {
             const searchType = leaveFlag && !joinFlag ? 'leave' : 'join'; // aka default to join
-            const file = await getUserSoundFile(client, userIdArg, searchType);
+            const file = await getUserSoundFile(userIdArg, searchType);
             if (!file) {
                 response.edit(`${error} ${searchStringMessage} wasn't found.`).catch(() => {});
                 return;
             }
-            client.playerManager.play(client, senderVoiceChannel, { path: file.path });
-            response.edit(`${success} Playing sound for **${userGlobalName} - \`${file.filename}\`**`).catch(() => {});
+            client.playerManager.play(senderVoiceChannel, { file_path: file.file_path, source_hash: file.source_hash });
+            response.edit(`${success} Playing sound for **${userGlobalName} - \`${file.file_name}\`**`).catch(() => {});
             return;
         }
 
-
-        const searchResult = searchSoundFiles({client, searchString, firstPriorityUserId: message.author.id, joinFlag, leaveFlag});
+        const searchResult = searchSoundFiles({searchString, firstPriorityUserId: message.author.id, joinFlag, leaveFlag});
         const results = searchResult.results;
 
         if ( results.length == 0 || results[0].score > 0.5) {
-            // check for files not in soundFiles Collection.
+            // check for files not in database
             const projectRoot = path.resolve('./');
             const targetPath = path.resolve(projectRoot, args[0]);
             const isSafePath = targetPath.startsWith(projectRoot);
@@ -106,7 +105,7 @@ module.exports = new Command({
                 try {
                     const fileStat = await stat(targetPath);
                     if (fileStat.isFile()) {
-                        client.playerManager.play(client, senderVoiceChannel, { path: `./${args[0]}`});
+                        client.playerManager.play(senderVoiceChannel, { file_path: `./${args[0]}`});
                         response.edit(`${success} Playing **\`${args[0]}\`**`).catch(() => {});
                         return;
                     }
@@ -125,7 +124,7 @@ module.exports = new Command({
 
         const finalWinner = tiedResults[0].item;
 
-        client.playerManager.play(client, senderVoiceChannel, { path: finalWinner.path });
-        response.edit(`${success} Playing **\`${finalWinner.filename}\`** (${searchResult.reason})`).catch(() => {});
+        client.playerManager.play(senderVoiceChannel, { file_path: finalWinner.file_path, source_hash: finalWinner.source_hash });
+        response.edit(`${success} Playing **\`${finalWinner.file_name}\`** (${searchResult.reason})`).catch(() => {});
     }
 });

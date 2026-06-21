@@ -1,126 +1,88 @@
 const { readFile, writeFile } = require('fs/promises');
 const path = require('path');
 
-const Client = require('./Client.js');
 const { consoleLog } = require('../Data/Log.js');
-const { exists } = require('../utils/fsUtils.js');
-
-//const settingsFilePath = path.join(__dirname, `../../config/settings.json`);
-const settingsFilePath = './config/settings.json';
+const { db } = require('./dbManager.js')
 
 
-/**
- * Reads the settings from the settings.json file and sets them in the client.
- * @param {Client} client - The client instance.
- * @returns {Promise<void>} - A promise that resolves when the settings are read.
- */
-async function readSettingsFile (client) {
-    if (!exists(settingsFilePath)) {
-        consoleLog(`[ERROR] Settings file not found, creating new one: ${settingsFilePath}`);
-        try {
-            await writeSettingsFile(client);
-            return;
-        }
-        catch (err) {
-            consoleLog(`[ERROR] Failed to create settings file: ${err}`);
-            return;
-        }
-    }
-
-    const fileContent = await readFile(settingsFilePath, { encoding: 'utf8' });
-    const readData = JSON.parse(fileContent);
-
-    client.settings.guild.clear();
-    client.settings.user.clear();
-
-    for (const [key, value] of Object.entries(readData.guild)) {
-        //if (!value || !value && !value.enabledDefaultJoin) continue;
-        client.settings.guild.set(key, {
-            enabledJoin: value.enabledJoin === undefined ? true : value.enabledJoin,
-            enabledLeave: value.enabledLeave === undefined ? true : value.enabledLeave,
-            enabledDefaultJoin: value.enabledDefaultJoin === undefined ? true : value.enabledDefaultJoin,
-            enabledDefaultLeave: value.enabledDefaultLeave === undefined ? true : value.enabledDefaultLeave
-        });
-    }
-    for (const [key, value] of Object.entries(readData.user)) {
-        //if (!value || !value && !value.enabledDefaultJoin) continue;
-        client.settings.user.set(key, {
-            enabledJoin: value.enabledJoin === undefined ? true : value.enabledJoin,
-            enabledLeave: value.enabledLeave === undefined ? true : value.enabledLeave,
-            enabledDefaultJoin: value.enabledDefaultJoin === undefined ? true : value.enabledDefaultJoin,
-            enabledDefaultLeave: value.enabledDefaultLeave === undefined ? true : value.enabledDefaultLeave
-        });
-    }
-}
-
-
-/**
- * Writes the current settings from client database to the settings.json file.
- * @param {Client} client - The client instance. 
- * @returns {Promise<void>} - A promise that resolves when the settings are written and rejects if there is an error.
- */
-async function writeSettingsFile (client) {
-    const data = {
-        guild: Object.fromEntries(client.settings.guild),
-        user: Object.fromEntries(client.settings.user)
-    };
-
-    try {
-        await writeFile(settingsFilePath, JSON.stringify(data, null, 4), 'utf8')
-    }
-    catch (err) {
-        consoleLog(`[ERROR] Failed to write settings file: ${err}`);
-        throw (err);
-    }
-}
-
+const upsertSettingsQueries = {
+    enabledJoin: db.prepare(/*sql*/`
+        INSERT INTO settings (target_id, target_type, join_enabled) VALUES (?, ?, ?)
+        ON CONFLICT(target_id, target_type) DO UPDATE SET join_enabled = EXCLUDED.join_enabled
+    `),
+    enabledLeave: db.prepare(/*sql*/`
+        INSERT INTO settings (target_id, target_type, leave_enabled) VALUES (?, ?, ?)
+        ON CONFLICT(target_id, target_type) DO UPDATE SET leave_enabled = EXCLUDED.leave_enabled
+    `),
+    enabledDefaultJoin: db.prepare(/*sql*/`
+        INSERT INTO settings (target_id, target_type, default_join_enabled) VALUES (?, ?, ?)
+        ON CONFLICT(target_id, target_type) DO UPDATE SET default_join_enabled = EXCLUDED.default_join_enabled
+    `),
+    enabledDefaultLeave: db.prepare(/*sql*/`
+        INSERT INTO settings (target_id, target_type, default_leave_enabled) VALUES (?, ?, ?)
+        ON CONFLICT(target_id, target_type) DO UPDATE SET default_leave_enabled = EXCLUDED.default_leave_enabled
+    `)
+};
 
 /**
  * Sets a setting for a user or guild.
- * @param {Client} client - The client instance.
+ * @param {_} _ - legacy, was previously client instance
  * @param {string} type - 'guild' or 'user'
  * @param {string} id - guildId or userId
  * @param {string} setting - 'enabledJoin', 'enabledLeave', 'enabledDefaultJoin', 'enabledDefaultLeave'
  * @param {boolean} value - true or false
  */
-const setSetting = (client, type, id, setting, value) => {
+const setSetting = (_, type, id, setting, value) => {
     if (type != 'guild' && type != 'user') return;
-    if (setting != 'enabledJoin' && setting != 'enabledLeave' && setting != 'enabledDefaultJoin' && setting != 'enabledDefaultLeave') return;
 
-    if (!client.settings[type].has(id)) {
-        client.settings[type].set(id, {
-            enabledJoin: true,
-            enabledLeave: true,
-            enabledDefaultJoin: true,
-            enabledDefaultLeave: true
-        });
+    const stmt = upsertSettingsQueries[setting];
+    if (!stmt) return;
+
+    try {
+        stmt.run(id, type, value ? 1 : 0);
     }
-
-    const currentSettings = client.settings[type].get(id);
-    currentSettings[setting] = value;
-
-    client.settings[type].set(id, currentSettings);
+    catch (error) {
+        consoleLog(`[ERR] Failed to set settings to db, id ${id} type ${type}:`, error);
+    }
 }
 
 
+const getSettingsQuery = db.prepare(/*sql*/`
+    SELECT * FROM settings WHERE target_id = ? AND target_type = ?
+`);
+
 /**
  * Gets a setting for a user or guild.
- * @param {Client} client - The client instance.
  * @param {string} type - The type of setting ('guild' or 'user').
  * @param {string} id - The ID of the guild or user.
  * @returns {object} - The settings object for the specified type and ID.
  */
-const getSetting = (client, type, id) => {
+const getSetting = (type, id) => {
     if (type != 'guild' && type != 'user') return null;
 
-    if (client.settings[type].has(id)) return client.settings[type].get(id);
-    return null;
+    let settings;
+    try {
+        settings = getSettingsQuery.get(id, type);
+    }
+    catch (error) {
+        consoleLog(`[ERR] Failed to get settings from db, id ${id} type ${type}:`, error);
+        return null;
+    }
+
+    if (!settings) return null;
+
+    const settingsObject = {
+        enabledJoin: Boolean(settings.join_enabled),
+        enabledLeave: Boolean(settings.leave_enabled),
+        enabledDefaultJoin: Boolean(settings.default_join_enabled),
+        enabledDefaultLeave: Boolean(settings.default_leave_enabled)
+    }
+
+    return settingsObject;
 }
 
 
 module.exports = {
-    readSettingsFile,
-    writeSettingsFile,
     setSetting,
     getSetting
 };

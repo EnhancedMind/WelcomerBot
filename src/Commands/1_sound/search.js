@@ -71,7 +71,7 @@ module.exports = new Command({
 
         const response = await message.channel.send(`${searching} Searching for \`[${searchString}]\``);
 
-        const searchResult = searchSoundFiles({client, searchString, firstPriorityUserId: message.author.id, joinFlag, leaveFlag});
+        const searchResult = searchSoundFiles({searchString, firstPriorityUserId: message.author.id, joinFlag, leaveFlag});
         const results = searchResult.results.slice(0, 5);
 
         if ( results.length == 0) {
@@ -84,7 +84,7 @@ module.exports = new Command({
             .setTitle('Search Results')
 
         for (const [index, item] of results.entries()) {
-            embed.addFields({ name: `${emojiListSource[index]} \`${item.item.filename}\``, value: pathFlag ? `> \`${item.item.path}\`` : '' });
+            embed.addFields({ name: `${emojiListSource[index]} \`${item.item.file_name}\``, value: pathFlag ? `> \`${item.item.file_path}\`` : '' });
         }
 
         response.edit({ content: `${success} Search results for \`${args.join(' ')}\`:`, embeds: [embed] }).catch(() => {});
@@ -119,8 +119,8 @@ module.exports = new Command({
                 return;
             }
 
-            client.playerManager.play(client, senderVoiceChannel, { path: results[index].item.path });
-            response.edit({ content: `${success} Playing **\`${results[index].item.filename}\`** (${searchResult.reason})`, embeds: [] }).catch(() => {});
+            client.playerManager.play(senderVoiceChannel, { path: results[index].item.file_path, source_hash: results[index].item.source_hash });
+            response.edit({ content: `${success} Playing **\`${results[index].item.file_name}\`** (${searchResult.reason})`, embeds: [] }).catch(() => {});
             collector.stop();
         });
 

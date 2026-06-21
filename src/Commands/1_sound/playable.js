@@ -7,6 +7,7 @@ const { bot: { prefix }, player: { allowedExtensions }, directories: {userMusicD
 const { homepage } = require('../../../package.json');
 const { getUserSoundArray, defaultDirComparison, everyoneDirComparison, userDirComparison } = require('../../Structures/musicFilesManager.js');
 const path = require('path');
+const { db } = require('../../Structures/dbManager.js');
 
 const helpText = 
 `This command allows you to list all the available song that can be played.
@@ -37,23 +38,19 @@ module.exports = new Command({
         if(array === undefined) return; // Flag had an issue
 
         if(array.length == 0 && taggedUser === undefined) { // User array failed
-            const defaultAndEveryone = [];
-            const users = [];
+            const defaultAndEveryone = db.prepare(/*sql*/`
+                SELECT * FROM files WHERE target_id IN ('default', 'everyone')
+            `).all(); // file_name, file_path
+            
+            const users = db.prepare(/*sql*/`
+                SELECT * FROM files WHERE target_id NOT IN ('default', 'everyone')
+            `).all();;
 
-            // Put everyone and default before user sounds
-            for(const [key, value] of client.soundFiles) { 
-                if(key == 'default' || key == 'everyone') {
-                    defaultAndEveryone.push(...value);
-                }
-                else {
-                    users.push(...value);
-                }
-            }
             array.push(...defaultAndEveryone,...users);
         }
 
         if(jsonFlag) {
-            exportPlayableToJson(message, client, array, taggedUser);
+            await exportPlayableToJson(message, client, array, taggedUser);
         }
         else {
             printPlayable(message, client, array, taggedUser, personalFlag, page, noPathFlag);
@@ -88,7 +85,7 @@ function resolvePage(message, args) {
  * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
  * @param {string[]} args - The command arguments.
  * @param {Client} client - The client instance.
- * @returns {[object[], Discord.user, boolean]} - [array with user's songs if flagged, the user, if the flag was 'personal']
+ * @returns {[object[], Discord.user, boolean, boolean]} - [array with user's songs if flagged, the user, if the flag was 'personal', noPathFlag]
  */
 async function resolveUserFlag(message, args, client) {
     const senderId = message.author.id;
@@ -132,17 +129,17 @@ async function resolveUserFlag(message, args, client) {
 
     // Just user flag was triggered
     if(userFlagIdx !== -1) {
-        const joinArray = (joinFlag || !eventFlag) ? await getUserSoundArray(client, taggedUser, 'join', message.guildId) : [];
-        const leaveArray = (leaveFlag || !eventFlag) ? await getUserSoundArray(client, taggedUser, 'leave', message.guildId) : [];
+        const joinArray = (joinFlag || !eventFlag) ? await getUserSoundArray(taggedUser, 'join', message.guildId) : [];
+        const leaveArray = (leaveFlag || !eventFlag) ? await getUserSoundArray(taggedUser, 'leave', message.guildId) : [];
         const array = [...joinArray,...leaveArray];
         return [ array, taggedUser, false, noPathFlag ];
     }
 
     //personal flag was triggered
-    const array = (await getUserSoundArray(client, taggedUser,'all', message.guildId)).filter(song => {return song.path.startsWith(userDirComparison)});
+    const array = (await getUserSoundArray(taggedUser, 'all', message.guildId)).filter(song => {return song.file_path.startsWith(userDirComparison)});
     if(eventFlag) {
-        if(joinFlag) return [ array.filter(song => song.join), taggedUser, true, noPathFlag ];
-        else if(leaveFlag) return [ array.filter(song => song.leave), taggedUser, true, noPathFlag ];
+        if(joinFlag) return [ array.filter(song => song.is_join), taggedUser, true, noPathFlag ];
+        else if(leaveFlag) return [ array.filter(song => song.is_leave), taggedUser, true, noPathFlag ];
     }
     return [ array, taggedUser, true, noPathFlag ];
 }
@@ -161,7 +158,7 @@ async function exportPlayableToJson(message, client, array, taggedUser) {
     const filePrefix = (taggedUser) ? `${(await client.users.fetch(taggedUser)).globalName}_` : ''; 
     const attachment = new AttachmentBuilder(buffer, { name: `${filePrefix}soundFiles.json` });
 
-    message.channel.send({ content: 'Here is the JSON data:', files: [attachment] });
+    await message.channel.send({ content: 'Here is the JSON data:', files: [attachment] });
     return;    
 }
 
@@ -182,9 +179,9 @@ async function printPlayable(message, client, array, taggedUser, personal, page,
     let defaultCount = 0;
     
     for(const song of array) {
-        if(song.path.startsWith(userDirComparison)) userCount++;
-        if(song.path.startsWith(everyoneDirComparison)) everyoneCount++;
-        if(song.path.startsWith(defaultDirComparison)) defaultCount++;
+        if(song.file_path.startsWith(userDirComparison)) userCount++;
+        if(song.file_path.startsWith(everyoneDirComparison)) everyoneCount++;
+        if(song.file_path.startsWith(defaultDirComparison)) defaultCount++;
     }
 
     let targetsName = "DEBUG";
@@ -216,8 +213,8 @@ async function printPlayable(message, client, array, taggedUser, personal, page,
                 });
         }
         embeds[j].addFields({
-            name: `\`${array[i].filename}\``,
-            value: noPathFlag ? '' : `> \`${array[i].path}\``,
+            name: `\`${array[i].file_name}\``,
+            value: noPathFlag ? '' : `> \`${array[i].file_path}\``,
         });
     }
 

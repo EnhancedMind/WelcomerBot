@@ -1,6 +1,6 @@
 const Command = require('../../Structures/Command.js');
 
-const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/settingsManager.js');
+const { getSetting, setSetting } = require('../../Structures/settingsManager.js');
 const { bot: { ownerID, devIDs }, emoji: { success, error }, response: { invalidPermissions } } = require('../../../config/config.json');
 
 
@@ -53,15 +53,8 @@ module.exports = new Command({
                     setSetting(client, 'user', member, 'enabledDefaultLeave', setting);
                 }
             }
-
-            try {
-                await writeSettingsFile(client)
-            }
-            catch (err) {
-                await message.channel.send(`${error} An error occured while writing the settings file, the settings are only applied until the bot restarts!`);
-            }
         }
         
-        await message.channel.send(`${success} The current settings for this user are:\n\`\`\`\n${JSON.stringify(getSetting(client, 'user', member), null, 4)} \n\`\`\``);
+        await message.channel.send(`${success} The current settings for this user are:\n\`\`\`\n${JSON.stringify(getSetting('user', member), null, 4)} \n\`\`\``);
     }
 });

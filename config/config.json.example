@@ -43,7 +43,8 @@
         "everyoneMusicDir": "./music/everyone",
         "defaultMusicDir": "./music/default",
         "tempMusicDir": "./music/temp",
-        "topMusicDir": "./music"
+        "topMusicDir": "./music",
+        "reencodedMusicDir": "./music/reencoded"
     },
     "filebrowser": {
         "enabled": false,

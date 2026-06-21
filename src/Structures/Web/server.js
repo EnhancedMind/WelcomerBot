@@ -284,7 +284,7 @@ function initProxyServer(client) {
 
                             // strip the endpoint namespace and clean up special character encoding
                             const cleanedPath = decodeURIComponent(pathname.replace('/api/tus', ''));
-                            if (verifiedUser == 'admin' || verifiedUser == 'developer') syncSoundFiles(client).catch(() => {});
+                            if (verifiedUser == 'admin' || verifiedUser == 'developer') syncSoundFiles().catch(() => {});
                             else await handleFileUploadCompletion(client, cleanedPath, verifiedUser).catch((err) => {
                                 consoleLog(`[ERR] Error handling file upload completion for user ${verifiedUser} and file ${cleanedPath}`, err);
                             });
@@ -292,7 +292,7 @@ function initProxyServer(client) {
                     }
 
                     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && pathname.startsWith('/api/resources/') && isSuccess) {
-                        syncSoundFiles(client).catch(() => {});
+                        syncSoundFiles().catch(() => {});
                     }
                 });
             }
@@ -331,7 +331,7 @@ async function handleFileUploadCompletion(client, filePath, userID) {
     });
 
     if (!isNaN(duration) && duration <= maxTime) {
-        syncSoundFiles(client).catch(() => {});
+        syncSoundFiles().catch(() => {});
         return;
     }
 

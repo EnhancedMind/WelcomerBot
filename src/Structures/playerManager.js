@@ -7,6 +7,7 @@ const { player: { playIntoEmptyChannel, selfDeaf, debug, loudnessNormalization, 
 const Client = require('./Client.js');
 const { consoleLog, consoleTrace } = require('../Data/Log.js');
 const { invalidateSoundFile } = require('../Structures/musicFilesManager.js');
+const { db } = require('./dbManager.js')
 
 
 /**
@@ -26,12 +27,11 @@ const activeConnections = new Collection();
 
 /**
  * Handles playing a sound file into a voice channel
- * @param {Client} client The Discord client instance.
  * @param {VoiceChannel} voiceChannel The target channel to play audio in.
  * @param {Object} file The sound file metadata object containing path and once.
  * @param {number} delay Delayed execution buffer in milliseconds.
  */
-async function play(client, voiceChannel, file, delay = 0) {
+async function play(voiceChannel, file, delay = 0) {
     if (!voiceChannel) return consoleTrace('[WARN] No voice channel provided to play function');
     const guildId = voiceChannel.guild.id;
     let session = activeConnections.get(guildId);
@@ -64,7 +64,7 @@ async function play(client, voiceChannel, file, delay = 0) {
 
         // handle file invalidation for interrupted song
         if (session.fileToInvalidate) {
-            invalidateSoundFile(client, session.fileToInvalidate);
+            invalidateSoundFile(session.fileToInvalidate);
             session.fileToInvalidate = null;
         }
     }
@@ -113,7 +113,7 @@ async function play(client, voiceChannel, file, delay = 0) {
 
             if (currentSession.fileToInvalidate) {
                 try {
-                    invalidateSoundFile(client, currentSession.fileToInvalidate);
+                    invalidateSoundFile(currentSession.fileToInvalidate);
                 }
                 catch {}
                 currentSession.fileToInvalidate = null;
@@ -147,59 +147,78 @@ async function play(client, voiceChannel, file, delay = 0) {
         currentSession.isPreparing = false; // playing has begun, no longer in preparation phase, ready to disconnect on idle
 
         // tag once files to be invalidated after playback finishes
-        if (file.once) currentSession.fileToInvalidate = file.path;
+        if (file.play_once) currentSession.fileToInvalidate = file.file_path;
 
-        const ffmpegOptions = [
-            //'-loglevel', '8', '-hide_banner',
-            '-i', path.resolve(file.path),
-            '-af', `highpass=f=20, lowpass=f=18000, aresample=async=1,${loudnessNormalization ? 'loudnorm=I=-16:TP=-1.5:LRA=11,' : ''} volume=-10dB`,
-            '-c:a', 'libopus',
-            '-b:a', `${bitrate == 'auto' || !bitrate ? voiceChannel.bitrate : bitrate}`,
-            '-vbr', 'on',
-            '-compression_level', '9',
-            '-ar', '48000',
-            '-ac', '2',
-            '-f', 'ogg', 'pipe:3'
-        ];
-
-        if (!debug) ffmpegOptions.splice(0, 0, ...['-loglevel', '8', '-hide_banner']); // when debug is true, dont insert log supression
-
-        try {
-            const ffmpegProcess = spawn('ffmpeg', ffmpegOptions, {
-                windowsHide: true, 
-                stdio: [ 
-                    // Standard: stdin, stdout, stderr
-                    'inherit', 'inherit', 'inherit', 
-                    // Custom: pipe:3
-                    'pipe'
-                ]
+        let reencodedFilePath = null;
+        if (file.source_hash) {
+            reencodedFilePath = db.prepare(/*sql*/`
+                SELECT file_path 
+                FROM files_reencoded 
+                WHERE source_hash = ?
+            `).get(file.source_hash);
+        }
+        
+        if (reencodedFilePath?.file_path) {
+            const resource = createAudioResource(path.resolve(reencodedFilePath.file_path), {
+                inputType: 'ogg/opus',
+                inlineVolume: false
             });
 
-            ffmpegProcess.on('close', (code, signal) => {
-                if (code !== 0 && signal !== 'SIGKILL') { // with SIGKILL code will be null
-                    consoleLog(`[ERR] FFmpeg exited with code ${code}, disconnecting...`);
+            currentSession.player.play(resource);
+        }
+        else {
+            const ffmpegOptions = [
+                //'-loglevel', '8', '-hide_banner',
+                '-i', path.resolve(file.file_path),
+                '-af', `highpass=f=20, lowpass=f=18000, aresample=async=1,${loudnessNormalization ? 'loudnorm=I=-16:TP=-1.5:LRA=11,' : ''} volume=-10dB`,
+                '-c:a', 'libopus',
+                '-b:a', `${bitrate == 'auto' || !bitrate ? voiceChannel.bitrate : bitrate}`,
+                '-vbr', 'on',
+                '-compression_level', '9',
+                '-ar', '48000',
+                '-ac', '2',
+                '-f', 'ogg', 'pipe:3'
+            ];
+
+            if (!debug) ffmpegOptions.splice(0, 0, ...['-loglevel', '8', '-hide_banner']); // when debug is true, dont insert log supression
+
+            try {
+                const ffmpegProcess = spawn('ffmpeg', ffmpegOptions, {
+                    windowsHide: true, 
+                    stdio: [ 
+                        // Standard: stdin, stdout, stderr
+                        'inherit', 'inherit', 'inherit', 
+                        // Custom: pipe:3
+                        'pipe'
+                    ]
+                });
+
+                ffmpegProcess.on('close', (code, signal) => {
+                    if (code !== 0 && signal !== 'SIGKILL') { // with SIGKILL code will be null
+                        consoleLog(`[ERR] FFmpeg exited with code ${code}, disconnecting...`);
+                        disconnect(guildId);
+                    }
+                });
+
+                ffmpegProcess.on('error', (err) => {
+                    consoleLog(`[ERR] FFmpeg process error:\n`, err);
                     disconnect(guildId);
-                }
+                });
+
+                currentSession.ffmpegProcess = ffmpegProcess;
+            }
+            catch (err) {
+                consoleLog(`[ERR] FFmpeg process error in player:\n`, err);
+            }
+
+
+            const resource = createAudioResource(currentSession.ffmpegProcess.stdio[3], {
+                inputType: 'ogg/opus',
+                inlineVolume: false
             });
 
-            ffmpegProcess.on('error', (err) => {
-                consoleLog(`[ERR] FFmpeg process error:\n`, err);
-                disconnect(guildId);
-            });
-
-            currentSession.ffmpegProcess = ffmpegProcess;
+            currentSession.player.play(resource);
         }
-        catch (err) {
-            consoleLog(`[ERR] FFmpeg process error in player:\n`, err);
-        }
-
-
-        const resource = createAudioResource(currentSession.ffmpegProcess.stdio[3], {
-            inputType: 'ogg/opus',
-            inlineVolume: false
-        });
-
-        currentSession.player.play(resource);
 
     }, delay);
 }

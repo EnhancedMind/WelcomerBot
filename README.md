@@ -133,7 +133,8 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
         "everyoneMusicDir": "./music/everyone",
         "defaultMusicDir": "./music/default",
         "tempMusicDir": "./music/temp",
-        "topMusicDir": "./music"
+        "topMusicDir": "./music",
+        "reencodedMusicDir": "./music/reencoded"
     },
     "filebrowser": {
         "enabled": false,
@@ -198,6 +199,7 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
 - `directories.defaultMusicDir`: directory used for users without custom music  
 - `directories.tempMusicDir`: directory used for temporary music files  
 - `directories.topMusicDir`: the base directory for the above, limiting the scope of what song commands can change  
+- `directories.reencodedMusicDir`: the directory used to store reencoded music files  
 <br>
 
 - `filebrowser.enabled`: whether the filebrowser reverse proxy and handlers are enabled, this includes webmanage command being enabled or not  

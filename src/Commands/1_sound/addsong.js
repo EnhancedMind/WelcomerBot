@@ -16,7 +16,7 @@ const path = require('path');
 
 const { exists } = require('../../utils/fsUtils.js');
 const { consoleLog } = require('../../Data/Log.js');
-const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/settingsManager.js');
+const { getSetting, setSetting } = require('../../Structures/settingsManager.js');
 const { syncSoundFiles, getUserPath, getFileDuration, defaultDirComparison, everyoneDirComparison } = require('../../Structures/musicFilesManager.js');
 
 const helpText = 
@@ -98,7 +98,7 @@ async function addSongCore(message, client, targetDir) {
 
     // Modifying settings if they are disabled
     let settingModified = false;
-    const setting = getSetting(client, 'user', senderId);
+    const setting = getSetting('user', senderId);
 
     for(const [_, attachment] of allAttachments) {
         const fileName = attachment.title ? `${attachment.title}${path.extname(attachment.name)}` : attachment.name;
@@ -155,16 +155,10 @@ async function addSongCore(message, client, targetDir) {
         }
     }
 
-    await syncSoundFiles(client);
+    await syncSoundFiles();
 
     if (settingModified) {
-        try {
-            await writeSettingsFile(client);
-            channelResponse.push(`${success} Your settings have been updated to play the sound!`);
-        }
-        catch {
-            channelResponse.push(`${warning} An error occurred while writing the settings file, your sound is activated only until the bot restarts!`);
-        }
+        channelResponse.push(`${success} Your settings have been updated to play the sound!`);
     }
 
     // ensure message is not empty

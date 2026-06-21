@@ -1,7 +1,7 @@
 const Command = require('../../Structures/Command.js');
 
 const { PermissionsBitField } = require('discord.js');
-const { getSetting, setSetting, writeSettingsFile } = require('../../Structures/settingsManager.js');
+const { getSetting, setSetting } = require('../../Structures/settingsManager.js');
 const { bot: { ownerID }, emoji: { success, error }, response: { invalidPermissions } } = require('../../../config/config.json');
 
 
@@ -45,15 +45,8 @@ module.exports = new Command({
                     setSetting(client, 'guild', message.guild.id, 'enabledDefaultLeave', setting);
                 }
             }
-
-            try {
-                await writeSettingsFile(client)
-            }
-            catch (err) {
-                await message.channel.send(`${error} An error occured while writing the settings file, the settings are only applied until the bot restarts!`);
-            }
         }
 
-        await message.channel.send(`${success} The current setting for this server are:\n\`\`\`\n${JSON.stringify(getSetting(client, 'guild', message.guild.id), null, 4)} \n\`\`\``);
+        await message.channel.send(`${success} The current setting for this server are:\n\`\`\`\n${JSON.stringify(getSetting('guild', message.guild.id), null, 4)} \n\`\`\``);
     }
 });
