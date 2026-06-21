@@ -1,3 +1,35 @@
+# Unreleased
+
+### Added
+- SQLite Database Integration: Introduced a local SQLite engine to manage bot data natively.  
+- Audio Pre-encoding Cache: The bot now automatically pre-encodes frequently used sounds into an optimized format. Instead of utilizing heavy runtime CPU transcoding on every playback, it streams cached assets directly (significantly reducing resource usage on devices like the Raspberry Pi).  
+- Playback History Foundation: Prepared the core database schema to support logging and fetching sound playback histories in future updates.  
+- Added 'list' alias to playable command  
+- Added proper shorthand arg parsing to play and search commands  
+- Added --no-path (-P) flag to playable command to not display file paths  
+- Added --path (-p) flag to search command to display where the files are located  
+- Added --me (-m) flag to play command as an alternative to tagging yourself  
+- Added better structure to the webmanage command messages  
+
+
+### Changed
+- State Persistence: Shifted user and guild configuration states away from JSON files and volatile JavaScript `Map` objects into relational database tables.  
+- Runtime Audio Handler: Refactored audio streaming logic to check the pre-encoded cache first, demuxing on the fly when possible, while keeping the standard dynamic encoder as a fallback for not preencoded files.  
+- Properly handle mentions in all commands using mentions  
+- Removed the feature to log into file, external utility has to be used from now  
+- Made message embed formating consistent  
+- Improved the performance and reliability of help and aliases commands  
+
+
+### Fixed & Cleaned
+- Automated Schema Migration: Added an internal startup routine that automatically ports legacy JSON file configurations into the new SQLite format and cleans up the deprecated files afterwards.  
+- Removed legacy storage dependencies and in-memory synchronization blockers.  
+- Fixed voiceStateUpdate trigerring player incorectly, specifically trying to triger join event when user disconnected from afk channel + made logic overall more reliable  
+- Fixed player crashing when no channel was provided to manager (ghost voiceStates)  
+- Fixed search command crashing  
+
+
+
 # Version 0.7.1
 Started creating official docker image for linux/amd64 and linux/arm64 platforms, more info in README.md  
 Added support for FileBrowser as a music file management backend accessible through the new webmanage command, more info in README.md  
