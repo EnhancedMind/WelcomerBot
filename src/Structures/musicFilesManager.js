@@ -339,7 +339,7 @@ function reencodeSingleFile(filepath, hash) {
                 windowsHide: true,
                 stdio: [ 
                     // Standard: stdin, stdout, stderr
-                    'inherit', 'inherit', 'inherit', 
+                    'ignore', 'inherit', 'inherit', 
                 ]
             });
 

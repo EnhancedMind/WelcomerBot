@@ -177,7 +177,7 @@ async function play(voiceChannel, file, delay = 0) {
                 '-compression_level', '9',
                 '-ar', '48000',
                 '-ac', '2',
-                '-f', 'ogg', 'pipe:3'
+                '-f', 'ogg', 'pipe:1'
             ];
 
             if (!debug) ffmpegOptions.splice(0, 0, ...['-loglevel', '8', '-hide_banner']); // when debug is true, dont insert log supression
@@ -187,9 +187,7 @@ async function play(voiceChannel, file, delay = 0) {
                     windowsHide: true, 
                     stdio: [ 
                         // Standard: stdin, stdout, stderr
-                        'inherit', 'inherit', 'inherit', 
-                        // Custom: pipe:3
-                        'pipe'
+                        'ignore', 'pipe', 'inherit'
                     ]
                 });
 
@@ -212,7 +210,7 @@ async function play(voiceChannel, file, delay = 0) {
             }
 
 
-            const resource = createAudioResource(currentSession.ffmpegProcess.stdio[3], {
+            const resource = createAudioResource(currentSession.ffmpegProcess.stdout, {
                 inputType: 'ogg/opus',
                 inlineVolume: false
             });
