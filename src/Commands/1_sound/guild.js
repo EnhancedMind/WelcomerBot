@@ -50,6 +50,6 @@ module.exports = new Command({
             setSetting('guild', message.guild.id, newSettings);
         }
 
-        await message.channel.send(`${success} The current setting for this server are:\n\`\`\`\n${JSON.stringify(getSetting('guild', message.guild.id), null, 4)} \n\`\`\``);
+        await message.channel.send(`${success} The current setting for this server are:\n\`\`\`json\n${JSON.stringify(getSetting('guild', message.guild.id), null, 4)} \n\`\`\``);
     }
 });
