@@ -146,11 +146,11 @@ async function addSongCore(message, client, targetDir) {
 
         if (!setting) continue;
         if (!setting.enabledJoin && (fileName.includes('$join') || !fileName.includes('$leave')) ) {
-            setSetting(client, 'user', senderId, 'enabledJoin', true);
+            setSetting('user', senderId, { enabledJoin: true });
             settingModified = true;
         }
         else if (!setting.enabledLeave && fileName.includes('$leave')) {
-            setSetting(client, 'user', senderId, 'enabledLeave', true);
+            setSetting('user', senderId, { enabledLeave: true });
             settingModified = true;
         }
     }

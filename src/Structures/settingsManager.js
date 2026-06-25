@@ -26,24 +26,32 @@ const upsertSettingsQueries = {
 
 /**
  * Sets a setting for a user or guild.
- * @param {_} _ - legacy, was previously client instance
  * @param {string} type - 'guild' or 'user'
  * @param {string} id - guildId or userId
- * @param {string} setting - 'enabledJoin', 'enabledLeave', 'enabledDefaultJoin', 'enabledDefaultLeave'
- * @param {boolean} value - true or false
+ * @param {Object} settings - A partial configuration object. Only the provided settings will be updated.
+ * @param {boolean} [settings.enabledJoin] - Whether playing join sounds is enabled.
+ * @param {boolean} [settings.enabledLeave] - Whether playing leave sounds is enabled.
+ * @param {boolean} [settings.enabledDefaultJoin] - Whether playing default join sounds is enabled.
+ * @param {boolean} [settings.enabledDefaultLeave] - Whether playing default leave sounds is enabled.
  */
-const setSetting = (_, type, id, setting, value) => {
+const setSetting = (type, id, settings) => {
     if (type != 'guild' && type != 'user') return;
 
-    const stmt = upsertSettingsQueries[setting];
-    if (!stmt) return;
+    db.transaction(() => {
+        for (const [key, value] of Object.entries(settings)) {
+            if ( !['enabledJoin', 'enabledLeave', 'enabledDefaultJoin', 'enabledDefaultLeave'].includes(key) ) continue;
+            
+            const stmt = upsertSettingsQueries[key];
+            if (!stmt) continue;
 
-    try {
-        stmt.run(id, type, value ? 1 : 0);
-    }
-    catch (error) {
-        consoleLog(`[ERR] Failed to set settings to db, id ${id} type ${type}:`, error);
-    }
+            try {
+                stmt.run(id, type, value ? 1 : 0);
+            }
+            catch (error) {
+                consoleLog(`[ERR] Failed to set settings to db, id ${id} type ${type}:`, error);
+            }
+        }
+    })();
 }
 
 

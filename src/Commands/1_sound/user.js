@@ -23,11 +23,12 @@ module.exports = new Command({
 
 
         if ( (args.length > 0 && member == message.author.id) || (args.length > 1 && member != message.author.id) ) { //only execute if there is at least one argument (args[0]) and the user is not tagged OR there is only a tagged user in args[0] 
+            const newSettings = {};
             if ([ 'reset', 'r' ].includes(args[0])) {
-                setSetting(client, 'user', member, 'enabledJoin', true);
-                setSetting(client, 'user', member, 'enabledLeave', true);
-                setSetting(client, 'user', member, 'enabledDefaultJoin', true);
-                setSetting(client, 'user', member, 'enabledDefaultLeave', true);
+                newSettings.enabledJoin = true;
+                newSettings.enabledLeave = true;
+                newSettings.enabledDefaultJoin = true;
+                newSettings.enabledDefaultLeave = true;
             }
             else if (!['enable', 'en', 'disable', 'dis' ].includes(args[0])) {} // skip invalid value
             else {
@@ -41,18 +42,20 @@ module.exports = new Command({
                 }
 
                 if (args.includes('join') || args.includes('all')) {
-                    setSetting(client, 'user', member, 'enabledJoin', setting);
+                    newSettings.enabledJoin = setting;
                 }
                 if (args.includes('leave') || args.includes('all')) {
-                    setSetting(client, 'user', member, 'enabledLeave', setting);
+                    newSettings.enabledLeave = setting;
                 }
                 if (args.includes('defaultJoin') || args.includes('defaultjoin') || args.includes('all')) {
-                    setSetting(client, 'user', member, 'enabledDefaultJoin', setting);
+                    newSettings.enabledDefaultJoin = setting;
                 }
                 if (args.includes('defaultLeave') || args.includes('defaultleave') || args.includes('all')) {
-                    setSetting(client, 'user', member, 'enabledDefaultLeave', setting);
+                    newSettings.enabledDefaultLeave = setting;
                 }
             }
+
+            setSetting('user', message.guild.id, newSettings);
         }
         
         await message.channel.send(`${success} The current settings for this user are:\n\`\`\`\n${JSON.stringify(getSetting('user', member), null, 4)} \n\`\`\``);
