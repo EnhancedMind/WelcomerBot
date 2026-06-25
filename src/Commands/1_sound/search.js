@@ -119,7 +119,16 @@ module.exports = new Command({
                 return;
             }
 
-            client.playerManager.play(senderVoiceChannel, { path: results[index].item.file_path, source_hash: results[index].item.source_hash });
+            client.playerManager.play({
+                voiceChannel: senderVoiceChannel,
+                file: {
+                    file_path: results[index].item.file_path,
+                    source_hash: results[index].item.source_hash
+                },
+                triggerType: 'manual',
+                eventType: 'command',
+                userId: message.author.id
+            });
             response.edit({ content: `${success} Playing **\`${results[index].item.file_name}\`** (${searchResult.reason})`, embeds: [] }).catch(() => {});
             collector.stop();
         });

@@ -1,6 +1,6 @@
-const { Collection, VoiceChannel } = require('discord.js');
+const { Collection, VoiceChannel, Snowflake } = require('discord.js');
 const { createAudioPlayer, createAudioResource, joinVoiceChannel, VoiceConnection, AudioPlayer, AudioPlayerStatus, VoiceConnectionStatus, entersState } = require('@discordjs/voice');
-const { spawn } = require('child_process');
+const { spawn, ChildProcess } = require('child_process');
 const path = require('path');
 
 const { player: { playIntoEmptyChannel, selfDeaf, debug, loudnessNormalization, bitrate } } = require('../../config/config.json');
@@ -20,18 +20,52 @@ const { db } = require('./dbManager.js')
  * @property {NodeJS.Timeout|null} checkInterval - Interval timer for periodically checking if the bot is still in a voice channel, used to clean up sessions if the bot was kicked.
  * @property {string|null} fileToInvalidate - The path of the sound file to invalidate after playback finishes, used for one-time play files.
  * @property {boolean} isPreparing - Flag indicating whether the session is currently in the preparation phase before playback starts, used to prevent idle disconnections during startup.
- * @type {Discord.Collection<Discord.Snowflake, PlayerSession>}
+ * @type {Collection<Snowflake, PlayerSession>} - Collection, key is guildId and value is PlayerSession object.
  */
 const activeConnections = new Collection();
 
 
+// statement to insert into history, is outside function to avoid rerunning and recompilation on runtime
+const insertHistoryStmt = db.prepare(/*sql*/`
+    INSERT INTO playback_history (
+        file_id, 
+        file_path_snapshot, 
+        file_name_snapshot, 
+        hash_snapshot,
+        trigger_type, 
+        event_type, 
+        user_id, 
+        channel_id, 
+        guild_id
+    ) VALUES (
+        (SELECT id FROM files WHERE file_path = :path LIMIT 1),
+        :path, 
+        :name, 
+        :hash, 
+        :trigger, 
+        :event, 
+        :user, 
+        :channel, 
+        :guild
+    )
+`);
+
+
 /**
  * Handles playing a sound file into a voice channel
- * @param {VoiceChannel} voiceChannel The target channel to play audio in.
- * @param {Object} file The sound file metadata object containing path and once.
- * @param {number} delay Delayed execution buffer in milliseconds.
+ * @param {Object} options - The player options.
+ * @param {VoiceChannel} options.voiceChannel - The target channel to play audio in.
+ * @param {Object} options.file - The sound file metadata object.
+ * @param {String} options.file.file_path - The path to the file to play
+ * @param {String} options.file.source_hash - The hash of the file to play, to find its pre-encoded version.
+ * @param {number} [options.file.play_once=0] - 1 or 0 indicating whether to mark the file as used after playing.
+ * @param {number} [options.delay=0] - Delayed execution buffer in milliseconds.
+ * @param {string} options.triggerType - 'automated' or 'manual', dictating how the action was initiated.
+ * @param {string} options.eventType - The contextual event (e.g., 'join', 'leave', 'command').
+ * @param {string} options.userId - The Discord user ID of the user triggering this event.
+ * @returns {Promise<void>}
  */
-async function play(voiceChannel, file, delay = 0) {
+async function play({voiceChannel, file, delay = 0, triggerType = 'unknown', eventType = 'unknown', userId = 'unknown'}) {
     if (!voiceChannel) return consoleTrace('[WARN] No voice channel provided to play function');
     const guildId = voiceChannel.guild.id;
     let session = activeConnections.get(guildId);
@@ -128,6 +162,22 @@ async function play(voiceChannel, file, delay = 0) {
             consoleLog(`[WARN] Audio player error in guild ${guildId}:`, err);
             disconnect(guildId);
         });
+    }
+
+    try {
+        insertHistoryStmt.run({
+            path: file.file_path,                               // file_path_snapshot
+            name: path.basename(file.file_path),                // file_name_snapshot
+            hash: file.source_hash ? file.source_hash : null,   // hash_snapshot
+            trigger: triggerType,                               // trigger_type
+            event: eventType,                                   // event_type
+            user: userId,                                       // user_id
+            channel: voiceChannel.id,                           // channel_id
+            guild: guildId                                      // guild_id
+        });
+    }
+    catch (error) {
+        consoleLog('Failed to log playback history:', error);
     }
 
     // begin playback after the specified delay to wait for listener connection establishment

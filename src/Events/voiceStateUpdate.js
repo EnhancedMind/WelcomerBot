@@ -12,7 +12,15 @@ module.exports = new Event('voiceStateUpdate', async (client, oldState, newState
     if(newState.channelId && (!oldState.channelId || oldState.channelId == oldState.guild?.afkChannelId)) { //joining a channel or returning from afk
         const file = await getUserSoundFile(member.id, 'join', newState.guild.id);
         if (!file) return;
-        client.playerManager.play(newState.channel, file, 800);
+
+        client.playerManager.play({
+            voiceChannel: newState.channel,
+            file: file,
+            delay: 800,
+            triggerType: 'automated',
+            eventType: 'join',
+            userId: member.id
+        });
     }
 
     else if(!newState.channelId && oldState.channelId && oldState.channelId != oldState.guild?.afkChannelId) { //leaving a channel
@@ -20,6 +28,13 @@ module.exports = new Event('voiceStateUpdate', async (client, oldState, newState
         const file = await getUserSoundFile(member.id, 'leave', oldState.guild.id);
         if (!file) return;
 
-        client.playerManager.play(oldState.channel, file, 150);
+        client.playerManager.play({
+            voiceChannel: oldState.channel,
+            file: file,
+            delay: 150,
+            triggerType: 'automated',
+            eventType: 'leave',
+            userId: member.id
+        });
     }
 });

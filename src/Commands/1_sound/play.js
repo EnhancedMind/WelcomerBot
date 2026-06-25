@@ -88,7 +88,16 @@ module.exports = new Command({
                 response.edit(`${error} ${searchStringMessage} wasn't found.`).catch(() => {});
                 return;
             }
-            client.playerManager.play(senderVoiceChannel, { file_path: file.file_path, source_hash: file.source_hash });
+            client.playerManager.play({
+                voiceChannel: senderVoiceChannel,
+                file: {
+                    file_path: file.file_path,
+                    source_hash: file.source_hash
+                },
+                triggerType: 'manual',
+                eventType: searchType,
+                userId: userIdArg
+            });
             response.edit(`${success} Playing sound for **${userGlobalName} - \`${file.file_name}\`**`).catch(() => {});
             return;
         }
@@ -105,7 +114,16 @@ module.exports = new Command({
                 try {
                     const fileStat = await stat(targetPath);
                     if (fileStat.isFile()) {
-                        client.playerManager.play(senderVoiceChannel, { file_path: `./${args[0]}`});
+                        // fallback not in db
+                        client.playerManager.play({
+                            voiceChannel: senderVoiceChannel,
+                            file: {
+                                file_path: path.join(`./${args[0]}`)
+                            },
+                            triggerType: 'manual',
+                            eventType: 'command',
+                            userId: message.author.id
+                        });
                         response.edit(`${success} Playing **\`${args[0]}\`**`).catch(() => {});
                         return;
                     }
@@ -124,7 +142,16 @@ module.exports = new Command({
 
         const finalWinner = tiedResults[0].item;
 
-        client.playerManager.play(senderVoiceChannel, { file_path: finalWinner.file_path, source_hash: finalWinner.source_hash });
+        client.playerManager.play({
+            voiceChannel: senderVoiceChannel,
+            file: {
+                file_path: finalWinner.file_path,
+                source_hash: finalWinner.source_hash
+            },
+            triggerType: 'manual',
+            eventType: 'command',
+            userId: message.author.id
+        });
         response.edit(`${success} Playing **\`${finalWinner.file_name}\`** (${searchResult.reason})`).catch(() => {});
     }
 });
