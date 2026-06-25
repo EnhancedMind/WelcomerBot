@@ -1,5 +1,6 @@
 node_modules/
 music/*.mp3
+music/*.webm
 music/users/*
 music/everyone/*
 music/default/*.m4a
