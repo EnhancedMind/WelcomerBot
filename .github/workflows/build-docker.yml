@@ -73,6 +73,9 @@ jobs:
           push: true
           platforms: ${{ matrix.platform }}
           tags: ${{ steps.prep.outputs.DOCKER_TAGS }}
+          # Disable attestations to remove unknown/unknown entries
+          provenance: false
+          sbom: false
           build-args: |
             COMMIT_SHA=${{ steps.prep.outputs.SHA_SHORT }}
             BUILD_NUMBER=${{ steps.prep.outputs.BUILD_NUMBER }}
