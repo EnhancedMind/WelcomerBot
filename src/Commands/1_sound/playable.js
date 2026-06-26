@@ -27,7 +27,7 @@ module.exports = new Command({
     aliases: [ 'pl', 'pls', 'list' ],
     category: 'sound',
     syntax: 'playable [--json] [--user/--personal [@user]] [--join] [--leave] pagenumber',
-    description: `Lists all the files that can be played. Use \`${prefix}playable --json\` to get the output as JSON data.`,
+    description: `Lists all the files that can be played. Use \`${prefix}playable --help\` to see all the options.`,
     help: helpText,
     async run(message, args, client) {
         const jsonFlag = args.includes('--json')
