@@ -129,14 +129,14 @@ async function resolveUserFlag(message, args, client) {
 
     // Just user flag was triggered
     if(userFlagIdx !== -1) {
-        const joinArray = (joinFlag || !eventFlag) ? await getUserSoundArray(taggedUser, 'join', message.guildId) : [];
-        const leaveArray = (leaveFlag || !eventFlag) ? await getUserSoundArray(taggedUser, 'leave', message.guildId) : [];
+        const joinArray = (joinFlag || !eventFlag) ? await getUserSoundArray(taggedUser, 'join', message.guildId, false) : [];
+        const leaveArray = (leaveFlag || !eventFlag) ? await getUserSoundArray(taggedUser, 'leave', message.guildId, false) : [];
         const array = [...joinArray,...leaveArray];
         return [ array, taggedUser, false, noPathFlag ];
     }
 
     //personal flag was triggered
-    const array = (await getUserSoundArray(taggedUser, 'all', message.guildId)).filter(song => {return song.file_path.startsWith(userDirComparison)});
+    const array = ( await getUserSoundArray(taggedUser, 'all', message.guildId, false) ).filter(song => {return song.file_path.startsWith(userDirComparison)});
     if(eventFlag) {
         if(joinFlag) return [ array.filter(song => song.is_join), taggedUser, true, noPathFlag ];
         else if(leaveFlag) return [ array.filter(song => song.is_leave), taggedUser, true, noPathFlag ];

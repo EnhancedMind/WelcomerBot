@@ -423,9 +423,10 @@ function getLoudnessData(inputPath) {
  * @param {string} userId - The ID of the user.
  * @param {string} type - The type of sound file ('join', 'leave' or 'all').
  * @param {string} guildId - The id of the guild.
+ * @param {boolean} [onlyValid=true] - Wheter to include only valid sounds or all sounds. Defaults to true.
  * @returns {Object[]} - The sound file object array.
  */
-async function getUserSoundArray(userId, type, guildId) {
+async function getUserSoundArray(userId, type, guildId, onlyValid = true) {
     const guildSettings = await getSetting('guild', guildId);
     const userSettings = await getSetting('user', userId);
     const setting = { // check explicitly if either if false, otherwise default to true
@@ -449,7 +450,7 @@ async function getUserSoundArray(userId, type, guildId) {
             SELECT 1 FROM files 
             WHERE target_id = @userId 
             AND deleted_at IS NULL 
-            AND is_valid = 1 
+            AND (@onlyValid = 0 OR is_valid = 1)
             AND (
                 (@type = 'join' AND is_join = 1) OR 
                 (@type = 'leave' AND is_leave = 1) OR 
@@ -460,7 +461,7 @@ async function getUserSoundArray(userId, type, guildId) {
         -- Step 2: Fetch the actual sounds
         SELECT * FROM files
         WHERE deleted_at IS NULL 
-        AND is_valid = 1
+        AND (@onlyValid = 0 OR is_valid = 1)
         AND (
             (@type = 'join' AND is_join = 1) OR
             (@type = 'leave' AND is_leave = 1) OR
@@ -491,7 +492,8 @@ async function getUserSoundArray(userId, type, guildId) {
     const array = db.prepare(query).all({
         userId: userId,
         type: type,
-        defaultEnabled: defaultEnabled
+        defaultEnabled: defaultEnabled,
+        onlyValid: onlyValid ? 1 : 0
     });
 
     return array;
