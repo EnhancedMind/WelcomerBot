@@ -315,8 +315,13 @@ function reencodeSingleFile(filepath, hash) {
 
             let loudnormFilter = '';
             if (loudnessNormalization) {
-                const metrics = await getLoudnessData(inputPath);
-                loudnormFilter = `loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=${metrics.input_i}:measured_TP=${metrics.input_tp}:measured_LRA=${metrics.input_lra}:measured_thresh=${metrics.input_thresh}:offset=${metrics.target_offset}:linear=true,`;
+                const fileDuration = await getFileDuration(inputPath);
+
+                if (fileDuration > 3) {
+                    const metrics = await getLoudnessData(inputPath);
+                    loudnormFilter = `loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=${metrics.input_i}:measured_TP=${metrics.input_tp}:measured_LRA=${metrics.input_lra}:measured_thresh=${metrics.input_thresh}:offset=${metrics.target_offset}:linear=true,`;
+                }
+                else loudnormFilter = `dynaudnorm=f=120:g=15,`;
             }
 
             const pass2Args = [

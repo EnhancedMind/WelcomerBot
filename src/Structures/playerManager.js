@@ -220,7 +220,7 @@ async function play({voiceChannel, file, delay = 0, triggerType = 'unknown', eve
             const ffmpegOptions = [
                 //'-loglevel', '8', '-hide_banner',
                 '-i', path.resolve(file.file_path),
-                '-af', `highpass=f=20, lowpass=f=18000, aresample=async=1,${loudnessNormalization ? 'loudnorm=I=-16:TP=-1.5:LRA=11,' : ''} volume=-10dB`,
+                '-af', `highpass=f=20,lowpass=f=18000,aresample=async=1,${loudnessNormalization ? 'dynaudnorm=f=120:g=15,' : ''}volume=-10dB`,
                 '-c:a', 'libopus',
                 '-b:a', `${bitrate == 'auto' || !bitrate ? voiceChannel.bitrate : bitrate}`,
                 '-vbr', 'on',
