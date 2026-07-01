@@ -1,4 +1,4 @@
-const { readdir, mkdir, rename, stat, readFile } = require('fs/promises');
+const { readdir, mkdir, rename, stat, readFile, rm } = require('fs/promises');
 const fs = require('fs')
 const path = require('path');
 const Fuse = require('fuse.js');
@@ -26,9 +26,11 @@ if (!fs.existsSync(reencodedDirAbs)) {
 
 /**
  * Syncs the sound files from the music directory to the database.
+ * @param {Object} options - Options for syncing sound files.
+ * @param {boolean} [options.forceReencode=false] - If true, reencodes all files regardless of their current state in the reencoded table.
  * @returns {Promise<void>} - A promise that resolves when the sound files are synced.
  */
-async function syncSoundFiles() {
+async function syncSoundFiles({ forceReencode = false } = {}) { // = {} is as default empty object to avoid destructuring undefined if no argument is passed
     // create a temporary Map to hold the disk state
     const diskFiles = new Map();
 
@@ -121,7 +123,7 @@ async function syncSoundFiles() {
         }
     })();
 
-    reencodeFiles();
+    await reencodeFiles(forceReencode);
 }
 
 /**
@@ -231,9 +233,28 @@ function addSoundToList(targetList, filePath, fileName, defaultChance = undefine
 
 /**
  * Queries the database for files suitable for reencoding into cache and reencodes them, inserts to reencoded table
+ * @param {boolean} [force=false] - If true, reencodes all files regardless of their current state in the reencoded table.
  * @returns {Promise<null>}
  */
-async function reencodeFiles() {
+async function reencodeFiles(force = false) {
+    if (force) {
+        consoleLog(`[INFO] Force re-encode triggered. Purging entire cache...`);
+
+        // clear the database cache table (keeps schema intact, wipes rows)
+        db.prepare(/*sql*/`DELETE FROM files_reencoded`).run();
+
+        try {
+            await rm(reencodedDirAbs, { recursive: true, force: true });
+            await mkdir(reencodedDirAbs, { recursive: true });
+            consoleLog(`[INFO] Cache folder successfully purged and recreated.`);
+        }
+        catch (dirError) {
+            consoleLog(`[ERR] Failed to reset cache directory:`, dirError);
+            return;
+        }
+    }
+
+
     const existingReencodedFiles = db.prepare(/*sql*/`SELECT source_hash, file_path FROM files_reencoded`).all();
     const deleteCacheStmt = db.prepare(/*sql*/`DELETE FROM files_reencoded WHERE source_hash = ?`);
 
@@ -293,6 +314,7 @@ async function reencodeFiles() {
             consoleLog(`[ERR] Failed to re-encode file at ${file.path}:`, error);
         }
     }
+    return;
 }
 
 /**
