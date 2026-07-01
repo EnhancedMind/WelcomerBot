@@ -22,7 +22,7 @@ You can use the following arguments to modify this behaviour:
 - \`--command\` or \`-c\` - Lists the entries with command event type.
 - \`--automated\` or \`-a\` - Lists the entries with automated trigger type.
 - \`--manual\` or \`-m\` - Lists the entries with manual trigger type.
-- \`--limit\` or \`-l\` - How many entries to include in the list.
+- \`--limit\` or \`-n\` - How many entries to include in the list.
 - \`--path\` - Display file paths instead of file names (only works for printing in chat). 
 - \`pagenumber\` - Specify the page number to view (only works for printing in chat).
 
