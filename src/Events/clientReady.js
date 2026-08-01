@@ -8,9 +8,4 @@ const { status: { status, game } } = require('../../config/config.json');
 
 module.exports = new Event('clientReady', async (client) => {
     consoleLog(`[INFO] ${client.user.username} is online and ready on ${client.guilds.cache.size} servers!`);
-    client.user.setStatus(status);
-    client.user.setActivity(
-        game,
-        { type: ActivityType.Playing }
-    );
 });

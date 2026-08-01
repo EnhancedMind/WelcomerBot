@@ -16,12 +16,21 @@ const { readdirSync } = require('fs');
 const { consoleLog } = require('../Data/Log');
 const { syncSoundFiles } = require('./musicFilesManager.js');
 const { initProxyServer } = require('./Web/server.js')
-const { bot: { token }, filebrowser: { enabled: fbEnabled } } = require('../../config/config.json');
+const { bot: { token }, status: { status, game }, filebrowser: { enabled: fbEnabled } } = require('../../config/config.json');
 
 
 class Client extends Discord.Client {
     constructor() {
-        super({ intents });
+        super({
+            intents,
+            presence: {
+                activities: [{
+                    name: game,
+                    type: Discord.ActivityType.Playing,
+                }],
+                status: status,
+            }
+        });
 
         /**
          * @type {Discord.Collection<string, Command>}
