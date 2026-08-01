@@ -13,11 +13,13 @@ module.exports = new Command({
     async run(message, args, client) {
         const senderId = message.author.id;
         if (senderId != ownerID && !devIDs.includes(senderId)) return await message.channel.send(`${error} ${invalidPermissions}`);
-        client.user.setStatus(status);
-        client.user.setActivity(
-            game,
-            { type: ActivityType.Playing }
-        );
-        await message.channel.send(`${success} Reloaded!`);
+        client.user.setPresence({
+            activities: [{
+                name: game,
+                type: Discord.ActivityType.Playing,
+            }],
+            status: status,
+        });
+        await message.channel.send(`${success} Reloaded status and activity!`);
     }
 });
