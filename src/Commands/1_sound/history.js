@@ -1,6 +1,6 @@
 const Command = require('../../Structures/Command');
 
-const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const { EmbedBuilder, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
 const { parseArgs } = require('node:util');
 
 const paginator = require('../../Structures/Paginator.js');
@@ -22,6 +22,7 @@ You can use the following arguments to modify this behaviour:
 - \`--command\` or \`-c\` - Lists the entries with command event type.
 - \`--automated\` or \`-a\` - Lists the entries with automated trigger type.
 - \`--manual\` or \`-m\` - Lists the entries with manual trigger type.
+- \`--id\` or \`-i\` - Lists the entry with the specified id.
 - \`--limit\` or \`-n\` - How many entries to include in the list.
 - \`--path\` - Display file paths instead of file names (only works for printing in chat). 
 - \`pagenumber\` - Specify the page number to view (only works for printing in chat).
@@ -48,8 +49,11 @@ module.exports = new Command({
         if(flags.json) {
             await exportPlayableToJson(message, client, array, taggedUser);
         }
+        else if (array.length > 1) {
+            await printPlayable(message, client, array, taggedUser, flags, page);
+        }
         else {
-            printPlayable(message, client, array, taggedUser, flags, page);
+            await printSinglePlayable(message, client, array[0], taggedUser, flags);
         }
     }
 });
@@ -99,6 +103,7 @@ async function getHistoryEntries(message, args) {
             // other
             'json': { type: 'boolean' },
             'path': { type: 'boolean' },
+            'id': { type: 'string', short: 'i' },
         }
     });
 
@@ -133,27 +138,33 @@ async function getHistoryEntries(message, args) {
     const params = [ message.guild.id ];
 
 
-    if (userId) {
-        sql += ` AND user_id = ?`;
-        params.push(userId);
+    if (flags.id) {
+        sql += ` AND id = ?`;
+        params.push(parseInt(flags.id, 10));
     }
+    else {
+        if (userId) {
+            sql += ` AND user_id = ?`;
+            params.push(userId);
+        }
 
-    if (eventTypes.length > 0) {
-        // creates string like: AND event_type IN (?, ?)
-        const placeholders = eventTypes.map(() => '?').join(', ');
-        sql += ` AND event_type IN (${placeholders})`;
-        params.push(...eventTypes);
+        if (eventTypes.length > 0) {
+            // creates string like: AND event_type IN (?, ?)
+            const placeholders = eventTypes.map(() => '?').join(', ');
+            sql += ` AND event_type IN (${placeholders})`;
+            params.push(...eventTypes);
+        }
+
+        if (triggerTypes.length > 0) {
+            const placeholders = triggerTypes.map(() => '?').join(', ');
+            sql += ` AND trigger_type IN (${placeholders})`;
+            params.push(...triggerTypes);
+        }
+
+        // sort newest first, apply limit
+        sql += ` ORDER BY played_at DESC LIMIT ?`;
+        params.push(limit);
     }
-
-    if (triggerTypes.length > 0) {
-        const placeholders = triggerTypes.map(() => '?').join(', ');
-        sql += ` AND trigger_type IN (${placeholders})`;
-        params.push(...triggerTypes);
-    }
-
-    // sort newest first, apply limit
-    sql += ` ORDER BY played_at DESC LIMIT ?`;
-    params.push(limit);
 
 
     try {
@@ -174,7 +185,7 @@ async function getHistoryEntries(message, args) {
  * @param {Client} client - The client instance.
  * @param {object[]} array - The array to jsonify.
  * @param {Discord.user|undefined} taggedUser - The user specified in the arguments (if any).
- * @returns {null}
+ * @returns {Promise<void>}
  */
 async function exportPlayableToJson(message, client, array, taggedUser) {
     const jsonString = JSON.stringify(array, null, 2);
@@ -194,7 +205,7 @@ async function exportPlayableToJson(message, client, array, taggedUser) {
  * @param {Discord.user|undefined} taggedUser - The user tagged in the arguments (if any).
  * @param {string|boolean[]} flags - The args flags values array.
  * @param {Number} page - Page specified to display first.
- * @returns {null}
+ * @returns {Promise<void>}
  */
 async function printPlayable(message, client, array, taggedUser, flags, page) {
     let targetsName = "DEBUG";
@@ -226,7 +237,7 @@ async function printPlayable(message, client, array, taggedUser, flags, page) {
             const eventTypeText = array[i].event_type[0].toUpperCase() + array[i].event_type.substring(1);
             const userGlobalName = taggedUser ? '' : ` - ${(await client.users.fetch(array[i].user_id)).globalName}`;
             embeds[j].addFields({
-                name: `<t:${array[i].played_at}:f> [${triggerTypeText} ${eventTypeText}]${userGlobalName}`,
+                name: `${array[i].id}: <t:${array[i].played_at}:f> [${triggerTypeText} ${eventTypeText}]${userGlobalName}`,
                 value: `> \`${flags.path ? array[i].file_path_snapshot : array[i].file_name_snapshot}\``,
             });
         }
@@ -255,4 +266,153 @@ async function printPlayable(message, client, array, taggedUser, flags, page) {
     paginator(message, embeds, null, page).catch(async (err) => {
         await message.channel.send('The paginator failed.');
     });;
+}
+
+/**
+ * Takes the entry and makes it into a embed and sends it into channel
+ * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
+ * @param {Client} client - The client instance.
+ * @param {object} entry - The single entry to print.
+ * @param {Discord.user|undefined} taggedUser - The user tagged in the arguments (if any).
+ * @param {string|boolean[]} flags - The args flags values array.
+ * @returns {Promise<void>}
+ */
+async function printSinglePlayable(message, client, entry, taggedUser, flags) {
+    const fileEntry = db.prepare('SELECT * FROM files WHERE id = ?').get(entry.file_id);
+
+    const embed = new EmbedBuilder()
+        .setColor(0x3399FF)
+        .setAuthor({
+            name: `Playback history!`,
+            url: homepage,
+            iconURL: client.user.displayAvatarURL({ size: 1024, dynamic: true })
+        });
+
+    const triggerTypeText = entry.trigger_type 
+        ? entry.trigger_type[0].toUpperCase() + entry.trigger_type.substring(1) 
+        : 'Unknown';
+
+    const eventTypeText = entry.event_type 
+        ? entry.event_type[0].toUpperCase() + entry.event_type.substring(1) 
+        : 'Unknown';
+
+    let userDisplay = `<@${entry.user_id}>`;
+    try {
+        const user = await client.users.fetch(entry.user_id);
+        if (user) {
+            userDisplay = `${user.globalName || user.username} (<@${entry.user_id}>)`;
+        }
+    } catch (err) {
+        consoleLog(`[ERROR] Could not fetch user ${entry.user_id} for history embed: `, err);
+    }
+
+    embed.addFields(
+        {
+            name: 'File name snapshot',
+            value: `> \`${entry.file_name_snapshot}\``,
+            inline: false
+        },
+        {
+            name: 'File path snapshot',
+            value: `> \`${entry.file_path_snapshot}\``,
+            inline: false
+        }
+    );
+
+    if (fileEntry) {
+        if (fileEntry.deleted_at == null) {
+            embed.addFields(
+                {
+                    name: 'File name current',
+                    value: `> \`${fileEntry.file_name}\``,
+                    inline: false
+                },
+                {
+                    name: 'File path current',
+                    value: `> \`${fileEntry.file_path}\``,
+                    inline: false
+                }
+            );
+        }
+        else {
+            embed.addFields(
+                {
+                    name: 'Deleted at',
+                    value: `<t:${fileEntry.deleted_at}:f> (<t:${fileEntry.deleted_at}:R>)`,
+                    inline: false
+                }
+            );
+        }
+    }
+
+    embed.addFields(
+        {
+            name: 'Triggered By',
+            value: userDisplay,
+            inline: true
+        },
+        {
+            name: 'Context',
+            value: `${triggerTypeText} - ${eventTypeText}`,
+            inline: true
+        },
+        {
+            name: 'Played At',
+            value: `<t:${entry.played_at}:f> (<t:${entry.played_at}:R>)`,
+            inline: false
+        }
+    );
+
+    // --- play again button ---
+    const components = [];
+    let playButton = null;
+
+    if (!fileEntry ||fileEntry?.deleted_at != null) {
+        embed.setFooter({ text: `⚠️ This file has been deleted and cannot be replayed.` });
+    }
+    else if (!message.member?.voice?.channel) {
+        embed.setFooter({ text: `⚠️ Join a voice channel to enable the Play Again button.` });
+    }
+    else {
+        playButton = new ButtonBuilder()
+            .setCustomId(`play_history_${entry.id}_${Date.now()}`)
+            .setLabel('Play Again')
+            .setStyle(ButtonStyle.Primary)
+            .setEmoji('▶️');
+
+        const row = new ActionRowBuilder().addComponents(playButton);
+        components.push(row);
+    }
+
+    const response = await message.channel.send({ embeds: [embed], components });
+
+    if (!playButton) return;
+
+    const collector = response.createMessageComponentCollector({
+        componentType: ComponentType.Button,
+        time: 30000 // 30s timeout
+    });
+
+    collector.on('collect', async (interaction) => {
+        interaction.deferUpdate(); // Acknowledge the interaction to avoid the "This interaction failed" message in discord clients
+
+        if (interaction.user.id !== message.author.id) return;
+
+        collector.resetTimer();
+
+        client.playerManager.play({
+            voiceChannel: message.member.voice.channel,
+            file: {
+                file_path: fileEntry.file_path,
+                hash: fileEntry.source_hash,
+            },
+            triggerType: 'manual',
+            eventType: 'command',
+            user: message.author.id
+        });
+    });
+
+    collector.on('end', async () => {
+        await response.edit({ embeds: [embed], components: [] }).catch(() => {});
+    });
 }
