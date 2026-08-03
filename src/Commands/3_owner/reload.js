@@ -16,7 +16,7 @@ module.exports = new Command({
         client.user.setPresence({
             activities: [{
                 name: game,
-                type: Discord.ActivityType.Playing,
+                type: ActivityType.Playing,
             }],
             status: status,
         });
