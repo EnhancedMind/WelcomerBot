@@ -23,9 +23,11 @@ COPY --chown=node:node . .
 # Get build args from github action and pass them to ENV
 ARG COMMIT_SHA="unknown"
 ARG BUILD_NUMBER="0"
+ARG BUILD_TIME="0"
 
 ENV COMMIT_SHA=${COMMIT_SHA}
 ENV BUILD_NUMBER=${BUILD_NUMBER}
+ENV BUILD_TIME=${BUILD_TIME}
 
 
 USER node

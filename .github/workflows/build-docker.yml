@@ -40,6 +40,7 @@ jobs:
           REPO_LOWER="${RAW_REPO,,}"
           echo "SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           echo "BUILD_NUMBER=$(git rev-list --count HEAD)" >> $GITHUB_OUTPUT
+          echo "BUILD_TIME=$(date +%s)" >> $GITHUB_OUTPUT
 
           IMAGE_PATH="ghcr.io/${REPO_LOWER}"
           
@@ -79,6 +80,7 @@ jobs:
           build-args: |
             COMMIT_SHA=${{ steps.prep.outputs.SHA_SHORT }}
             BUILD_NUMBER=${{ steps.prep.outputs.BUILD_NUMBER }}
+            BUILD_TIME=${{ steps.prep.outputs.BUILD_TIME }}
           # Scoping ensures the amd64 and arm64 caches don't overwrite each other
           cache-from: type=gha,scope=build-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=build-${{ matrix.arch }}
