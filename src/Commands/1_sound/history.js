@@ -235,7 +235,9 @@ async function printPlayable(message, client, array, taggedUser, flags, page) {
         try {
             const triggerTypeText = array[i].trigger_type[0].toUpperCase() + array[i].trigger_type.substring(1);
             const eventTypeText = array[i].event_type[0].toUpperCase() + array[i].event_type.substring(1);
-            const userGlobalName = taggedUser ? '' : ` - ${(await client.users.fetch(array[i].user_id)).globalName}`;
+            const userGlobalName = !taggedUser && /^\d{17,19}$/.test(array[i].user_id) 
+                ?  ` - ${(await client.users.fetch(array[i].user_id)).globalName}`
+                : '';
             embeds[j].addFields({
                 name: `${array[i].id}: <t:${array[i].played_at}:f> [${triggerTypeText} ${eventTypeText}]${userGlobalName}`,
                 value: `> \`${flags.path ? array[i].file_path_snapshot : array[i].file_name_snapshot}\``,
