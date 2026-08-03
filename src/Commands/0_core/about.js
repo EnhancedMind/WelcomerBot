@@ -13,10 +13,18 @@ module.exports = new Command({
     async run(message, args, client) {
         const versionStringParts = [];
         if (version) versionStringParts.push(`v${version}`);
-          if (process.env.BUILD_NUMBER) versionStringParts.push(`Build: ${process.env.BUILD_NUMBER}`);
-          if (process.env.COMMIT_SHA) versionStringParts.push(`Commit: ${process.env.COMMIT_SHA}`);
+        if (process.env.BUILD_NUMBER) versionStringParts.push(`Build: ${process.env.BUILD_NUMBER}`);
+        if (process.env.COMMIT_SHA) versionStringParts.push(`Commit: ${process.env.COMMIT_SHA}`);
+        if (process.env.BUILD_TIME || true) {
+            const buildTime = new Date(parseInt(process.env.BUILD_TIME) * 1000);
+            const formattedBuildTime = new Date(buildTime).toLocaleString(timeFormat, {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+            });
+            versionStringParts.push(`Build Time: ${formattedBuildTime}`);
+        }
 
-          const versionString = versionStringParts.length > 0 ? `(${versionStringParts.join(', ')})` : '';
+        const versionString = versionStringParts.length > 0 ? `(${versionStringParts.join(', ')})` : '';
 
         const embed = new EmbedBuilder()
             .setColor(0x3399FF)
