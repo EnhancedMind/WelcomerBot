@@ -408,7 +408,7 @@ async function printSinglePlayable(message, client, entry, taggedUser, flags) {
             },
             triggerType: 'manual',
             eventType: 'command',
-            user: message.author.id
+            userId: message.author.id
         });
     });
 
