@@ -4,7 +4,7 @@ const { EmbedBuilder, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, Button
 const { parseArgs } = require('node:util');
 
 const paginator = require('../../Structures/Paginator.js');
-const { bot: { prefix } } = require('../../../config/config.json');
+const { bot: { prefix, ownerID, devIDs } } = require('../../../config/config.json');
 const { homepage } = require('../../../package.json');
 const { db } = require('../../Structures/dbManager.js');
 const { consoleLog } = require('../../Data/Log.js');
@@ -24,6 +24,7 @@ You can use the following arguments to modify this behaviour:
 - \`--manual\` or \`-m\` - Lists the entries with manual trigger type.
 - \`--id\` or \`-i\` - Lists the entry with the specified id.
 - \`--limit\` or \`-n\` - How many entries to include in the list.
+- \`--global\` or \`-g\` - Lists the history for all guilds. Only works for devs and owner.
 - \`--path\` - Display file paths instead of file names (only works for printing in chat). 
 - \`pagenumber\` - Specify the page number to view (only works for printing in chat).
 
@@ -100,6 +101,7 @@ async function getHistoryEntries(message, args) {
             'manual': { type: 'boolean', short: 'm' },
             // limits
             'limit': { type: 'string', short: 'n' },
+            'global': { type: 'boolean', short: 'g' }, // for devs and owner only
             // other
             'json': { type: 'boolean' },
             'path': { type: 'boolean' },
@@ -133,39 +135,50 @@ async function getHistoryEntries(message, args) {
 
     const limit = flags.limit ? parseInt(flags.limit, 10) : 8 * 15;
 
-    // baseline: always restrict history to the current guild
-    let sql = `SELECT * FROM playback_history WHERE guild_id = ?`;
-    const params = [ message.guild.id ];
+    let sql = `SELECT * FROM playback_history`;
+    const conditions = [];
+    const params = [];
+
+    const senderId = message.author.id;
+    const permissionFail = senderId != ownerID && !devIDs.includes(senderId);
+
+    if (!flags.global || permissionFail) { // did not ask for global OR asked but do not have permission - restrict to current guild
+        conditions.push(`guild_id = ?`);
+        params.push(message.guild.id);
+    }
 
 
     if (flags.id) {
-        sql += ` AND id = ?`;
+        conditions.push(`id = ?`);
         params.push(parseInt(flags.id, 10));
     }
     else {
         if (userId) {
-            sql += ` AND user_id = ?`;
+            conditions.push(`user_id = ?`);
             params.push(userId);
         }
 
         if (eventTypes.length > 0) {
             // creates string like: AND event_type IN (?, ?)
             const placeholders = eventTypes.map(() => '?').join(', ');
-            sql += ` AND event_type IN (${placeholders})`;
+            conditions.push(`event_type IN (${placeholders})`);
             params.push(...eventTypes);
         }
 
         if (triggerTypes.length > 0) {
             const placeholders = triggerTypes.map(() => '?').join(', ');
-            sql += ` AND trigger_type IN (${placeholders})`;
+            conditions.push(`trigger_type IN (${placeholders})`);
             params.push(...triggerTypes);
         }
-
-        // sort newest first, apply limit
-        sql += ` ORDER BY played_at DESC LIMIT ?`;
-        params.push(limit);
     }
 
+    if (conditions.length > 0) {
+        sql += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    // sort newest first, apply limit
+    sql += ` ORDER BY played_at DESC LIMIT ?`;
+    params.push(limit);
 
     try {
         const statement = db.prepare(sql);
