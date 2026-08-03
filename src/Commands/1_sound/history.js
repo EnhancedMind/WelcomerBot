@@ -406,7 +406,7 @@ async function printSinglePlayable(message, client, entry, taggedUser, flags) {
             voiceChannel: message.member.voice.channel,
             file: {
                 file_path: fileEntry.file_path,
-                hash: fileEntry.source_hash,
+                source_hash: fileEntry.source_hash,
             },
             triggerType: 'manual',
             eventType: 'command',
