@@ -15,7 +15,7 @@ module.exports = new Command({
         if (version) versionStringParts.push(`v${version}`);
         if (process.env.BUILD_NUMBER) versionStringParts.push(`Build: ${process.env.BUILD_NUMBER}`);
         if (process.env.COMMIT_SHA) versionStringParts.push(`Commit: ${process.env.COMMIT_SHA}`);
-        if (process.env.BUILD_TIME || true) {
+        if (process.env.BUILD_TIME) {
             const buildTime = new Date(parseInt(process.env.BUILD_TIME) * 1000);
             const formattedBuildTime = new Date(buildTime).toLocaleString(timeFormat, {
                 dateStyle: 'medium',
