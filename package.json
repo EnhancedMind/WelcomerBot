@@ -27,5 +27,10 @@
     "libsodium-wrappers": "^0.8.4",
     "opusscript": "^0.0.8",
     "xxhash-wasm": "^1.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.0",
+    "globals": "^17.9.0"
   }
 }
