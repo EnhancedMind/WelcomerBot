@@ -11,7 +11,7 @@ module.exports = new Command({
     description: "Restarts the bot's client",
     async run(message, args, client) {
         const senderId = message.author.id;
-        if (senderId != ownerID && !devIDs.includes(senderId)) return awaitmessage.channel.send(`${error} ${invalidPermissions}`);
+        if (senderId != ownerID && !devIDs.includes(senderId)) return await message.channel.send(`${error} ${invalidPermissions}`);
 
         consoleLog('[INFO] Restarting...');
 
