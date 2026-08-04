@@ -1,9 +1,8 @@
 const crypto = require('crypto');
-const url = require('url');
 
 const { consoleLog } = require('../../Data/Log');
 
-const { player: { allowedExtensions }, filebrowser: { filebrowserApiUrl } } = require('../../../config/config.json');
+const { filebrowser: { filebrowserApiUrl } } = require('../../../config/config.json');
 
 
 /**

@@ -1,6 +1,3 @@
-const { readFile, writeFile } = require('fs/promises');
-const path = require('path');
-
 const { consoleLog } = require('../Data/Log.js');
 const { db } = require('./dbManager.js')
 

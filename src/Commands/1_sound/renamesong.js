@@ -2,7 +2,7 @@ const Command = require('../../Structures/Command.js');
 
 const { 
     bot: { prefix, ownerID, devIDs }, 
-    emoji: { success, warning }, 
+    emoji: { warning }, 
     response: { missingArguments }
 } = require('../../../config/config.json')
 
@@ -10,7 +10,7 @@ const { rename } = require('fs/promises');
 const path = require('path');
 
 const { exists } = require('../../utils/fsUtils.js');
-const { defaultDirComparison, everyoneDirComparison, userDirComparison, musicDirComparison } = require('../../Structures/musicFilesManager.js');
+const { syncSoundFiles, defaultDirComparison, everyoneDirComparison, userDirComparison, musicDirComparison } = require('../../Structures/musicFilesManager.js');
 const { db } = require('../../Structures/dbManager.js');
 
 const helpText = 

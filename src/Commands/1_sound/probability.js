@@ -1,12 +1,10 @@
 const Command = require('../../Structures/Command');
 
-const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 
 const paginator = require('../../Structures/Paginator.js');
-const { bot: { prefix }, player: { allowedExtensions }, directories: {userMusicDir, everyoneMusicDir, defaultMusicDir} } = require('../../../config/config.json');
 const { homepage } = require('../../../package.json');
-const { getUserSoundArray, findProbabilities, defaultDirComparison, everyoneDirComparison, userDirComparison } = require('../../Structures/musicFilesManager.js');
-const path = require('path');
+const { getUserSoundArray, findProbabilities  } = require('../../Structures/musicFilesManager.js');
 
 const helpText = 
 `This command allows you to show the users songs along with the probability of each song playing.

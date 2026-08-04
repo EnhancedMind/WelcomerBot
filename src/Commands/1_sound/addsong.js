@@ -5,13 +5,12 @@ const {
     emoji: { success, info, warning }, 
     response: { missingArguments }, 
     player: { maxTime, allowedExtensions },
-    directories: {userMusicDir, defaultMusicDir, everyoneMusicDir, tempMusicDir}
+    directories: { defaultMusicDir, everyoneMusicDir, tempMusicDir }
 } = require('../../../config/config.json');
 
 const https = require('https');
 const { createWriteStream } = require('fs');
-const { readdir, stat, rename, mkdir, rm } = require('fs/promises');
-const { spawn } = require('child_process');
+const { rename, mkdir, rm } = require('fs/promises');
 const path = require('path');
 
 const { exists } = require('../../utils/fsUtils.js');

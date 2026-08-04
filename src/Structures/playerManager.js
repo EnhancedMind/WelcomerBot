@@ -1,10 +1,9 @@
 const { Collection, VoiceChannel, Snowflake } = require('discord.js');
-const { createAudioPlayer, createAudioResource, joinVoiceChannel, VoiceConnection, AudioPlayer, AudioPlayerStatus, VoiceConnectionStatus, entersState } = require('@discordjs/voice');
+const { createAudioPlayer, createAudioResource, joinVoiceChannel, VoiceConnection, AudioPlayer, AudioPlayerStatus } = require('@discordjs/voice');
 const { spawn, ChildProcess } = require('child_process');
 const path = require('path');
 
 const { player: { playIntoEmptyChannel, selfDeaf, debug, loudnessNormalization, bitrate } } = require('../../config/config.json');
-const Client = require('./Client.js');
 const { consoleLog, consoleTrace } = require('../Data/Log.js');
 const { invalidateSoundFile } = require('../Structures/musicFilesManager.js');
 const { db } = require('./dbManager.js')

@@ -1,4 +1,10 @@
-const { bot: { ownerID, devIDs }, emoji: { success, error }, response: { invalidPermissions }, player: { allowedExtensions }, directories: { topMusicDir }, filebrowser: { enabled: fbEnabled, externalDomain }  } = require('../../../config/config.json');
+const {
+    bot: { ownerID, devIDs },
+    emoji: { error },
+    response: { invalidPermissions },
+    directories: { topMusicDir },
+    filebrowser: { enabled: fbEnabled, externalDomain }
+} = require('../../../config/config.json');
 
 const { consoleLog } = require('../../Data/Log');
 

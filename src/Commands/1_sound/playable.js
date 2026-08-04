@@ -3,10 +3,9 @@ const Command = require('../../Structures/Command');
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 
 const paginator = require('../../Structures/Paginator.js');
-const { bot: { prefix }, player: { allowedExtensions }, directories: {userMusicDir, everyoneMusicDir, defaultMusicDir} } = require('../../../config/config.json');
+const { bot: { prefix } } = require('../../../config/config.json');
 const { homepage } = require('../../../package.json');
 const { getUserSoundArray, defaultDirComparison, everyoneDirComparison, userDirComparison } = require('../../Structures/musicFilesManager.js');
-const path = require('path');
 const { db } = require('../../Structures/dbManager.js');
 
 const helpText = 

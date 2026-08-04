@@ -2,7 +2,7 @@ const Command = require('../../Structures/Command');
 
 const { ActivityType } = require('discord.js');
 
-const { bot: { ownerID, adminIDs, devIDs }, status: { status, game }, emoji: { success, error }, response: { invalidPermissions } } = require('../../../config/config.json');
+const { bot: { ownerID, devIDs }, status: { status, game }, emoji: { success, error }, response: { invalidPermissions } } = require('../../../config/config.json');
 
 
 module.exports = new Command({
