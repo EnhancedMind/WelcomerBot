@@ -33,8 +33,11 @@ export default defineConfig([
             "no-unused-vars": [
                 "warn", 
                 { 
-                    "vars": "all", 
-                    "args": "after-used", 
+                    "vars": "all",
+                    "varsIgnorePattern": "^_",
+                    "args": "after-used",
+                    "argsIgnorePattern": "^_",
+                    "caughtErrors": "none",
                     "ignoreRestSiblings": false 
                 }
             ],
