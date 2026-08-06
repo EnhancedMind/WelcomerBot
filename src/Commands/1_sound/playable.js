@@ -1,12 +1,14 @@
 const Command = require('../../Structures/Command');
 
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const { parseArgs } = require('node:util');
 
 const paginator = require('../../Structures/Paginator.js');
 const { bot: { prefix } } = require('../../../config/config.json');
 const { homepage } = require('../../../package.json');
 const { getUserSoundArray, defaultDirComparison, everyoneDirComparison, userDirComparison } = require('../../Structures/musicFilesManager.js');
 const { db } = require('../../Structures/dbManager.js');
+const { extractUserId } = require('../../utils/discordUtils.js');
 
 const helpText = 
 `This command allows you to list all the available song that can be played.
@@ -32,7 +34,7 @@ module.exports = new Command({
         const jsonFlag = args.includes('--json')
 
         const page = resolvePage(message, args);
-        const [ array, taggedUser, personalFlag, noPathFlag ] = await resolveUserFlag(message, args, client);
+        const [ array, taggedUser, personalFlag, noPathFlag ] = await resolveUserFlag(message, args);
 
         if(array === undefined) return; // Flag had an issue
 
@@ -68,7 +70,6 @@ function resolvePage(message, args) {
     for(const arg of args) {
         if(/^\d+$/.test(arg)) {
             page = parseInt(arg);
-            
         }
     }
 
@@ -83,51 +84,51 @@ function resolvePage(message, args) {
  * Find the specified page number or set it to 0
  * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
  * @param {string[]} args - The command arguments.
- * @param {Client} client - The client instance.
  * @returns {[object[], Discord.user, boolean, boolean]} - [array with user's songs if flagged, the user, if the flag was 'personal', noPathFlag]
  */
-async function resolveUserFlag(message, args, client) {
+async function resolveUserFlag(message, args) {
     const senderId = message.author.id;
-    let userFlagIdx = args.indexOf('--user');
-    if (userFlagIdx === -1) {
-        userFlagIdx = args.indexOf('-u'); // Fallback to shorthand if longhand wasn't used
-    }
 
-    let personalFlagIdx = args.indexOf('--personal');
-    if (personalFlagIdx === -1) {
-        personalFlagIdx = args.indexOf('-p');
-    }
+    const parsed = parseArgs({
+        args: args,
+        strict: false,
+        options: {
+            'user': { type: 'boolean', short: 'u' },
+            'personal': { type: 'boolean', short: 'p' },
+            'join': { type: 'boolean', short: 'j' },
+            'leave': { type: 'boolean', short: 'l' },
+            'no-path': { type: 'boolean', short: 'P' },
+        }
+    });
 
-    const leaveFlag = args.includes('--leave') || args.includes('-l');
-    const joinFlag = args.includes('--join') || args.includes('-j');
-    const noPathFlag = args.includes('--no-path') || args.includes('-P');
+    const flags = parsed.values;
+    const positionals = parsed.positionals;
+
+    const leaveFlag = flags.leave;
+    const joinFlag = flags.join;
+    const noPathFlag = flags['no-path'];
     const eventFlag = leaveFlag || joinFlag;
 
-    if(userFlagIdx === -1 && personalFlagIdx === -1) return [ [], undefined, undefined, noPathFlag ]; // No flags => [] to list everything
-    if(userFlagIdx !== -1 && personalFlagIdx !== -1) { // Use of both at the same time is invalid
+    if(!flags.user && !flags.personal) return [ [], undefined, undefined, noPathFlag ]; // No flags => [] to list everything
+    if(flags.user && flags.personal) { // Use of both at the same time is invalid
         await message.channel.send({ content: `Both user and personal flags can't be triggered at the same time!`});
         return [ undefined, undefined, undefined, undefined ];
     }
 
-    const flagIdx = (userFlagIdx !== -1) ? userFlagIdx : personalFlagIdx;
-    let taggedUser = undefined;
+    let taggedUser = senderId;
 
-    if (args.length > flagIdx+1) { // If the user tag has an argument
-        const nextVal = (args[flagIdx+1].startsWith('-')) ? `<@${senderId}>` : args[flagIdx+1]; // If no tag, use the sender
-        const mentionMatches = nextVal.match(/^<@!?([0-9]{18,19})>/); // Extract the user id
-
-        if (!mentionMatches) {
-            await message.channel.send({ content: `Invalid user argument ${nextVal}`});
-            return [ undefined, undefined, undefined, undefined ];
+    if (positionals.length > 0) { // If the user tag has an argument
+        for (const positional of positionals) {
+            const extracted = extractUserId(positional);
+            if (extracted) {
+                taggedUser = extracted;
+                break;
+            }
         }
-        taggedUser = mentionMatches[1];
-    }
-    else { // If not, just make the sender the argument
-        taggedUser = senderId;
     }
 
     // Just user flag was triggered
-    if(userFlagIdx !== -1) {
+    if(flags.user) {
         const joinArray = (joinFlag || !eventFlag) ? await getUserSoundArray(taggedUser, 'join', message.guildId, false) : [];
         const leaveArray = (leaveFlag || !eventFlag) ? await getUserSoundArray(taggedUser, 'leave', message.guildId, false) : [];
         const array = [...joinArray,...leaveArray];
@@ -237,7 +238,7 @@ async function printPlayable(message, client, array, taggedUser, personal, page,
         embeds[0].setDescription(`**Here are all the files that can be played by the bot:**\n\`\`\`🎶 Everyone files: ${everyoneCount}\n🎶 Default files: ${defaultCount}\n🎶 User files: ${userCount}\`\`\``);
     }
 
-    paginator(message, embeds, null, page).catch(async (err) => {
+    paginator(message, embeds, null, page).catch(async (_) => {
         await message.channel.send('The paginator failed.');
     });;
 }

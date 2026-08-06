@@ -8,6 +8,7 @@ const {
 
 const { rm } = require('fs/promises');
 const path = require('path');
+const { parseArgs } = require('node:util');
 
 const { exists } = require('../../utils/fsUtils.js');
 const { defaultDirComparison, everyoneDirComparison, userDirComparison, musicDirComparison, invalidateSoundFile } = require('../../Structures/musicFilesManager.js');
@@ -37,12 +38,22 @@ module.exports = new Command({
         const channel = message.channel;
         const senderId = message.author.id;
 
-        const forceFlag = args.includes('-f') || args.includes('--force');
-        const enoughArguments = (forceFlag) ? args.length >= 2 : args.length >= 1
+        const parsed = parseArgs({
+            args: args,
+            strict: false, // Essential for dynamic handling
+            options: {
+                'force': { type: 'boolean', short: 'f' }
+            }
+        });
+
+        const forceFlag = parsed.values.force;
+        args = parsed.positionals;
+
+        const enoughArguments = args.length >= 1;
 
         if(!enoughArguments) return await channel.send(`${warning} ${missingArguments}`);
 
-        let file = (forceFlag) ? args[1] : args[0];
+        let file = args[0];
 
         if(path.dirname(file) === '.') {
             const row = db.prepare(/*sql*/`

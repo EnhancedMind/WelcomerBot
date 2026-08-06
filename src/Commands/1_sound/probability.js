@@ -1,10 +1,12 @@
 const Command = require('../../Structures/Command');
 
 const { EmbedBuilder } = require('discord.js');
+const { parseArgs } = require('node:util');
 
 const paginator = require('../../Structures/Paginator.js');
 const { homepage } = require('../../../package.json');
 const { getUserSoundArray, findProbabilities  } = require('../../Structures/musicFilesManager.js');
+const { extractUserId } = require('../../utils/discordUtils.js');
 
 const helpText = 
 `This command allows you to show the users songs along with the probability of each song playing.
@@ -39,31 +41,31 @@ module.exports = new Command({
  */
 function resolveFlags(message, args) {
     const senderId = message.author.id;
-    let userFlagIdx = args.indexOf('--user');
-    if (userFlagIdx === -1) {
-        userFlagIdx = args.indexOf('-u'); // Fallback to shorthand if longhand wasn't used
-    }
 
-    const joinFlag = args.includes('--join') || args.includes('-j');
-    const leaveFlag = args.includes('--leave') || args.includes('-l');
+    const parsed = parseArgs({
+        args: args,
+        strict: false,
+        options: {
+            'user': { type: 'string', short: 'u' },
+            'join': { type: 'boolean', short: 'j' },
+            'leave': { type: 'boolean', short: 'l' },
+        }
+    });
 
-    let taggedUser = undefined;
+    const flags = parsed.values;
 
-    if (args.length > userFlagIdx+1) { // If the user tag has an argument
-        const nextVal = (args[userFlagIdx+1].startsWith('-')) ? `<@${senderId}>` : args[userFlagIdx+1]; // If no tag, use the sender
-        const mentionMatches = nextVal.match(/^<@!?([0-9]{18,19})>/); // Extract the user id
+    let taggedUser = senderId;
 
-        if (!mentionMatches) {
-            message.channel.send({ content: `Invalid user argument ${nextVal}`});
+    if (flags.user) {
+        taggedUser = extractUserId(flags.user);
+
+        if (!taggedUser) {
+            message.channel.send({ content: `Invalid user argument ${flags.user}`});
             return [undefined, undefined, undefined];
         }
-        taggedUser = mentionMatches[1];
-    }
-    else { // If not, just make the sender the argument
-        taggedUser = senderId;
     }
 
-    return [taggedUser, joinFlag, leaveFlag];
+    return [taggedUser, flags.join, flags.leave];
 }
 
 
@@ -158,7 +160,7 @@ async function printProbability(message, client, array, probabilities, [joinSum,
         
     embeds[0].setDescription(`**Here are the probabilities for ${targetName}:**`);
 
-    paginator(message, embeds, null, 0).catch(async (err) => {
+    paginator(message, embeds, null, 0).catch(async (_) => {
         await message.channel.send('The paginator failed.');
     });
 }

@@ -6,13 +6,13 @@ const {
     filebrowser: { enabled: fbEnabled, externalDomain }
 } = require('../../../config/config.json');
 
-const { consoleLog } = require('../../Data/Log');
-
 if (!fbEnabled) return consoleLog('[INFO] Filebrowser is disabled');
 
 const path = require('path');
+const { parseArgs } = require('node:util');
 
 const Command = require('../../Structures/Command');
+const { consoleLog } = require('../../Data/Log');
 const { getUserPath } = require('../../Structures/musicFilesManager');
 const { ensureUserExists } = require('../../Structures/Web/filebrowserApi');
 const { generateLoginToken } = require('../../Structures/Web/tokenStore');
@@ -40,8 +40,17 @@ module.exports = new Command({
     async run(message, args, client) {
         const senderId = message.author.id;
 
-        const adminFlag = args.includes('--admin') || args.includes('-a');
-        const devFlag = args.includes('--dev') || args.includes('-d');
+        const parsed = parseArgs({
+            args: args,
+            strict: false,
+            options: {
+                'admin': { type: 'boolean', short: 'a' },
+                'dev': { type: 'boolean', short: 'd' }
+            }
+        });
+
+        const adminFlag = parsed.values.admin;
+        const devFlag = parsed.values.dev;
 
         if (adminFlag && senderId != ownerID) return await message.channel.send(`${error} ${invalidPermissions} (Bot owner)`);
         if (devFlag && senderId != ownerID && !devIDs.includes(senderId)) return await message.channel.send(`${error} ${invalidPermissions} (Bot developer)`);

@@ -12,17 +12,19 @@ const https = require('https');
 const { createWriteStream } = require('fs');
 const { rename, mkdir, rm } = require('fs/promises');
 const path = require('path');
+const { parseArgs } = require('node:util');
 
 const { exists } = require('../../utils/fsUtils.js');
 const { consoleLog } = require('../../Data/Log.js');
 const { getSetting, setSetting } = require('../../Structures/settingsManager.js');
 const { syncSoundFiles, getUserPath, getFileDuration, defaultDirComparison, everyoneDirComparison } = require('../../Structures/musicFilesManager.js');
+const { extractUserId } = require('../../utils/discordUtils.js');
 
 const helpText = 
 `This command allows you to add a song to your library in the database.
 The song must be under ${maxTime} seconds and must be a music file. The supported file types are: \`${allowedExtensions.join(', ')}\`
 To use this, send the file you want to add as an attachment in the message.
- 
+
 You can also add various tags in the filenameseperated by underscores that will affect the behavior. The tags are:
 - \`$join\` - This will make the sound play when you join a voice channel. This is the default behavior even if you don't add this tag.
 - \`$leave\` - This will make the sound play when you leave a voice channel.
@@ -47,30 +49,37 @@ module.exports = new Command({
         const channel = message.channel;
         const senderId = message.author.id;
 
+        const parsed = parseArgs({
+            args: args,
+            strict: false,
+            options: {
+                'default': { type: 'boolean', short: 'd' },
+                'everyone': { type: 'boolean', short: 'e' },
+                'user': { type: 'string', short: 'u' },
+            }
+        });
+
+        const flags = parsed.values;
+
         if (!message.attachments.size) return await channel.send(`${warning} ${missingArguments} (No attachment found)`);
         const permissionFail = senderId != ownerID && !devIDs.includes(senderId);
 
-        if (args[0] == '--default' || args[0] == '-d') {
+        if (flags.default) {
             if (permissionFail) return await channel.send(`${warning} You do not have the permission to add songs to default! (Developer)`);
             await addSongCore(message, client, defaultMusicDir);
         }
-        else if (args[0] == '--everyone' || args[0] == '-e') {
+        else if (flags.everyone) {
             if (permissionFail) return await channel.send(`${warning} You do not have the permission to add songs to everyone! (Developer)`);
             await addSongCore(message, client, everyoneMusicDir);
         }
-        else if (args[0] == '--user' || args[0] == '-u') {
+        else if (flags.user) {
             if (permissionFail) return await channel.send(`${warning} You do not have the permission to add songs to other users! (Developer)`);
 
-            if (!args[1]) return await channel.send(`${warning} ${missingArguments} (No user specified)`);
+            if (typeof flags.user !== 'string') return await channel.send(`${warning} ${missingArguments} (No user specified)`);
 
-            const mentionMatch = args[1].match(/^<@!?([0-9]{18,19})>/);
-            if (mentionMatch) {
-                const userPath = await getUserPath(client, mentionMatch[1]);
-                await addSongCore(message, client, userPath)
-            }
-            else {
-                return await channel.send(`${warning} user ${args[1]} is not a valid user.`);
-            }
+            const userId = extractUserId(flags.user);
+            const userPath = await getUserPath(client, userId);
+            await addSongCore(message, client, userPath);
         }
         else { // Typical user file
             const userPath = await getUserPath(client, senderId);
