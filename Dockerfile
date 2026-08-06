@@ -16,7 +16,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install --no-audit --no-fund
+RUN npm install --omit=dev --no-audit --no-fund && npm cache clean --force
 
 COPY --chown=node:node . .
 
