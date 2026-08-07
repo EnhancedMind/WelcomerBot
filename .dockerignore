@@ -17,3 +17,6 @@ logs/
 config/
 .env
 *.removedfromdocker
+eslint.config.mjs
+*.example
+schema.sql
