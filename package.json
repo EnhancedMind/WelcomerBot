@@ -16,6 +16,7 @@
   },
   "scripts": {
     "start": "node --trace-warnings --trace-deprecation src/main.js",
+    "lint": "eslint .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
