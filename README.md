@@ -89,7 +89,6 @@ The docker-compose.yml will automatically initiate the filebrowser database with
 Copy the `config.json.example` in the config folder and rename it to `config.json`  
 ```json
 {
-    "terminateOnUncaughtException": true,
     "bot": {
         "token": "put your bot token here",
         "prefix": "*",
@@ -151,9 +150,6 @@ Copy the `config.json.example` in the config folder and rename it to `config.jso
     }
 }
 ```
-<br>
-
-- `terminateOnUncaughtException`: whether to terminate the process on uncaught exception or not - **only for advanced users**  
 <br>
 
 - `bot.token`: the token of your discord bot you can get from [Discord Developers page](https://discord.com/developers/applications)  

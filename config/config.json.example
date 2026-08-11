@@ -1,5 +1,4 @@
 {
-    "terminateOnUncaughtException": true,
     "bot": {
         "token": "put your bot token here",
         "prefix": "*",
