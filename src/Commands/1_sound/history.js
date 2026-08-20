@@ -54,7 +54,7 @@ module.exports = new Command({
             await printPlayable(message, client, array, taggedUser, flags, page);
         }
         else {
-            await printSinglePlayable(message, client, array[0], taggedUser, flags);
+            await printSinglePlayable(message, client, array[0]);
         }
     }
 });
@@ -278,7 +278,7 @@ async function printPlayable(message, client, array, taggedUser, flags, page) {
         embeds[0].setDescription(`**Here is playback history for this server:**`);
     }
 
-    paginator(message, embeds, null, page).catch(async (err) => {
+    paginator(message, embeds, null, page).catch(async (_) => {
         await message.channel.send('The paginator failed.');
     });;
 }
@@ -288,11 +288,9 @@ async function printPlayable(message, client, array, taggedUser, flags, page) {
  * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
  * @param {Client} client - The client instance.
  * @param {object} entry - The single entry to print.
- * @param {Discord.user|undefined} taggedUser - The user tagged in the arguments (if any).
- * @param {string|boolean[]} flags - The args flags values array.
  * @returns {Promise<void>}
  */
-async function printSinglePlayable(message, client, entry, taggedUser, flags) {
+async function printSinglePlayable(message, client, entry) {
     const fileEntry = db.prepare('SELECT * FROM files WHERE id = ?').get(entry.file_id);
 
     const embed = new EmbedBuilder()
