@@ -3,7 +3,7 @@ const Command = require('../../Structures/Command');
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const { parseArgs } = require('node:util');
 
-const paginator = require('../../Structures/Paginator.js');
+const Paginator = require('../../Structures/Paginator.js');
 const { bot: { prefix } } = require('../../../config/config.json');
 const { homepage } = require('../../../package.json');
 const { getUserSoundArray, defaultDirComparison, everyoneDirComparison, userDirComparison } = require('../../Structures/musicFilesManager.js');
@@ -54,7 +54,7 @@ module.exports = new Command({
             await exportPlayableToJson(message, client, array, taggedUser);
         }
         else {
-            printPlayable(message, client, array, taggedUser, personalFlag, page, noPathFlag);
+            await printPlayable(message, client, array, taggedUser, personalFlag, page, noPathFlag);
         }
     }
 });
@@ -238,7 +238,9 @@ async function printPlayable(message, client, array, taggedUser, personal, page,
         embeds[0].setDescription(`**Here are all the files that can be played by the bot:**\n\`\`\`🎶 Everyone files: ${everyoneCount}\n🎶 Default files: ${defaultCount}\n🎶 User files: ${userCount}\`\`\``);
     }
 
-    paginator(message, embeds, null, page).catch(async (_) => {
-        await message.channel.send('The paginator failed.');
-    });;
+    Paginator.create({
+        message,
+        pages: embeds,
+        page
+    });
 }

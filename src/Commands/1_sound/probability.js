@@ -3,7 +3,7 @@ const Command = require('../../Structures/Command');
 const { EmbedBuilder } = require('discord.js');
 const { parseArgs } = require('node:util');
 
-const paginator = require('../../Structures/Paginator.js');
+const Paginator = require('../../Structures/Paginator.js');
 const { homepage } = require('../../../package.json');
 const { getUserSoundArray, findProbabilities  } = require('../../Structures/musicFilesManager.js');
 const { extractUserId } = require('../../utils/discordUtils.js');
@@ -160,7 +160,8 @@ async function printProbability(message, client, array, probabilities, [joinSum,
         
     embeds[0].setDescription(`**Here are the probabilities for ${targetName}:**`);
 
-    paginator(message, embeds, null, 0).catch(async (_) => {
-        await message.channel.send('The paginator failed.');
+    Paginator.create({
+        message,
+        pages: embeds
     });
 }

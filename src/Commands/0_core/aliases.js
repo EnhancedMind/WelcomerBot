@@ -1,7 +1,7 @@
 const Command = require('../../Structures/Command');
 
 const { EmbedBuilder } = require('discord.js');
-const paginator = require('../../Structures/Paginator');
+const Paginator = require('../../Structures/Paginator');
 const { homepage } = require('../../../package.json');
 
 
@@ -69,8 +69,10 @@ module.exports = new Command({
             });
         });
 
-        paginator(message, pages, null, page).catch(async (err) => {
-            await message.channel.send('The paginator failed.');
+        Paginator.create({
+            message,
+            pages,
+            page
         });
     }
 });

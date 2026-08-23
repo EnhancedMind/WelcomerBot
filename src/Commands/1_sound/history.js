@@ -3,7 +3,7 @@ const Command = require('../../Structures/Command');
 const { EmbedBuilder, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
 const { parseArgs } = require('node:util');
 
-const paginator = require('../../Structures/Paginator.js');
+const Paginator = require('../../Structures/Paginator.js');
 const { bot: { prefix, ownerID, devIDs } } = require('../../../config/config.json');
 const { homepage } = require('../../../package.json');
 const { db } = require('../../Structures/dbManager.js');
@@ -278,9 +278,11 @@ async function printPlayable(message, client, array, taggedUser, flags, page) {
         embeds[0].setDescription(`**Here is playback history for this server:**`);
     }
 
-    paginator(message, embeds, null, page).catch(async (_) => {
-        await message.channel.send('The paginator failed.');
-    });;
+    Paginator.create({
+        message,
+        pages: embeds,
+        page
+    });
 }
 
 /**
