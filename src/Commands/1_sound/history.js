@@ -1,9 +1,10 @@
 const Command = require('../../Structures/Command');
 
-const { EmbedBuilder, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
+const { EmbedBuilder, AttachmentBuilder, ButtonStyle } = require('discord.js');
 const { parseArgs } = require('node:util');
 
 const Paginator = require('../../Structures/Paginator.js');
+const ButtonPrompt = require('../../Structures/ButtonPrompt.js');
 const { bot: { prefix, ownerID, devIDs } } = require('../../../config/config.json');
 const { homepage } = require('../../../package.json');
 const { db } = require('../../Structures/dbManager.js');
@@ -379,42 +380,37 @@ async function printSinglePlayable(message, client, entry) {
     );
 
     // --- play again button ---
-    const components = [];
-    let playButton = null;
+    let enablePlayAgainButton = true;
 
-    if (!fileEntry ||fileEntry?.deleted_at != null) {
+    if (!fileEntry || fileEntry?.deleted_at != null) {
         embed.setFooter({ text: `⚠️ This file has been deleted and cannot be replayed.` });
+        enablePlayAgainButton = false;
     }
     else if (!message.member?.voice?.channel) {
         embed.setFooter({ text: `⚠️ Join a voice channel to enable the Play Again button.` });
-    }
-    else {
-        playButton = new ButtonBuilder()
-            .setCustomId(`play_history_${entry.id}_${Date.now()}`)
-            .setLabel('Play Again')
-            .setStyle(ButtonStyle.Primary)
-            .setEmoji('▶️');
-
-        const row = new ActionRowBuilder().addComponents(playButton);
-        components.push(row);
+        enablePlayAgainButton = false;
     }
 
-    const response = await message.channel.send({ embeds: [embed], components });
+    if (!enablePlayAgainButton) return await message.channel.send({ embeds: [embed] });
 
-    if (!playButton) return;
-
-    const collector = response.createMessageComponentCollector({
-        componentType: ComponentType.Button,
-        time: 30000 // 30s timeout
+    const prompt = await ButtonPrompt.create({
+        message,
+        content: {
+            embeds: [embed]
+        },
+        buttons: [
+            {
+                id: `play_history`,
+                label: 'Play Again',
+                style: ButtonStyle.Primary,
+                emoji: '▶️'
+            }
+        ]
     });
 
-    collector.on('collect', async (interaction) => {
-        interaction.deferUpdate(); // Acknowledge the interaction to avoid the "This interaction failed" message in discord clients
+    if (!prompt) return;
 
-        if (interaction.user.id !== message.author.id) return;
-
-        collector.resetTimer();
-
+    prompt.on(`play_history`, (_) => {
         client.playerManager.play({
             voiceChannel: message.member.voice.channel,
             file: {
@@ -425,9 +421,5 @@ async function printSinglePlayable(message, client, entry) {
             eventType: 'command',
             userId: message.author.id
         });
-    });
-
-    collector.on('end', async () => {
-        await response.edit({ embeds: [embed], components: [] }).catch(() => {});
     });
 }

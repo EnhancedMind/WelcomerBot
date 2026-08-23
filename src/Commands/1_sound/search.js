@@ -1,9 +1,10 @@
 const Command = require('../../Structures/Command');
 
-const { EmbedBuilder, ReactionCollector } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 const { getVoiceConnection } = require('@discordjs/voice');
 const { parseArgs } = require('node:util');
 
+const ButtonPrompt = require('../../Structures/ButtonPrompt.js');
 const { searchSoundFiles } = require('../../Structures/musicFilesManager.js');
 const { bot: { prefix }, emoji: { success, warning, error, searching }, response: { missingArguments, noChannel, wrongChannel, afkChannel } } = require('../../../config/config.json');
 
@@ -59,7 +60,6 @@ module.exports = new Command({
         args = parsed.positionals;
         const searchString = args.join(' ');
 
-
         const senderVoiceChannel = message.member.voice.channel;
 
         if (!args[0]) return await message.channel.send(`${warning} ${missingArguments}`);
@@ -81,62 +81,70 @@ module.exports = new Command({
 
         const embed = new EmbedBuilder()
             .setColor(0x3399FF)
-            .setTitle('Search Results')
+            .setTitle('Search Results');
+        const buttons = [];
 
         for (const [index, item] of results.entries()) {
-            embed.addFields({ name: `${emojiListSource[index]} \`${item.item.file_name}\``, value: pathFlag ? `> \`${item.item.file_path}\`` : '' });
+            embed.addFields({
+                name: `${emojiListSource[index]} \`${item.item.file_name}\``,
+                value: pathFlag ? `> \`${item.item.file_path}\`` : ''
+            });
+
+            buttons.push({
+                id: `sound_select_${index}`,
+                label: '',
+                emoji: emojiListSource[index],
+                style: 'primary'
+            });
         }
 
-        response.edit({ content: `${success} Search results for \`${args.join(' ')}\`:`, embeds: [embed] }).catch(() => {});
+        buttons.push({ id: 'cancel', label: 'Cancel', emoji: emojiListSource[emojiListSource.length - 1], style: 'danger' });
 
+        const prompt = await ButtonPrompt.create({
+            message,
+            existingMessage: response,
+            content: {
+                content: `${success} Search results for \`${searchString}\`:`,
+                embeds: [embed]
+            },
+            buttons,
+            deferUpdate: false,
+            resetTimer: false,
+            timeout: 35000
+        });
 
-        const emojiList = [ ...emojiListSource.slice(0, results.length), emojiListSource[emojiListSource.length - 1] ];
+        if (!prompt) return;
 
-        const react = async () => {
-            for (const emoji of emojiList) {
-                response.react(emoji).catch(() => {});
-                await new Promise(resolve => setTimeout(resolve, 750));
-            }
-        }
-        const allReactionsSubmittedPromise = react();
-
-
-        const filter = (reaction, user) => emojiList.includes(reaction.emoji.name) && user.bot == false;
-
-        const collector = new ReactionCollector(response, { filter, time: 35000 });
-
-        collector.on('collect', async (reaction, user) => {
-            if (reaction.count < 2) return;
-
-            reaction.users.remove(user).catch(() => {});
-
-            if (user != message.author) return;
-
-            const index = emojiList.indexOf(reaction.emoji.name);
-            if (index == emojiList.length - 1) {
-                response.edit({ content:`${success} Cancelled search.`, embeds: [] }).catch(() => {});
-                collector.stop();
+        prompt.on('click', async (interaction, customId) => {
+            if (customId === 'cancel') {
+                await interaction.update({ content: `${success} Cancelled search.`, embeds: [], components: [] });
+                prompt.destroy(false);
                 return;
             }
 
-            client.playerManager.play({
-                voiceChannel: senderVoiceChannel,
-                file: {
-                    file_path: results[index].item.file_path,
-                    source_hash: results[index].item.source_hash
-                },
-                triggerType: 'manual',
-                eventType: 'command',
-                userId: message.author.id
-            });
-            response.edit({ content: `${success} Playing **\`${results[index].item.file_name}\`** (${searchResult.reason})`, embeds: [] }).catch(() => {});
-            collector.stop();
-        });
+            const index = parseInt(customId.replace('sound_select_', ''), 10);
+            const selectedSound = results[index]?.item;
 
-        collector.on('end', async (_, reason) => {
-            if (reason.endsWith('Delete')) return;
-            await allReactionsSubmittedPromise;
-            response.reactions.removeAll().catch(() => {});
+            if (selectedSound) {
+                client.playerManager.play({
+                    voiceChannel: senderVoiceChannel,
+                    file: {
+                        file_path: selectedSound.file_path,
+                        source_hash: selectedSound.source_hash
+                    },
+                    triggerType: 'manual',
+                    eventType: 'command',
+                    userId: message.author.id
+                });
+
+                await interaction.update({ 
+                    content: `${success} Playing **\`${selectedSound.file_name}\`** (${searchResult.reason})`, 
+                    embeds: [], 
+                    components: [] 
+                });
+            }
+
+            prompt.destroy(false);
         });
     }
 });
