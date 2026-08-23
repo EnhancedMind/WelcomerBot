@@ -10,6 +10,10 @@
 - Added --path (-p) flag to search command to display where the files are located  
 - Added --me (-m) flag to play command as an alternative to tagging yourself  
 - Added better structure to the webmanage command messages  
+- Added logging history of played files into database  
+- Added the history command  
+- Added the option to force re-encode all cached files with the sync command, using the --force-reencode flag  
+- Added build time to the about command  
 
 
 ### Changed
@@ -19,6 +23,12 @@
 - Removed the feature to log into file, external utility has to be used from now  
 - Made message embed formating consistent  
 - Improved the performance and reliability of help and aliases commands  
+- Improved FFmpeg IO handling  
+- Made the docker image smaller by building in separate stage  
+- Removed the terminateOnUncaughtException bypass, now the process will always terminate  
+- Reworked the Paginator to use modern buttons and dropdown to select page in menus with more than 3 pages  
+- Reworked the buttons in search, history and forceprune commands to use new central ButtonPrompt handler iwht modern buttons like new Paginator  
+- Made the prune command primarily use bulk delete, if possible, to reduce number of API calls and rate limits  
 
 
 ### Fixed & Cleaned
@@ -27,6 +37,10 @@
 - Fixed voiceStateUpdate trigerring player incorectly, specifically trying to triger join event when user disconnected from afk channel + made logic overall more reliable  
 - Fixed player crashing when no channel was provided to manager (ghost voiceStates)  
 - Fixed search command crashing  
+- Fixed ffmpeg loudness normalization for files shorter than 3 seconds, now it uses dynaudnorm filter instead of loudnorm filter for those files  
+- Fixed the bot losing its status and activity randomly, hopefully  
+- Fixed the restart command crashing when user without valid permission used it  
+- Fixed the start logs order
 
 
 
