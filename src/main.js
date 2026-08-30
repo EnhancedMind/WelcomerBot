@@ -1,2 +1,2 @@
-const Client = require('./Structures/Client');
-new Client().start();
+const client = require('./Structures/clientInstance');
+client.start();
