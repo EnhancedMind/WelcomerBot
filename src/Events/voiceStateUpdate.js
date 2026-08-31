@@ -2,9 +2,12 @@ const Event = require('../Structures/Event.js');
 
 const { player: { playIntoEmptyChannel } } = require('../../config/config.json');
 const { getUserSoundFile } = require('../Structures/musicFilesManager.js');
+const { isShuttingDown } = require('../utils/shutdown');
 
 
 module.exports = new Event('voiceStateUpdate', async (client, oldState, newState) => {
+    if (isShuttingDown()) return;
+
     const member = newState.member || oldState.member;
     if (!member || member.user.bot) return;
     if (newState.channelId == newState.guild?.afkChannelId) return;

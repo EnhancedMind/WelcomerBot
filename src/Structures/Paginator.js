@@ -55,12 +55,11 @@ class Paginator {
     }
 
     /**
-     * Destroys all currently active paginators
-     * @returns {Promise<undefined>}
+     * Destroys all currently active paginators, returns array of promises of all destroys
+     * @returns {Array[Promise]}
      */
-    static async destroyAll() {
-        const destroyPromises = Array.from(Paginator.#activePaginators).map(instance => instance.destroy());
-        await Promise.allSettled(destroyPromises);
+    static destroyAll() {
+        return Array.from(Paginator.#activePaginators).map(instance => instance.destroy());
     }
 
     /**

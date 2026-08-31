@@ -57,12 +57,11 @@ class ButtonPrompt extends EventEmitter {
     }
 
     /**
-     * Destroys all currently active buttonprompts
-     * @returns {Promise<undefined>}
+     * Destroys all currently active buttonprompts, returns array of promises of all destroys
+     * @returns {Array[Promise]}
      */
-    static async destroyAll() {
-        const destroyPromises = Array.from(ButtonPrompt.#activePrompts).map((instance) => instance.destroy());
-        await Promise.allSettled(destroyPromises);
+    static destroyAll() {
+        return Array.from(ButtonPrompt.#activePrompts).map((instance) => instance.destroy());
     }
 
     /**

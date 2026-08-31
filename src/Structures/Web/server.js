@@ -19,6 +19,8 @@ const loginHtmlContent = readFileSync(htmlPath, 'utf8');
 
 const activeUploadsLength = new Map();
 
+let proxyServer = null;
+
 
 // cryptographic cookie helpers
 /**
@@ -86,7 +88,7 @@ function parseCookieHeader(cookieHeader, name) {
  */
 function initProxyServer(client) {
     // core HTTP router
-    const server = http.createServer((req, res) => {
+    proxyServer = http.createServer((req, res) => {
         const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
         let pathname = parsedUrl.pathname;
 
@@ -311,10 +313,34 @@ function initProxyServer(client) {
     });
 
     // start the server
-    server.listen(port, () => {
+    proxyServer.listen(port, () => {
         consoleLog(`[INFO] Filebrowser reverse proxy running on port ${port}!`);
     });
 }
+
+/**
+ * Closes the proxy server if it is running
+ * @returns {Promise<void>} - Resolves when the server is closed
+ */
+function closeProxyServer() {
+    return new Promise((resolve, reject) => {
+        if (activeUploadsLength && activeUploadsLength.size) {
+            for (const upload of activeUploadsLength.values()) {
+                if (upload && upload.timeoutId) clearTimeout(upload.timeoutId);
+            }
+            activeUploadsLength.clear();
+        }
+
+        if (!proxyServer) return resolve();
+
+        proxyServer.close(err => {
+            if (err) return reject(err);
+            proxyServer = null;
+            resolve();
+        });
+    });
+}
+
 
 /**
  * This function is called when the filebrowser signals that an upload has completed.
@@ -359,4 +385,7 @@ async function handleFileUploadCompletion(client, filePath, userID) {
     });
 }
 
-module.exports = { initProxyServer }
+module.exports = {
+    initProxyServer,
+    closeProxyServer
+}

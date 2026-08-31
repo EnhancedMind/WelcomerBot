@@ -1,5 +1,6 @@
 const Event = require('../Structures/Event');
 const { consoleLog } = require('../Data/Log');
+const { isShuttingDown, registerCommandExecution, unregisterCommandExecution } = require('../utils/shutdown');
 
 const { bot: { prefix, ignoreMessageEndingWithPrefix }, emoji: { error: emojiError, warning }, response: { notValidCommand } } = require('../../config/config.json');
 
@@ -22,9 +23,13 @@ module.exports = new Event('messageCreate', async (client, message) => {
 
     const command = client.commands.get(cmd) || client.commands.find(a => a.aliases && a.aliases.includes(cmd));
     if (!notValidCommand && !command) return;
-    if (!command) return message.channel.send(`**${cmd}** is not a valid command!`);
+    if (!command) return message.channel.send(`**${cmd}** is not a valid command!`).catch(() => {});
+    
+    if (isShuttingDown()) return message.channel.send('The bot is restarting, try again in a moment.').catch(() => {});
+
     if (args[0] == '--help' || args[0] == '-h') return message.channel.send(command.help ? command.help : command.description);
 
+    registerCommandExecution(message.id);
     try {
         await command.run(message, args, client);
     }
@@ -44,5 +49,8 @@ module.exports = new Event('messageCreate', async (client, message) => {
         catch (sendErr) {
             consoleLog(`[ERR] Could not deliver error message to Discord text channel:`, sendErr);
         }
+    }
+    finally {
+        unregisterCommandExecution(message.id);
     }
 });
