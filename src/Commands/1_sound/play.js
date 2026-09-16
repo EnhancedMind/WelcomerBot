@@ -6,6 +6,7 @@ const path = require('path');
 const { parseArgs } = require('node:util');
 
 const { getUserSoundFile, searchSoundFiles } = require('../../Structures/musicFilesManager.js');
+const PlayerManager = require('../../Structures/playerManager.js');
 const { bot: { prefix }, emoji: { success, warning, error, loading }, response: { missingArguments, noChannel, wrongChannel, afkChannel }, player: { allowedExtensions } } = require('../../../config/config.json');
 
 const helpText =
@@ -88,7 +89,7 @@ module.exports = new Command({
                 response.edit(`${error} ${searchStringMessage} wasn't found.`).catch(() => {});
                 return;
             }
-            client.playerManager.play({
+            PlayerManager.play({
                 voiceChannel: senderVoiceChannel,
                 file: {
                     file_path: file.file_path,
@@ -115,7 +116,7 @@ module.exports = new Command({
                     const fileStat = await stat(targetPath);
                     if (fileStat.isFile()) {
                         // fallback not in db
-                        client.playerManager.play({
+                        PlayerManager.play({
                             voiceChannel: senderVoiceChannel,
                             file: {
                                 file_path: path.join(`./${args[0]}`)
@@ -142,7 +143,7 @@ module.exports = new Command({
 
         const finalWinner = tiedResults[0].item;
 
-        client.playerManager.play({
+        PlayerManager.play({
             voiceChannel: senderVoiceChannel,
             file: {
                 file_path: finalWinner.file_path,

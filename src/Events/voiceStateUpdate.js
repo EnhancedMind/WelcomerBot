@@ -2,6 +2,7 @@ const Event = require('../Structures/Event.js');
 
 const { player: { playIntoEmptyChannel } } = require('../../config/config.json');
 const { getUserSoundFile } = require('../Structures/musicFilesManager.js');
+const PlayerManager = require('../Structures/playerManager.js');
 const { isShuttingDown } = require('../utils/shutdown');
 
 
@@ -16,7 +17,7 @@ module.exports = new Event('voiceStateUpdate', async (client, oldState, newState
         const file = await getUserSoundFile(member.id, 'join', newState.guild.id);
         if (!file) return;
 
-        client.playerManager.play({
+        PlayerManager.play({
             voiceChannel: newState.channel,
             file: file,
             delay: 800,
@@ -31,7 +32,7 @@ module.exports = new Event('voiceStateUpdate', async (client, oldState, newState
         const file = await getUserSoundFile(member.id, 'leave', oldState.guild.id);
         if (!file) return;
 
-        client.playerManager.play({
+        PlayerManager.play({
             voiceChannel: oldState.channel,
             file: file,
             delay: 150,

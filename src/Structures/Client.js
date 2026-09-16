@@ -36,14 +36,6 @@ class Client extends Discord.Client {
          * @type {Discord.Collection<string, Command>}
          */
         this.commands = new Discord.Collection();
-        /**
-         * @typedef {Object} PlayerManager
-         * @property {Discord.Collection<Discord.Snowflake, PlayerSession>} activeConnections - Map of guild IDs to their active voice connection sessions.
-         * @property {Function} play - Function to handle playing a sound file into a voice channel, managing connections and sessions.
-         * @property {Function} disconnect - Function to handle cleanly disconnecting from a voice channel and cleaning up the session.
-         * @type {PlayerManager}
-         */
-        this.playerManager = require('./playerManager.js');
     }
 
     async start() {

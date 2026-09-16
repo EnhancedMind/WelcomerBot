@@ -5,6 +5,7 @@ const { parseArgs } = require('node:util');
 
 const Paginator = require('../../Structures/Paginator.js');
 const ButtonPrompt = require('../../Structures/ButtonPrompt.js');
+const PlayerManager = require('../../Structures/playerManager.js');
 const { bot: { prefix, ownerID, devIDs } } = require('../../../config/config.json');
 const { homepage } = require('../../../package.json');
 const { db } = require('../../Structures/dbManager.js');
@@ -411,7 +412,7 @@ async function printSinglePlayable(message, client, entry) {
     if (!prompt) return;
 
     prompt.on(`play_history`, (_) => {
-        client.playerManager.play({
+        PlayerManager.play({
             voiceChannel: message.member.voice.channel,
             file: {
                 file_path: fileEntry.file_path,

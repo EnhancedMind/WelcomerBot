@@ -59,9 +59,7 @@ async function gracefulShutdown(signal) {
             ...ButtonPrompt.destroyAll()
         ];
 
-        PlayerManager.activeConnections.each(connection => {
-            PlayerManager.disconnect(connection?.connection?.joinConfig.guildId);
-        });
+        PlayerManager.destroyAll();
 
         const results = await Promise.allSettled(cleanupPromises);
         const failed = results.filter(r => r.status === 'rejected');

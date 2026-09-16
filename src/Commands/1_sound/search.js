@@ -6,6 +6,7 @@ const { parseArgs } = require('node:util');
 
 const ButtonPrompt = require('../../Structures/ButtonPrompt.js');
 const { searchSoundFiles } = require('../../Structures/musicFilesManager.js');
+const PlayerManager = require('../../Structures/playerManager.js');
 const { bot: { prefix }, emoji: { success, warning, error, searching }, response: { missingArguments, noChannel, wrongChannel, afkChannel } } = require('../../../config/config.json');
 
 
@@ -126,7 +127,7 @@ module.exports = new Command({
             const selectedSound = results[index]?.item;
 
             if (selectedSound) {
-                client.playerManager.play({
+                PlayerManager.play({
                     voiceChannel: senderVoiceChannel,
                     file: {
                         file_path: selectedSound.file_path,

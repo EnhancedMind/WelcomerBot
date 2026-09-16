@@ -2,6 +2,8 @@ const Command = require('../../Structures/Command.js');
 
 const { PermissionsBitField } = require('discord.js');
 const { getVoiceConnection } = require('@discordjs/voice');
+
+const PlayerManager = require('../../Structures/playerManager.js');
 const { bot: { ownerID }, emoji: { success, warning }, response: { wrongChannel, noMusic } } = require('../../../config/config.json');
 
 
@@ -16,7 +18,7 @@ module.exports = new Command({
 
         if (( !message.member.voice.channel || connection.joinConfig.channelId != message.member.voice.channel.id ) && !message.member.permissions.has(PermissionsBitField.Flags.ManageChannels) && message.author.id != ownerID) return await message.channel.send(`${warning} ${wrongChannel}`);
 
-        client.playerManager.disconnect(message.guild.id);
+        PlayerManager.disconnect(message.guild.id);
         await message.channel.send(`${success} The player has stopped.`);
     }
 });
