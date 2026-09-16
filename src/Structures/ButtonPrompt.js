@@ -98,9 +98,17 @@ class ButtonPrompt extends EventEmitter {
      * @private
      */
     #getComponents(disabled = false) {
-        const row = new ActionRowBuilder();
+        const rows = [];
+        let currentRow = new ActionRowBuilder();
 
         for (const btn of this.buttonConfigs) {
+            if (currentRow.components.length == 5) {
+                rows.push(currentRow);
+                currentRow = new ActionRowBuilder();
+            }
+
+            if (rows.length == 5) break;
+
             const builder = new ButtonBuilder()
                 .setCustomId(btn.id)
                 .setStyle(this.#getStyle(btn.style))
@@ -108,10 +116,16 @@ class ButtonPrompt extends EventEmitter {
 
             if (btn.label) builder.setLabel(btn.label);
             if (btn.emoji) builder.setEmoji(btn.emoji);
-            row.addComponents(builder);
+
+            currentRow.addComponents(builder);
         }
 
-        return [row];
+        // push the final row if it contains any remaining buttons
+        if (currentRow.components.length > 0 && rows.length < 5) {
+            rows.push(currentRow);
+        }
+
+        return rows;
     }
 
     /**
