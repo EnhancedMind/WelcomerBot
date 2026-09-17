@@ -44,7 +44,7 @@ async function syncSoundFiles({ forceReencode = false } = {}) { // = {} is as de
             await syncDir(diskFiles, userId, dirOrFilePath);
         }
         else { // Here just for legacy reasons, now each user should have their own directory
-            if(!allowedExtensions.some(ext => dirOrFile.endsWith(ext))) continue; // Check if the file has a valid extension
+            if(!allowedExtensions.some(ext => dirOrFile.toLowerCase().endsWith(ext))) continue; // Check if the file has a valid extension
             if ( !diskFiles.has(userId) ) {
                 diskFiles.set(userId, []);
             }
@@ -161,7 +161,7 @@ async function dirSoundTree(dirPath) {
             if(subDirTree.length !== 0) dirTree.push(['dir', dirOrFile , subDirTree]);
         }
         else {
-            if(allowedExtensions.some(ext => dirOrFile.endsWith(ext))) dirTree.push(['sound', dirOrFile]);
+            if(allowedExtensions.some(ext => dirOrFile.toLowerCase().endsWith(ext))) dirTree.push(['sound', dirOrFile]);
         }
     }
 
@@ -181,11 +181,11 @@ async function dirSoundTree(dirPath) {
  * @returns {Promise<void>}
  */
 async function syncDirTree(targetList, dirPath, dirTree, chance = undefined, chanceOrigin = undefined, joinType = false, leaveType = false, onceType = false) {
-    const defaultChance = (chance) ? chance / dirTree.length : undefined;
+    const defaultChance = (chance !== undefined) ? chance / dirTree.length : undefined;
     for(const node of dirTree) {
         if(node[0] == 'dir') {
             const [_, subName, subTree] = node;
-            const subChance = subName.includes('$ch=') ? parseFloat(subName.split('ch=')[1]) : defaultChance; // Override chance or take the dir's
+            const subChance = subName.includes('$ch=') ? parseFloat(subName.split('$ch=')[1]) : defaultChance; // Override chance or take the dir's
             const newChanceOrigin = (subChance != defaultChance) ? subName : chanceOrigin; // If we have an overridden chance, the origin becomes the subdirectory, otherwise we keep the inherited origin
             const subJoin = subName.includes('$join') ? true : joinType;
             const subLeave = subName.includes('$leave') ? true : leaveType;
@@ -197,7 +197,7 @@ async function syncDirTree(targetList, dirPath, dirTree, chance = undefined, cha
             addSoundToList(targetList, path.join(dirPath, fileName), fileName, defaultChance, chanceOrigin, joinType, leaveType, onceType);
         }
         else {
-            console.log(`Misbehaved node ${node} in ${dirPath}`);
+            consoleLog(`[WARN] Misbehaved node ${node} in ${dirPath}`);
         }
     }
 }
