@@ -27,6 +27,14 @@ Example usage:
 \`${prefix}removesong mysong.mp3\`
 `;
 
+
+const selectFilepathStmt = db.prepare(/*sql*/`
+    SELECT file_path 
+    FROM files 
+    WHERE target_id = ? AND file_name = ?
+    LIMIT 1
+`);
+
 module.exports = new Command({
     name: 'removesong',
     aliases: [ 'rm' ],
@@ -56,12 +64,7 @@ module.exports = new Command({
         let file = args[0];
 
         if(path.dirname(file) === '.') {
-            const row = db.prepare(/*sql*/`
-                SELECT file_path 
-                FROM files 
-                WHERE target_id = ? AND file_name = ?
-                LIMIT 1
-            `).get(senderId, file);
+            const row = selectFilepathStmt.get(senderId, file);
 
             if(!row) {
                 return await channel.send(`${warning} file \`${file}\` doesn't exist in your library!`);

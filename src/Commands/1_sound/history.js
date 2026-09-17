@@ -287,6 +287,8 @@ async function printPlayable(message, client, array, taggedUser, flags, page) {
     });
 }
 
+const selectFileByIdStmt = db.prepare('SELECT * FROM files WHERE id = ?');
+
 /**
  * Takes the entry and makes it into a embed and sends it into channel
  * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
@@ -295,7 +297,7 @@ async function printPlayable(message, client, array, taggedUser, flags, page) {
  * @returns {Promise<void>}
  */
 async function printSinglePlayable(message, client, entry) {
-    const fileEntry = db.prepare('SELECT * FROM files WHERE id = ?').get(entry.file_id);
+    const fileEntry = selectFileByIdStmt.get(entry.file_id);
 
     const embed = new EmbedBuilder()
         .setColor(0x3399FF)

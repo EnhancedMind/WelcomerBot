@@ -24,6 +24,23 @@ if (!fs.existsSync(reencodedDirAbs)) {
     fs.mkdirSync(reencodedDirAbs, { recursive: true });
 }
 
+const selectActiveDbFilesStmt = db.prepare(/*sql*/`SELECT id, file_path, source_hash FROM files WHERE deleted_at IS NULL`);
+
+const insertStmt = db.prepare(/*sql*/`
+    INSERT INTO files (source_hash, file_path, file_name, target_id, chance, chance_origin, is_join, is_leave, play_once, is_valid)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`);
+
+const updateStmt = db.prepare(/*sql*/`
+    UPDATE files 
+    SET chance = ?, chance_origin = ?, is_join = ?, is_leave = ?, play_once = ?, is_valid = ?, target_id = ?
+    WHERE id = ?
+`);
+
+const softDeleteStmt = db.prepare(/*sql*/`
+    UPDATE files SET deleted_at = ? WHERE id = ?
+`);
+
 /**
  * Syncs the sound files from the music directory to the database.
  * @param {Object} options - Options for syncing sound files.
@@ -72,23 +89,8 @@ async function syncSoundFiles({ forceReencode = false } = {}) { // = {} is as de
 
     // db sync
     // fetch active files currently in the database to cross-reference
-    const activeDbFiles = db.prepare(/*sql*/`SELECT id, file_path, source_hash FROM files WHERE deleted_at IS NULL`).all();
+    const activeDbFiles = selectActiveDbFilesStmt.all();
     const dbMap = new Map(activeDbFiles.map(f => [f.file_path, { id: f.id, hash: f.source_hash }]));
-
-    const insertStmt = db.prepare(/*sql*/`
-        INSERT INTO files (source_hash, file_path, file_name, target_id, chance, chance_origin, is_join, is_leave, play_once, is_valid)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    const updateStmt = db.prepare(/*sql*/`
-        UPDATE files 
-        SET chance = ?, chance_origin = ?, is_join = ?, is_leave = ?, play_once = ?, is_valid = ?, target_id = ?
-        WHERE id = ?
-    `);
-
-    const softDeleteStmt = db.prepare(/*sql*/`
-        UPDATE files SET deleted_at = ? WHERE id = ?
-    `);
 
     db.transaction(() => {
         const nowUnixTimestamp = Math.floor(Date.now() / 1000);
@@ -231,6 +233,23 @@ function addSoundToList(targetList, filePath, fileName, defaultChance = undefine
 };
 
 
+const deleteReencodedTableRowsStmt = db.prepare(/*sql*/`DELETE FROM files_reencoded`);
+const selectExistingReencodedFilesStmt = db.prepare(/*sql*/`SELECT source_hash, file_path FROM files_reencoded`);
+const deleteCacheStmt = db.prepare(/*sql*/`DELETE FROM files_reencoded WHERE source_hash = ?`);
+const selectFilesToReencodeStmt = db.prepare(/*sql*/`
+    SELECT f.id, f.file_path, f.source_hash 
+    FROM files f
+    LEFT JOIN files_reencoded fr ON f.source_hash = fr.source_hash
+    WHERE f.deleted_at IS NULL 
+    AND f.is_valid = 1
+    AND (f.is_join = 1 OR f.is_leave = 1)
+    AND f.play_once = 0
+    AND (
+        fr.source_hash IS NULL              -- Condition 1: Not re-encoded yet
+        OR fr.loudnorm != @targetLoudnorm   -- Condition 2: Re-encoded, but wrong loudnorm state
+    )
+`);
+
 /**
  * Queries the database for files suitable for reencoding into cache and reencodes them, inserts to reencoded table
  * @param {boolean} [force=false] - If true, reencodes all files regardless of their current state in the reencoded table.
@@ -241,7 +260,7 @@ async function reencodeFiles(force = false) {
         consoleLog(`[INFO] Force re-encode triggered. Purging entire cache...`);
 
         // clear the database cache table (keeps schema intact, wipes rows)
-        db.prepare(/*sql*/`DELETE FROM files_reencoded`).run();
+        deleteReencodedTableRowsStmt.run();
 
         try {
             await rm(reencodedDirAbs, { recursive: true, force: true });
@@ -254,9 +273,7 @@ async function reencodeFiles(force = false) {
         }
     }
 
-
-    const existingReencodedFiles = db.prepare(/*sql*/`SELECT source_hash, file_path FROM files_reencoded`).all();
-    const deleteCacheStmt = db.prepare(/*sql*/`DELETE FROM files_reencoded WHERE source_hash = ?`);
+    const existingReencodedFiles = selectExistingReencodedFilesStmt.all();
 
     const nonexistingFilesHash = [];
 
@@ -273,19 +290,7 @@ async function reencodeFiles(force = false) {
         }
     })();
 
-    const filesToReencode = db.prepare(/*sql*/`
-        SELECT f.id, f.file_path, f.source_hash 
-        FROM files f
-        LEFT JOIN files_reencoded fr ON f.source_hash = fr.source_hash
-        WHERE f.deleted_at IS NULL 
-        AND f.is_valid = 1
-        AND (f.is_join = 1 OR f.is_leave = 1)
-        AND f.play_once = 0
-        AND (
-            fr.source_hash IS NULL              -- Condition 1: Not re-encoded yet
-            OR fr.loudnorm != @targetLoudnorm   -- Condition 2: Re-encoded, but wrong loudnorm state
-        )
-    `).all({ 
+    const filesToReencode = selectFilesToReencodeStmt.all({ 
         targetLoudnorm: loudnessNormalization ? 1 : 0
     })
 
@@ -316,6 +321,15 @@ async function reencodeFiles(force = false) {
     }
     return;
 }
+
+
+const insertReencodedFileStmt = db.prepare(/*sql*/`
+    INSERT INTO files_reencoded (source_hash, file_path, loudnorm)
+    VALUES (?, ?, ?)
+    ON CONFLICT(source_hash) DO UPDATE SET 
+        file_path = excluded.file_path,
+        loudnorm = excluded.loudnorm
+`);
 
 /**
  * Encodes an audio file into an Opus/Ogg format for the bot's cache.
@@ -379,13 +393,7 @@ function reencodeSingleFile(filepath, hash) {
 
                 try {
                     // Update your files_reencoded registry inside the database right away
-                    db.prepare(/*sql*/`
-                        INSERT INTO files_reencoded (source_hash, file_path, loudnorm)
-                        VALUES (?, ?, ?)
-                        ON CONFLICT(source_hash) DO UPDATE SET 
-                            file_path = excluded.file_path,
-                            loudnorm = excluded.loudnorm
-                    `).run(hash, outputPath, loudnessNormalization ? 1 : 0);
+                    insertReencodedFileStmt.run(hash, outputPath, loudnessNormalization ? 1 : 0);
 
                     resolve(outputPath);
                 }
@@ -445,6 +453,52 @@ function getLoudnessData(inputPath) {
     });
 }
 
+
+const selectUserFilesStmt = db.prepare(/*sql*/`
+    -- Step 1: Check if the user has valid personal sounds and store it as a temporary boolean
+    WITH HasUserFiles AS (
+        SELECT 1 FROM files 
+        WHERE target_id = @userId 
+        AND deleted_at IS NULL 
+        AND (@onlyValid = 0 OR is_valid = 1)
+        AND (
+            (@type = 'join' AND is_join = 1) OR 
+            (@type = 'leave' AND is_leave = 1) OR 
+            (@type = 'all')
+        )
+        LIMIT 1
+    )
+    -- Step 2: Fetch the actual sounds
+    SELECT * FROM files
+    WHERE deleted_at IS NULL 
+    AND (@onlyValid = 0 OR is_valid = 1)
+    AND (
+        (@type = 'join' AND is_join = 1) OR
+        (@type = 'leave' AND is_leave = 1) OR
+        (@type = 'all')
+    )
+    AND (
+        -- Layer 1: The User's sounds
+        target_id = @userId 
+        
+        -- Layer 2: The 'Default' sounds fallback
+        OR (
+            target_id = 'default' 
+            AND @defaultEnabled = 1 
+            AND NOT EXISTS (SELECT 1 FROM HasUserFiles)
+        )
+        
+        -- Layer 3: The 'Everyone' sounds
+        OR (
+            target_id = 'everyone'
+            AND (
+                @defaultEnabled = 1 
+                OR EXISTS (SELECT 1 FROM HasUserFiles)
+            )
+        )
+    )
+`);
+
 /**
  * Gets a list of all sounds played for the user.
  * @param {string} userId - The ID of the user.
@@ -471,52 +525,7 @@ async function getUserSoundArray(userId, type, guildId, onlyValid = true) {
     if (type === 'join' && setting.enabledDefaultJoin === false) defaultEnabled = 0;
     if (type === 'leave' && setting.enabledDefaultLeave === false) defaultEnabled = 0;
 
-    const query = /*sql*/`
-        -- Step 1: Check if the user has valid personal sounds and store it as a temporary boolean
-        WITH HasUserFiles AS (
-            SELECT 1 FROM files 
-            WHERE target_id = @userId 
-            AND deleted_at IS NULL 
-            AND (@onlyValid = 0 OR is_valid = 1)
-            AND (
-                (@type = 'join' AND is_join = 1) OR 
-                (@type = 'leave' AND is_leave = 1) OR 
-                (@type = 'all')
-            )
-            LIMIT 1
-        )
-        -- Step 2: Fetch the actual sounds
-        SELECT * FROM files
-        WHERE deleted_at IS NULL 
-        AND (@onlyValid = 0 OR is_valid = 1)
-        AND (
-            (@type = 'join' AND is_join = 1) OR
-            (@type = 'leave' AND is_leave = 1) OR
-            (@type = 'all')
-        )
-        AND (
-            -- Layer 1: The User's sounds
-            target_id = @userId 
-            
-            -- Layer 2: The 'Default' sounds fallback
-            OR (
-                target_id = 'default' 
-                AND @defaultEnabled = 1 
-                AND NOT EXISTS (SELECT 1 FROM HasUserFiles)
-            )
-            
-            -- Layer 3: The 'Everyone' sounds
-            OR (
-                target_id = 'everyone'
-                AND (
-                    @defaultEnabled = 1 
-                    OR EXISTS (SELECT 1 FROM HasUserFiles)
-                )
-            )
-        )
-    `;
-
-    const array = db.prepare(query).all({
+    const array = selectUserFilesStmt.all({
         userId: userId,
         type: type,
         defaultEnabled: defaultEnabled,
@@ -591,6 +600,13 @@ function findProbabilities(songArray) {
     return [probabilities, probabilitySum];
 }
 
+
+const selectUserIdFilesStmt = db.prepare(/*sql*/`
+    SELECT file_path 
+    FROM files 
+    WHERE target_id = ?
+`)
+
 /**
  * Get the users directory for usersounds, or creates it if non-existent
  * @param {Client} client - The client instance.
@@ -598,11 +614,7 @@ function findProbabilities(songArray) {
  * @returns {string} The relative path to the user directory
  */
 async function getUserPath(client, targetId) {
-    const rows = db.prepare(/*sql*/`
-        SELECT file_path 
-        FROM files 
-        WHERE target_id = ?
-    `).all(targetId);
+    const rows = selectUserIdFilesStmt.all(targetId);
 
     if (rows.length > 0) {
         const baseLen = userDirComparison.split(path.sep).filter(Boolean).length;
@@ -683,6 +695,33 @@ async function getFileDuration(inputPath) {
     });
 }
 
+
+const selectExactSearchStmt = db.prepare(/*sql*/`
+    SELECT * FROM files
+    WHERE deleted_at IS NULL 
+        AND (
+            file_path = @query 
+            OR file_name = @query 
+            OR file_name LIKE @queryWithExtension 
+        )
+    LIMIT 1
+`);
+
+const selectFuzzyPoolSearchStmt = db.prepare(/*sql*/`
+    SELECT *,
+        CASE 
+            WHEN target_id = @priorityId THEN 1
+            WHEN target_id = 'everyone' THEN 3
+            WHEN target_id = 'default' THEN 4
+            ELSE 2
+        END as priorityIndex
+    FROM files
+    WHERE deleted_at IS NULL 
+        -- The boolean flags: If JS flag is false (0), the condition passes. If true (1), it enforces the column constraint.
+        AND (@joinFlag = 0 OR is_join = 1)
+        AND (@leaveFlag = 0 OR is_leave = 1)
+`);
+
 /**
  * Searches for sound files using prioritly exact match for path or filename, secondarily using fuzzy search.
  * @param {Object} options - The search options.
@@ -694,19 +733,8 @@ async function getFileDuration(inputPath) {
  * @returns {{ results: Array<[Object]>, reason: string }} An object containing the Fuse.js search results and the status reason.
  */
 function searchSoundFiles({searchString, firstPriorityUserId = null, joinFlag = false, leaveFlag = false, threshold = 0.35}) {
-    // exact match
-    const exactQuery = /*sql*/`
-        SELECT * FROM files
-        WHERE deleted_at IS NULL 
-          AND (
-              file_path = @query 
-              OR file_name = @query 
-              OR file_name LIKE @queryWithExtension 
-          )
-        LIMIT 1
-    `;
-
-    const exactMatch = db.prepare(exactQuery).get({
+    // exact match directly from db, matching path or filename with or without extension, but exactly
+    const exactMatch = selectExactSearchStmt.get({
         query: searchString,
         queryWithExtension: `${searchString}.%` // Matches 'searchString.mp3', 'searchString.ogg', etc.
     });
@@ -725,22 +753,7 @@ function searchSoundFiles({searchString, firstPriorityUserId = null, joinFlag = 
 
 
     // fuzzy search
-    const poolQuery = /*sql*/`
-        SELECT *,
-          CASE 
-              WHEN target_id = @priorityId THEN 1
-              WHEN target_id = 'everyone' THEN 3
-              WHEN target_id = 'default' THEN 4
-              ELSE 2
-          END as priorityIndex
-        FROM files
-        WHERE deleted_at IS NULL 
-          -- The boolean flags: If JS flag is false (0), the condition passes. If true (1), it enforces the column constraint.
-          AND (@joinFlag = 0 OR is_join = 1)
-          AND (@leaveFlag = 0 OR is_leave = 1)
-    `;
-
-    const searchablePool = db.prepare(poolQuery).all({
+    const searchablePool = selectFuzzyPoolSearchStmt.all({
         priorityId: firstPriorityUserId || '',
         joinFlag: joinFlag ? 1 : 0,
         leaveFlag: leaveFlag ? 1 : 0
@@ -772,6 +785,13 @@ function searchSoundFiles({searchString, firstPriorityUserId = null, joinFlag = 
     return result;
 }
 
+
+const updateInvalidateFileStmt = db.prepare(/*sql*/`
+    UPDATE files 
+    SET file_path = ?, file_name = ?, is_valid = 0 
+    WHERE file_path = ?
+`)
+
 /**
  * Invalidates a sound file by renaming it to a new name with a suffix indicating it has been used, and updating database.
  * @param {string} filePath - The path of the sound file to invalidate.
@@ -796,11 +816,7 @@ async function invalidateSoundFile(filePath) {
 
     await rename(filePath, newPath);
 
-    db.prepare(/*sql*/`
-        UPDATE files 
-        SET file_path = ?, file_name = ?, is_valid = 0 
-        WHERE file_path = ?
-    `).run(newPath, newFilename, filePath);
+    updateInvalidateFileStmt.run(newPath, newFilename, filePath);
 
     return { newPath, newFilename };
 }

@@ -28,6 +28,14 @@ Developers can also rename and move files anywhere in the \`${musicDirComparison
 This command only renames and moves files, it does NOT create directories.
 `;
 
+
+const selectFilepathStmt = db.prepare(/*sql*/`
+    SELECT file_path 
+    FROM files 
+    WHERE target_id = ? AND file_name = ?
+    LIMIT 1
+`);
+
 module.exports = new Command({
     name: 'renamesong',
     aliases: [ 'renamefile', 'mv' ],
@@ -46,12 +54,7 @@ module.exports = new Command({
         let destination = args[1];
 
         if(path.dirname(origin) === '.') {
-            const row = db.prepare(/*sql*/`
-                SELECT file_path 
-                FROM files 
-                WHERE target_id = ? AND file_name = ?
-                LIMIT 1
-            `).get(senderId, origin);
+            const row = selectFilepathStmt.get(senderId, origin);
 
             if(!row) {
                 return await channel.send(`${warning} file \`${origin}\` doesn't exist in your library!`);

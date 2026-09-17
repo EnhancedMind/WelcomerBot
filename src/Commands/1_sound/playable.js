@@ -23,6 +23,13 @@ You can use the following arguments to modify this behaviour:
 - \`pagenumber\` - Specify the page number to view (only works for printing in chat)
 `;
 
+const selectDefaultAndEveryoneStmt = db.prepare(/*sql*/`
+    SELECT * FROM files WHERE target_id IN ('default', 'everyone')
+`);
+const selectUsersStmt = db.prepare(/*sql*/`
+    SELECT * FROM files WHERE target_id NOT IN ('default', 'everyone')
+`);
+
 module.exports = new Command({
     name: 'playable',
     aliases: [ 'pl', 'pls', 'list' ],
@@ -39,13 +46,9 @@ module.exports = new Command({
         if(array === undefined) return; // Flag had an issue
 
         if(array.length == 0 && taggedUser === undefined) { // User array failed
-            const defaultAndEveryone = db.prepare(/*sql*/`
-                SELECT * FROM files WHERE target_id IN ('default', 'everyone')
-            `).all(); // file_name, file_path
+            const defaultAndEveryone = selectDefaultAndEveryoneStmt.all(); // file_name, file_path
             
-            const users = db.prepare(/*sql*/`
-                SELECT * FROM files WHERE target_id NOT IN ('default', 'everyone')
-            `).all();;
+            const users = selectUsersStmt.all();
 
             array.push(...defaultAndEveryone,...users);
         }
