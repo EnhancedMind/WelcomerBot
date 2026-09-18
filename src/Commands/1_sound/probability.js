@@ -59,7 +59,7 @@ function resolveFlags(message, args) {
     let taggedUser = senderId;
 
     if (flags.user) {
-        taggedUser = extractUserId(flags.user);
+        taggedUser = extractUserId(flags.user)[0];
 
         if (!taggedUser) {
             message.channel.send({ content: `Invalid user argument ${flags.user}`});

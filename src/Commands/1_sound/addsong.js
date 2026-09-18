@@ -77,7 +77,7 @@ module.exports = new Command({
 
             if (typeof flags.user !== 'string') return await channel.send(`${warning} ${missingArguments} (No user specified)`);
 
-            const userId = extractUserId(flags.user);
+            const userId = extractUserId(flags.user)[0];
             const userPath = await getUserPath(client, userId);
             await addSongCore(message, client, userPath);
         }

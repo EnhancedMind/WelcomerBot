@@ -101,13 +101,8 @@ async function resolveUserFlag(message, args) {
     let taggedUser = senderId;
 
     if (positionals.length > 0) { // If the user tag has an argument
-        for (const positional of positionals) {
-            const extracted = extractUserId(positional);
-            if (extracted) {
-                taggedUser = extracted;
-                break;
-            }
-        }
+        const extracted = extractUserId(positionals)[0];
+        if (extracted) taggedUser = extracted;
     }
 
     // Just user flag was triggered
