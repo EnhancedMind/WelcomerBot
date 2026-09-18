@@ -6,7 +6,7 @@ const { parseArgs } = require('node:util');
 const Paginator = require('../../Structures/Paginator.js');
 const { homepage } = require('../../../package.json');
 const { getUserSoundArray, findProbabilities  } = require('../../Structures/musicFilesManager.js');
-const { extractUserId } = require('../../utils/discordUtils.js');
+const { extractUserId, extractPageNumber } = require('../../utils/discordUtils.js');
 
 const helpText = 
 `This command allows you to show the users songs along with the probability of each song playing.
@@ -26,10 +26,10 @@ module.exports = new Command({
     description: `Lists the probability of each song playing for the sender or specified user for either joining or leaving.`,
     help: helpText,
     async run(message, args, client) {
-        const [taggedUser, joinFlag, leaveFlag] = resolveFlags(message, args);
+        const [taggedUser, joinFlag, leaveFlag, page] = resolveFlags(message, args);
         if (taggedUser === undefined) return; // Nonexistent user tagged
         const [array, probabilities, sums, joinCount] = await getSoundsWithProbabilities(taggedUser, joinFlag, leaveFlag, message.guildId);
-        await printProbability(message, client, array, probabilities, sums, joinCount, taggedUser);
+        await printProbability(message, client, array, probabilities, sums, joinCount, taggedUser, page);
     }
 });
 
@@ -54,6 +54,8 @@ function resolveFlags(message, args) {
 
     const flags = parsed.values;
 
+    const [ page ] = extractPageNumber(parsed.positionals);
+
     let taggedUser = senderId;
 
     if (flags.user) {
@@ -61,11 +63,11 @@ function resolveFlags(message, args) {
 
         if (!taggedUser) {
             message.channel.send({ content: `Invalid user argument ${flags.user}`});
-            return [undefined, undefined, undefined];
+            return [undefined, undefined, undefined, page];
         }
     }
 
-    return [taggedUser, flags.join, flags.leave];
+    return [taggedUser, flags.join, flags.leave, page];
 }
 
 
@@ -124,7 +126,7 @@ async function _getSoundsWithProbabilities(taggedUser, type, guildId) {
  * @param {Discord.user|undefined} taggedUser - The user tagged in the arguments (or the sender).
  * @returns {null}
  */
-async function printProbability(message, client, array, probabilities, [joinSum, leaveSum], joinCount, taggedUser) {
+async function printProbability(message, client, array, probabilities, [joinSum, leaveSum], joinCount, taggedUser, page) {
     const embeds = [];
     const targetName = (await client.users.fetch(taggedUser)).globalName;
 
@@ -162,6 +164,7 @@ async function printProbability(message, client, array, probabilities, [joinSum,
 
     Paginator.create({
         message,
-        pages: embeds
+        pages: embeds,
+        page
     });
 }

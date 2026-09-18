@@ -8,7 +8,7 @@ const { bot: { prefix } } = require('../../../config/config.json');
 const { homepage } = require('../../../package.json');
 const { getUserSoundArray, defaultDirComparison, everyoneDirComparison, userDirComparison } = require('../../Structures/musicFilesManager.js');
 const { db } = require('../../Structures/dbManager.js');
-const { extractUserId } = require('../../utils/discordUtils.js');
+const { extractUserId, extractPageNumber } = require('../../utils/discordUtils.js');
 
 const helpText = 
 `This command allows you to list all the available song that can be played.
@@ -38,10 +38,9 @@ module.exports = new Command({
     description: `Lists all the files that can be played. Use \`${prefix}playable --help\` to see all the options.`,
     help: helpText,
     async run(message, args, client) {
-        const jsonFlag = args.includes('--json')
+        const jsonFlag = args.includes('--json');
 
-        const page = resolvePage(message, args);
-        const [ array, taggedUser, personalFlag, noPathFlag ] = await resolveUserFlag(message, args);
+        const [ array, taggedUser, personalFlag, noPathFlag, page ] = await resolveUserFlag(message, args);
 
         if(array === undefined) return; // Flag had an issue
 
@@ -63,31 +62,10 @@ module.exports = new Command({
 });
 
 /**
- * Find the specified page number or set it to 0
+ * Resolves the flags from the command arguments and returns the relevant data.
  * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
  * @param {string[]} args - The command arguments.
- * @returns {void}
- */
-function resolvePage(message, args) {
-    let page = 0;
-    for(const arg of args) {
-        if(/^\d+$/.test(arg)) {
-            page = parseInt(arg);
-        }
-    }
-
-    if (isNaN(page)) {
-        page = 0;
-    }
-
-    return page-1;
-}
-
-/**
- * Find the specified page number or set it to 0
- * @param {Discord.Message<boolean> | Discord.Interaction<Discord.CacheType} message - The message with the command.
- * @param {string[]} args - The command arguments.
- * @returns {[object[], Discord.user, boolean, boolean]} - [array with user's songs if flagged, the user, if the flag was 'personal', noPathFlag]
+ * @returns {[object[], Discord.user, boolean, boolean, number]} - [array with user's songs if flagged, the user, if the flag was 'personal', noPathFlag, page]
  */
 async function resolveUserFlag(message, args) {
     const senderId = message.author.id;
@@ -112,10 +90,12 @@ async function resolveUserFlag(message, args) {
     const noPathFlag = flags['no-path'];
     const eventFlag = leaveFlag || joinFlag;
 
-    if(!flags.user && !flags.personal) return [ [], undefined, undefined, noPathFlag ]; // No flags => [] to list everything
+    const [ page ] = extractPageNumber(positionals);
+
+    if(!flags.user && !flags.personal) return [ [], undefined, undefined, noPathFlag, page ]; // No flags => [] to list everything
     if(flags.user && flags.personal) { // Use of both at the same time is invalid
         await message.channel.send({ content: `Both user and personal flags can't be triggered at the same time!`});
-        return [ undefined, undefined, undefined, undefined ];
+        return [ undefined, undefined, undefined, undefined, page ];
     }
 
     let taggedUser = senderId;
@@ -135,16 +115,16 @@ async function resolveUserFlag(message, args) {
         const joinArray = (joinFlag || !eventFlag) ? await getUserSoundArray(taggedUser, 'join', message.guildId, false) : [];
         const leaveArray = (leaveFlag || !eventFlag) ? await getUserSoundArray(taggedUser, 'leave', message.guildId, false) : [];
         const array = [...joinArray,...leaveArray];
-        return [ array, taggedUser, false, noPathFlag ];
+        return [ array, taggedUser, false, noPathFlag, page ];
     }
 
     //personal flag was triggered
     const array = ( await getUserSoundArray(taggedUser, 'all', message.guildId, false) ).filter(song => {return song.file_path.startsWith(userDirComparison)});
     if(eventFlag) {
-        if(joinFlag) return [ array.filter(song => song.is_join), taggedUser, true, noPathFlag ];
-        else if(leaveFlag) return [ array.filter(song => song.is_leave), taggedUser, true, noPathFlag ];
+        if (joinFlag) return [ array.filter(song => song.is_join), taggedUser, true, noPathFlag, page ];
+        else if (leaveFlag) return [ array.filter(song => song.is_leave), taggedUser, true, noPathFlag, page ];
     }
-    return [ array, taggedUser, true, noPathFlag ];
+    return [ array, taggedUser, true, noPathFlag, page ];
 }
 
 /**

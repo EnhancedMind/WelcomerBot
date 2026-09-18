@@ -10,6 +10,7 @@ const { bot: { prefix, ownerID, devIDs } } = require('../../../config/config.jso
 const { homepage } = require('../../../package.json');
 const { db } = require('../../Structures/dbManager.js');
 const { consoleLog } = require('../../Data/Log.js');
+const { extractUserId, extractPageNumber } = require('../../utils/discordUtils.js');
 
 const helpText = `
 This command displays the history of the sounds that have been played.
@@ -41,9 +42,7 @@ module.exports = new Command({
     description: `Displays the history of played sounds. Can be filtered, for more use \`${prefix}history --help\``,
     help: helpText,
     async run(message, args, client) {
-        const page = resolvePage(args);
-
-        const [ array, taggedUser, flags ] = await getHistoryEntries(message, args);
+        const [ array, taggedUser, flags, page ] = await getHistoryEntries(message, args);
 
         if(array === undefined) return await message.channel.send('There was an error when obtaining data from database.');
 
@@ -62,30 +61,10 @@ module.exports = new Command({
 });
 
 /**
- * Find the specified page number or set it to 0
- * @param {string[]} args - The command arguments.
- * @returns {number} - The extracted page number
- */
-function resolvePage(args) {
-    let page = 0;
-    for(const arg of args) {
-        if(/^\d+$/.test(arg)) {
-            page = parseInt(arg);
-        }
-    }
-
-    if (isNaN(page)) {
-        page = 0;
-    }
-
-    return page-1;
-}
-
-/**
  * Get the history entries, with filters from args
  * @param {Discord.Message<boolean>} message - The message with the command.
  * @param {string[]} args - The command arguments.
- * @returns {[object[], Discord.user, string|boolean[]]} - [array with history entries, the tagged user, array of flag values]
+ * @returns {[object[], Discord.user, string|boolean[], number]} - [array with history entries, the tagged user, array of flag values, page number]
  */
 async function getHistoryEntries(message, args) {
     const parsed = parseArgs({
@@ -112,6 +91,8 @@ async function getHistoryEntries(message, args) {
     });
 
     const flags = parsed.values;
+
+    const [ page ] = extractPageNumber(parsed.positionals);
 
     let userId = null
     if (flags.user) {
@@ -186,11 +167,11 @@ async function getHistoryEntries(message, args) {
         const statement = db.prepare(sql);
         const historyRows = statement.all(...params);
 
-        return [ historyRows, userId, flags ];
+        return [ historyRows, userId, flags, page ];
     }
     catch (err) {
         consoleLog('[INFO] Database Query Failed:', err);
-        return [ undefined, undefined, flags ];
+        return [ undefined, undefined, flags, page ];
     }
 }
 
