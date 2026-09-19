@@ -92,16 +92,28 @@ class Paginator {
             )
         );
 
-        if (this.pages.length > 3) this.components.push(
-            new ActionRowBuilder().addComponents(
-                new StringSelectMenuBuilder().setCustomId('paginator_select').setPlaceholder('Select page').setDisabled(disabled)
-                    .addOptions(
-                        this.pages.slice(0, 25).map((_, i) => (
-                            { label: `Page ${i + 1}`, value: String(i) }
-                        ))
+        if (this.pages.length > 3) {
+            const totalPages = Math.min(this.pages.length, 100);
+            const numRows = Math.ceil(totalPages / 25);
+
+            for (let i = 0; i < numRows; i++) {
+                const startIndex = i * 25;
+                const endIndex = Math.min(startIndex + 25, totalPages);
+
+                const placeholderText = numRows > 1 ? `Select page ${startIndex + 1}-${endIndex}` : 'Select page';
+
+                this.components.push(
+                    new ActionRowBuilder().addComponents(
+                        new StringSelectMenuBuilder().setCustomId(`paginator_select_${i}`).setPlaceholder(placeholderText).setDisabled(disabled)
+                            .addOptions(
+                                this.pages.slice(startIndex, endIndex).map((_, idx) => (
+                                    { label: `Page ${startIndex + idx + 1}`, value: String(startIndex + idx) }
+                                ))
+                            )
                     )
-            )
-        );
+                );
+            }
+        }
 
         return this.components;
     }
@@ -145,7 +157,9 @@ class Paginator {
                 return;
             }
 
-            switch (interaction.customId) {
+            const action = interaction.customId.startsWith('paginator_select_') ? 'paginator_select' : interaction.customId;
+
+            switch (action) {
                 case 'paginator_prev':
                     this.page = this.page > 0 ? this.page - 1 : this.pages.length - 1;
                     break;
