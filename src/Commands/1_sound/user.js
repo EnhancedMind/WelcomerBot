@@ -3,6 +3,7 @@ const Command = require('../../Structures/Command.js');
 const { parseArgs } = require('node:util');
 
 const { getSetting, setSetting } = require('../../Structures/settingsManager.js');
+const { extractUserId } = require('../../utils/discordUtils.js');
 const { bot: { ownerID, devIDs }, emoji: { success, error }, response: { invalidPermissions } } = require('../../../config/config.json');
 
 
@@ -38,15 +39,11 @@ module.exports = new Command({
     help: helpText,
     async run(message, args, client) {
         let member = message.author.id;
-        for (const arg of args) {
-            const mentionMatch = arg.match((/^<@!?([0-9]{18,19})>/));
-            if (mentionMatch) {
-                if (message.author.id != ownerID && !devIDs.includes(message.author.id)) return await message.channel.send(`${error} ${invalidPermissions} (Developer)`);
-                member = mentionMatch[1];
-                // pull out this arg from the args array
-                args.splice(args.indexOf(arg), 1);
-                break;
-            }
+        const [ mentionMatch, positionals ] = extractUserId(args);
+        if (mentionMatch) {
+            if (message.author.id != ownerID && !devIDs.includes(message.author.id)) return await message.channel.send(`${error} ${invalidPermissions} (Developer)`);
+            member = mentionMatch;
+            args = positionals; // Remove the user mention from the args
         }
 
 

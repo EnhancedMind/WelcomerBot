@@ -7,6 +7,7 @@ const { parseArgs } = require('node:util');
 
 const { getUserSoundFile, searchSoundFiles } = require('../../Structures/musicFilesManager.js');
 const PlayerManager = require('../../Structures/playerManager.js');
+const { extractUserId } = require('../../utils/discordUtils.js');
 const { bot: { prefix }, emoji: { success, warning, error, loading }, response: { missingArguments, noChannel, wrongChannel, afkChannel }, player: { allowedExtensions } } = require('../../../config/config.json');
 
 const helpText =
@@ -57,10 +58,12 @@ module.exports = new Command({
         let userIdArg = parsed.values.me ? message.author.id : null;
         args = parsed.positionals;
 
-        for (const arg of args) {
-            if (userIdArg) break;
-            const mentionMatch = arg.match(/^<@!?([0-9]{18,19})>/);
-            if (mentionMatch) userIdArg = mentionMatch[1];
+        if (!userIdArg) {
+            const [ mentionMatch, positionals ] = extractUserId(args);
+            if (mentionMatch) {
+                userIdArg = mentionMatch;
+                args = positionals;
+            }
         }
 
         let userGlobalName = null;

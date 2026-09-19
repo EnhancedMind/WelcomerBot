@@ -96,12 +96,8 @@ async function getHistoryEntries(message, args) {
 
     let userId = null
     if (flags.user) {
-        const mentionMatch = flags.user.match((/^<@!?([0-9]{18,19})>/));
-        if (mentionMatch) userId = mentionMatch[1];
-        else {
-            const userIdMatch = flags.user.match((/^([0-9]{18,19})/));
-            if (userIdMatch) userId = userIdMatch[1];
-        }
+        const mentionMatch = extractUserId(flags.user)[0];
+        if (mentionMatch) userId = mentionMatch;
     }
     else if (flags.personal) {
         userId = message.author.id;
