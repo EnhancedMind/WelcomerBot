@@ -1,5 +1,5 @@
 const { EventEmitter } = require('node:events');
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
+const { Message, MessageFlags, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
 const { consoleLog } = require("../Data/Log");
 
 /**
@@ -160,15 +160,17 @@ class ButtonPrompt extends EventEmitter {
         // track instance in set
         ButtonPrompt.#activePrompts.add(this);
 
-        const filter = (interaction) => interaction.user.id == this.message.author.id;
-
         this.collector = this.sentMessage.createMessageComponentCollector({
             componentType: ComponentType.Button,
-            filter,
             time: this.timeout
         });
 
         this.collector.on('collect', async (interaction) => {
+            if (interaction.user.id != this.message.author.id) {
+                await interaction.reply({ content: `You cannot interact with this button prompt. Only its author <@${this.message.author.id}> can.`, flags: MessageFlags.Ephemeral }).catch(() => {});
+                return;
+            }
+
             if (this.deferUpdate) interaction.deferUpdate().catch(() => {});
             if (this.resetTimer) this.collector.resetTimer();
             // emit a general 'click' event on every press

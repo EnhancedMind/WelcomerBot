@@ -1,4 +1,4 @@
-const { Message, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
+const { Message, MessageFlags, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
 const { consoleLog } = require("../Data/Log");
 
 /**
@@ -133,15 +133,18 @@ class Paginator {
         // track instance in set
         Paginator.#activePaginators.add(this);
 
-        const filter = (interaction) => interaction.user.id == this.message.author.id;
 
         this.collector = this.curPage.createMessageComponentCollector({
-            filter,
             time: this.timeout
         });
 
 
         this.collector.on('collect', async (interaction) => {
+            if (interaction.user.id != this.message.author.id) {
+                await interaction.reply({ content: `You cannot interact with this paginator. Only its author <@${this.message.author.id}> can.`, flags: MessageFlags.Ephemeral }).catch(() => {});
+                return;
+            }
+
             switch (interaction.customId) {
                 case 'paginator_prev':
                     this.page = this.page > 0 ? this.page - 1 : this.pages.length - 1;
