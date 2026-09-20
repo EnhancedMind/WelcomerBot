@@ -17,9 +17,10 @@ const activeCommands = new Set();
 /**
  * Shuts down the process
  * @param {string} signal the signal that triggered this
+ * @param {number} [inputCode] the exit code to use, if any
  * @returns {Promise<void>}
  */
-async function gracefulShutdown(signal) {
+async function gracefulShutdown(signal, inputCode) {
     if (shuttingDown) return;
     shuttingDown = true;
 
@@ -94,9 +95,11 @@ async function gracefulShutdown(signal) {
         somethingFailed = true;
     }
 
-    consoleLog('[SHUTDOWN] Graceful shutdown complete. Exiting process.');
+    const exitCode = inputCode || somethingFailed ? 1 : 0;
 
-    process.exit(somethingFailed ? 1 : 0);
+    consoleLog(`[SHUTDOWN] Graceful shutdown complete. Exiting process with code ${exitCode}.`);
+
+    process.exit(exitCode);
 }
 
 /**
@@ -109,12 +112,12 @@ function setupShutdownListeners() {
 
     process.on('uncaughtException', (error) => {
         consoleLog('[ERROR] [FATAL] Uncaught Exception thrown:\n', error);
-        gracefulShutdown('uncaughtException');
+        gracefulShutdown('uncaughtException', 1);
     });
 
     process.on('unhandledRejection', (error) => {
         consoleLog('[ERROR] [FATAL] Unhandled Promise Rejection:\n', error);
-        gracefulShutdown('unhandledRejection');
+        gracefulShutdown('unhandledRejection', 1);
     });
 }
 
