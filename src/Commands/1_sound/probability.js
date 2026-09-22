@@ -26,9 +26,9 @@ module.exports = new Command({
     description: `Lists the probability of each song playing for the sender or specified user for either joining or leaving.`,
     help: helpText,
     async run(message, args, client) {
-        const [taggedUser, joinFlag, leaveFlag, page] = resolveFlags(message, args);
+        const [taggedUser, joinFlag, leaveFlag, page] = await resolveFlags(message, args);
         if (taggedUser === undefined) return; // Nonexistent user tagged
-        const [array, probabilities, sums, joinCount] = await getSoundsWithProbabilities(taggedUser, joinFlag, leaveFlag, message.guildId);
+        const [array, probabilities, sums, joinCount] = getSoundsWithProbabilities(taggedUser, joinFlag, leaveFlag, message.guildId);
         await printProbability(message, client, array, probabilities, sums, joinCount, taggedUser, page);
     }
 });
@@ -39,7 +39,7 @@ module.exports = new Command({
  * @param {string[]} args - The command arguments.
  * @returns {[ [Object[], Object[]], Discord.user, [ [float[],float], [float[],float] ] ]} - [array with user's songs if flagged, the user, the probabilities for each song]
  */
-function resolveFlags(message, args) {
+async function resolveFlags(message, args) {
     const senderId = message.author.id;
 
     const parsed = parseArgs({
@@ -62,7 +62,7 @@ function resolveFlags(message, args) {
         taggedUser = extractUserId(flags.user)[0];
 
         if (!taggedUser) {
-            message.channel.send({ content: `Invalid user argument ${flags.user}`});
+            await message.channel.send({ content: `Invalid user argument ${flags.user}`});
             return [undefined, undefined, undefined, page];
         }
     }
@@ -79,11 +79,11 @@ function resolveFlags(message, args) {
  * @param {string} guildId - The server (guild id) to get the songs for.
  * @returns {[ Object[], Object[], [float, float], int ] ]} - [array with user's songs, array with corresponding probabilities, sums for join and leave, selfexplanatory]
  */
-async function getSoundsWithProbabilities(taggedUser, joinFlag, leaveFlag, guildId) {
+function getSoundsWithProbabilities(taggedUser, joinFlag, leaveFlag, guildId) {
     const eventFlag = joinFlag || leaveFlag;
 
-    const [joinArray, joinProbabilities, joinSum] = (joinFlag || !eventFlag) ? await _getSoundsWithProbabilities(taggedUser, 'join', guildId) : [[],[]];
-    const [leaveArray, leaveProbabilities, leaveSum] = (leaveFlag || !eventFlag) ? await _getSoundsWithProbabilities(taggedUser, 'leave', guildId) : [[],[]];
+    const [joinArray, joinProbabilities, joinSum] = (joinFlag || !eventFlag) ? _getSoundsWithProbabilities(taggedUser, 'join', guildId) : [[],[]];
+    const [leaveArray, leaveProbabilities, leaveSum] = (leaveFlag || !eventFlag) ? _getSoundsWithProbabilities(taggedUser, 'leave', guildId) : [[],[]];
 
     const array = [...joinArray,...leaveArray];
     const probabilities = [...joinProbabilities,...leaveProbabilities];
@@ -98,8 +98,8 @@ async function getSoundsWithProbabilities(taggedUser, joinFlag, leaveFlag, guild
  * @param {string} guildId - The server (guild id) to get the songs for.
  * @returns {[ Object[], Object[], float ] ]} - [array with user's songs if flagged, the user, the probabilities for each song]
  */
-async function _getSoundsWithProbabilities(taggedUser, type, guildId) {
-    const array = await getUserSoundArray(taggedUser, type, guildId);
+function _getSoundsWithProbabilities(taggedUser, type, guildId) {
+    const array = getUserSoundArray(taggedUser, type, guildId);
     const [probabilities,sum] = findProbabilities(array);
     const realProbabilities = probabilities.map(prob => prob/sum);
 
@@ -142,7 +142,7 @@ async function printProbability(message, client, array, probabilities, [joinSum,
                     iconURL: client.user.displayAvatarURL({ size: 1024, dynamic: true })
                 });
         }
-        const sum = (i < joinCount) ? joinSum : leaveSum;
+        //const sum = (i < joinCount) ? joinSum : leaveSum; // this var was left here unused, probably by gavkoCZ
         const origin = array[i].chance_origin ? array[i].chance_origin.replaceAll('_', '\\_') : 'Defined by the remainder';
         embeds[j].addFields({
             name: `\`${array[i].file_name}\``,

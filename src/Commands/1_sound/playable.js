@@ -107,14 +107,14 @@ async function resolveUserFlag(message, args) {
 
     // Just user flag was triggered
     if(flags.user) {
-        const joinArray = (joinFlag || !eventFlag) ? await getUserSoundArray(taggedUser, 'join', message.guildId, false) : [];
-        const leaveArray = (leaveFlag || !eventFlag) ? await getUserSoundArray(taggedUser, 'leave', message.guildId, false) : [];
+        const joinArray = (joinFlag || !eventFlag) ? getUserSoundArray(taggedUser, 'join', message.guildId, false) : [];
+        const leaveArray = (leaveFlag || !eventFlag) ? getUserSoundArray(taggedUser, 'leave', message.guildId, false) : [];
         const array = [...joinArray,...leaveArray];
         return [ array, taggedUser, false, noPathFlag, page ];
     }
 
     //personal flag was triggered
-    const array = ( await getUserSoundArray(taggedUser, 'all', message.guildId, false) ).filter(song => {return song.file_path.startsWith(userDirComparison)});
+    const array = getUserSoundArray(taggedUser, 'all', message.guildId, false).filter(song => {return song.file_path.startsWith(userDirComparison)});
     if(eventFlag) {
         if (joinFlag) return [ array.filter(song => song.is_join), taggedUser, true, noPathFlag, page ];
         else if (leaveFlag) return [ array.filter(song => song.is_leave), taggedUser, true, noPathFlag, page ];

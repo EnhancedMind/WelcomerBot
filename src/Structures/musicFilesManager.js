@@ -716,9 +716,9 @@ const selectUserFilesStmt = db.prepare(/*sql*/`
  * @param {boolean} [onlyValid=true] - Wheter to include only valid sounds or all sounds. Defaults to true.
  * @returns {Object[]} - The sound file object array.
  */
-async function getUserSoundArray(userId, type, guildId, onlyValid = true) {
-    const guildSettings = await getSetting('guild', guildId);
-    const userSettings = await getSetting('user', userId);
+function getUserSoundArray(userId, type, guildId, onlyValid = true) {
+    const guildSettings = getSetting('guild', guildId);
+    const userSettings = getSetting('user', userId);
     const setting = { // check explicitly if either if false, otherwise default to true
         enabledJoin: !(guildSettings?.enabledJoin === false || userSettings?.enabledJoin === false),
         enabledDefaultJoin: !(guildSettings?.enabledDefaultJoin === false || userSettings?.enabledDefaultJoin === false),
@@ -752,7 +752,7 @@ async function getUserSoundArray(userId, type, guildId, onlyValid = true) {
  * @returns {Promise<Object>} - A promise that resolves to a sound file object.
  */
 async function getUserSoundFile(userId, type, guildId) {
-    const selectionArray = await getUserSoundArray(userId, type, guildId);
+    const selectionArray = getUserSoundArray(userId, type, guildId);
 
     if(selectionArray.length === 0) return null;
 
