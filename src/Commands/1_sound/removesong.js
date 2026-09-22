@@ -13,6 +13,7 @@ const { parseArgs } = require('node:util');
 const { exists } = require('../../utils/fsUtils.js');
 const { defaultDirComparison, everyoneDirComparison, userDirComparison, musicDirComparison, invalidateSoundFile } = require('../../Structures/musicFilesManager.js');
 const { db } = require('../../Structures/dbManager.js');
+const { consoleLog } = require('../../Data/Log.js');
 
 const helpText = 
 `This command allows you to mark songs not be used or remove them completely.
@@ -101,10 +102,14 @@ module.exports = new Command({
             await channel.send(`${success} Successfully removed the file \`${file}\` from database`);
         }
         else {
-            const invalidDetails = await invalidateSoundFile(file);
-
-            if (invalidDetails) await channel.send(`${success} Successfully invalidated the file \`${file}\`!`);
-            else await channel.send(`${warning} Failed to invalidate file \`${file}\`!`);
+            try {
+                const invalidDetails = await invalidateSoundFile(file);
+                if (invalidDetails) await channel.send(`${success} Successfully invalidated the file \`${file}\`!`);
+            }
+            catch (err) {
+                consoleLog(`[ERR] Failed to invalidate file from removesong command ${file}:`, err);
+                await channel.send(`${warning} Failed to invalidate file \`${file}\`!, \`${err.message}\``);
+            }
         }
     }
 });
