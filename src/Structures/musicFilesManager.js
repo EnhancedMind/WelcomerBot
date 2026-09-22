@@ -24,22 +24,6 @@ if (!fs.existsSync(reencodedDirAbs)) {
     fs.mkdirSync(reencodedDirAbs, { recursive: true });
 }
 
-const selectActiveDbFilesStmt = db.prepare(/*sql*/`SELECT id, file_path, source_hash FROM files WHERE deleted_at IS NULL`);
-
-const insertStmt = db.prepare(/*sql*/`
-    INSERT INTO files (source_hash, file_path, file_name, target_id, chance, chance_origin, is_join, is_leave, play_once, is_valid)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`);
-
-const updateStmt = db.prepare(/*sql*/`
-    UPDATE files 
-    SET chance = ?, chance_origin = ?, is_join = ?, is_leave = ?, play_once = ?, is_valid = ?, target_id = ?
-    WHERE id = ?
-`);
-
-const softDeleteStmt = db.prepare(/*sql*/`
-    UPDATE files SET deleted_at = ? WHERE id = ?
-`);
 
 /**
  * Syncs the sound files from the music directory to the database.
@@ -87,46 +71,268 @@ async function syncSoundFiles({ forceReencode = false } = {}) { // = {} is as de
         }
     }
 
-    // db sync
-    // fetch active files currently in the database to cross-reference
-    const activeDbFiles = selectActiveDbFilesStmt.all();
-    const dbMap = new Map(activeDbFiles.map(f => [f.file_path, { id: f.id, hash: f.source_hash }]));
+    // Load current active DB records into a map (Key: file_path -> dbRow)
+    const dbMap = new Map(
+        selectActiveDbFilesStmt.all().map(row => [row.file_path, row])
+    );
 
-    db.transaction(() => {
-        const nowUnixTimestamp = Math.floor(Date.now() / 1000);
-
-        // compare what we found on disk against what is in the database
-        for (const [targetId, soundList] of diskFiles.entries()) {
-            for (const sound of soundList) {
-                const dbFile = dbMap.get(sound.path);
-                if (dbFile && sound.hash == dbFile.hash) {
-                    // File exists on disk AND in DB. Update attributes in case folder tags/chances changed.
-                    updateStmt.run(
-                        sound.chance, sound.chanceOrigin,
-                        sound.join ? 1 : 0, sound.leave ? 1 : 0, sound.once ? 1 : 0, sound.valid ? 1 : 0,
-                        targetId, dbFile.id
-                    );
-                    dbMap.delete(sound.path);
-                }
-                else {
-                    // file is on disk but not in DB
-                    insertStmt.run(
-                        sound.hash, sound.path, sound.filename, targetId, 
-                        sound.chance, sound.chanceOrigin, 
-                        sound.join ? 1 : 0, sound.leave ? 1 : 0, sound.once ? 1 : 0, sound.valid ? 1 : 0
-                    );
-                }
-            }
-        }
-
-        // Any keys left in dbMap were NOT found on the disk. Soft-delete them.
-        for (const [missingPath, missingProperties] of dbMap.entries()) {
-            softDeleteStmt.run(nowUnixTimestamp, missingProperties.id);
-        }
-    })();
+    db.transaction(() => syncTransactionLogic(diskFiles, dbMap))();
 
     await reencodeFiles(forceReencode);
 }
+
+
+const selectActiveDbFilesStmt = db.prepare(/*sql*/`
+    SELECT * FROM files WHERE deleted_at IS NULL
+`);
+
+const insertStmt = db.prepare(/*sql*/`
+    INSERT INTO files (
+        source_hash, file_path, file_name, target_id, chance, 
+        chance_origin, is_join, is_leave, play_once, is_valid
+    )
+    VALUES (
+        @source_hash, @file_path, @file_name, @target_id, @chance, 
+        @chance_origin, @is_join, @is_leave, @play_once, @is_valid
+    )
+`);
+
+const updatePathAndMetadataByIdStmt = db.prepare(/*sql*/`
+    UPDATE files 
+    SET file_path = @file_path,
+        file_name = @file_name,
+        chance = @chance,
+        chance_origin = @chance_origin,
+        is_join = @is_join,
+        is_leave = @is_leave,
+        play_once = @play_once,
+        is_valid = @is_valid
+    WHERE id = @id
+`);
+
+const updateMetadataByIdStmt = db.prepare(/*sql*/`
+    UPDATE files 
+    SET file_name = @file_name,
+        chance = @chance,
+        chance_origin = @chance_origin,
+        is_join = @is_join,
+        is_leave = @is_leave,
+        play_once = @play_once,
+        is_valid = @is_valid
+    WHERE id = @id
+`);
+
+const softDeleteStmt = db.prepare(/*sql*/`
+    UPDATE files SET deleted_at = @deleted_at WHERE id = @id
+`);
+
+/**
+ * Executes the sync process inside a database transaction context.
+ * @param {Map<string, Object>} diskFiles - Map of path -> disk file metadata
+ * @param {Map<string, Object>} unmatchedDbMap - Map of unmatched DB records
+ */
+function syncTransactionLogic(diskFiles, unmatchedDbMap) {
+    const nowUnixTimestamp = Math.floor(Date.now() / 1000);
+
+    // Counters for logging
+    let exactMatchCount = 0, metadataUpdatedCount = 0, renameCount = 0, insertCount = 0, softDeleteCount = 0;
+
+    // stores all the files that do not have an exact match in the DB (by path AND hash)
+    const unmatchedDiskFiles = [];
+
+    // I think I'm going to comment this like AI would as I already see I will get disoriented in the future lol
+    // Step 1: Iterate through all disk files and check if they have an exact match in the DB (by path AND hash).
+    //      If an exact match is found, update the metadata in the DB (because folder chance can change individual file chance even without changing path)
+    //      and remove it from unmatchedDbMap, as remaining entries will be used later to track moves/renames
+    //      Files that do not have an exact match are pushed to unmatchedDiskFiles for further processing in the next phases
+    for (const [targetId, soundArray] of diskFiles.entries()) {
+        if (!Array.isArray(soundArray)) continue;
+
+        for (const diskFile of soundArray) {
+            const dbRow = unmatchedDbMap.get(diskFile.path);
+
+            if (dbRow && dbRow.source_hash == diskFile.hash) {
+                // only update the db if the metadata has actually changed
+                if (hasMetadataChanged(diskFile, dbRow)) {
+                    updateMetadataByIdStmt.run({
+                        file_name: diskFile.filename,
+                        chance: diskFile.chance ?? null,
+                        chance_origin: diskFile.chanceOrigin ?? null,
+                        is_join: diskFile.join ? 1 : 0,
+                        is_leave: diskFile.leave ? 1 : 0,
+                        play_once: diskFile.once ? 1 : 0,
+                        is_valid: diskFile.valid ? 1 : 0,
+                        id: dbRow.id
+                    });
+                    metadataUpdatedCount++;
+                }
+                else exactMatchCount++;
+
+                unmatchedDbMap.delete(diskFile.path);
+            }
+            else {
+                unmatchedDiskFiles.push({ ...diskFile, targetId });
+            }
+        }
+    }
+
+    // this map will store all the items that are in db but no longer on disk, to be found as renamed/moved, or to be soft-deleted if they are truly missing
+    const dbByTargetAndHash = new Map();
+
+    for (const dbRow of unmatchedDbMap.values()) {
+        const key = `${dbRow.target_id}:${dbRow.source_hash}`;
+        if (!dbByTargetAndHash.has(key)) dbByTargetAndHash.set(key, []);
+        dbByTargetAndHash.get(key).push(dbRow);
+    }
+
+    // will store all the files that are newly inserted
+    const newlyInsertedDiskFiles = [];
+
+    // Step 2: Iterate through unmatchedDiskFiles and check if they have possible candidate matches in the DB
+    //      The candidate matches are files with same targetId and same hash, but different path (indicating a move/rename)
+    //      If there are multiple candidates for same target and hash, we will score them based on scorePathSimilarity and pick the best match
+    //      If a match is found, we update the path and metadata in the DB and remove it from dbByTargetAndHash
+    //      If no match is found, we push the disk file to newlyInsertedDiskFiles for insertion in the next phase
+    for (const diskFile of unmatchedDiskFiles) {
+        const key = `${diskFile.targetId}:${diskFile.hash}`;
+        const candidates = dbByTargetAndHash.get(key);
+
+        if (candidates && candidates.length > 0) {
+            let bestIndex = 0;
+
+            // resolve multiple candidate matches via path similarity
+            if (candidates.length > 1) {
+                let highestScore = -1;
+                candidates.forEach((cand, idx) => {
+                    const score = scorePathSimilarity(cand.file_path, diskFile.path);
+                    if (score > highestScore) {
+                        highestScore = score;
+                        bestIndex = idx;
+                    }
+                });
+            }
+
+            const matchedDb = candidates.splice(bestIndex, 1)[0]; // splice automatically removes the matched candidate from the array
+            if (candidates.length == 0) dbByTargetAndHash.delete(key);
+
+            updatePathAndMetadataByIdStmt.run({
+                file_path: diskFile.path,
+                file_name: diskFile.filename,
+                chance: diskFile.chance ?? null,
+                chance_origin: diskFile.chanceOrigin ?? null,
+                is_join: diskFile.join ? 1 : 0,
+                is_leave: diskFile.leave ? 1 : 0,
+                play_once: diskFile.once ? 1 : 0,
+                is_valid: diskFile.valid ? 1 : 0,
+                id: matchedDb.id
+            });
+            renameCount++;
+        }
+        else {
+            newlyInsertedDiskFiles.push(diskFile);
+        }
+    }
+
+    // Step 3: Inserts & Soft Delete
+    // Insert truly new files
+    for (const diskFile of newlyInsertedDiskFiles) {
+        insertStmt.run({
+            source_hash: diskFile.hash,
+            file_path: diskFile.path,
+            file_name: diskFile.filename,
+            target_id: diskFile.targetId,
+            chance: diskFile.chance ?? null,
+            chance_origin: diskFile.chanceOrigin ?? null,
+            is_join: diskFile.join ? 1 : 0,
+            is_leave: diskFile.leave ? 1 : 0,
+            play_once: diskFile.once ? 1 : 0,
+            is_valid: diskFile.valid ? 1 : 0
+        });
+        insertCount++;
+    }
+
+    // Soft delete missing DB rows
+    for (const candidates of dbByTargetAndHash.values()) {
+        for (const dbRow of candidates) {
+            softDeleteStmt.run({
+                deleted_at: nowUnixTimestamp, 
+                id: dbRow.id
+            });
+            softDeleteCount++;
+        }
+    }
+
+    // Logging output
+    const totalAffected = metadataUpdatedCount + renameCount + insertCount + softDeleteCount;
+    const totalSynced = exactMatchCount + totalAffected;
+    consoleLog(`[SYNC DB] Completed file sync: ${totalSynced} files synced. ${totalAffected} DB rows affected: ${metadataUpdatedCount} tags updated, ${renameCount} moved/renamed, ${insertCount} inserted, ${softDeleteCount} soft-deleted.`);
+}
+
+
+/**
+ * Checks if the disk metadata differs from what is currently saved in the DB row.
+ * Handles boolean-to-integer conversions and undefined/null normalization.
+ * @param {Object} diskFile - The metadata from the disk.
+ * @param {Object} dbRow - The corresponding row from the database.
+ * @return {boolean} - True if metadata has changed, false otherwise.
+ */
+function hasMetadataChanged(diskFile, dbRow) {
+    return (
+        dbRow.file_name !== diskFile.filename ||
+        (dbRow.chance ?? null) !== (diskFile.chance ?? null) ||
+        (dbRow.chance_origin ?? null) !== (diskFile.chanceOrigin ?? null) ||
+        dbRow.is_join !== (diskFile.join ? 1 : 0) ||
+        dbRow.is_leave !== (diskFile.leave ? 1 : 0) ||
+        dbRow.play_once !== (diskFile.once ? 1 : 0) ||
+        dbRow.is_valid !== (diskFile.valid ? 1 : 0)
+    );
+}
+
+
+/**
+ * Strips metadata tags ($ch=, $join, etc.) from an input for clean name comparison
+ * @param {string} input - The filename to clean
+ * @return {string} - The cleaned filename
+ */
+function cleanFileName(input) {
+    return input.replace(/\$ch=[0-9.]+|\$join|\$leave|\$once|\$used/gi, '');
+}
+
+
+/**
+ * Calculates a similarity score between a candidate DB path and a disk path, this feels kidna sloppy but works for now. V češtině je jednotkou dočasnosti 1 furt.
+ * @param {string} dbPath - The path from the database.
+ * @param {string} diskPath - The path from the disk.
+ * @return {number} - The similarity score. Higher scores means greater similarity
+ */
+function scorePathSimilarity(dbPath, diskPath) {
+    let score = 0;
+    const dbFileName = path.basename(dbPath);
+    const diskFileName = path.basename(diskPath);
+
+    // exact raw filename match
+    if (dbFileName == diskFileName) {
+        score += 10;
+    }
+    // cleaned base filename match, ignoring $tags
+    else if (cleanFileName(dbFileName) == cleanFileName(diskFileName)) {
+        score += 5;
+    }
+
+    // same parent directory name match
+    const dbDir = path.basename(path.dirname(dbPath));
+    const diskDir = path.basename(path.dirname(diskPath));
+    if (dbDir == diskDir) {
+        score += 3;
+    }
+    // cleaned parent directory name match, ignoring $tags
+    else if (cleanFileName(dbDir) == cleanFileName(diskDir)) {
+        score += 2;
+    }
+
+    return score;
+}
+
 
 /**
  * Prefix DFS through the directory, making an array tree of the directory with valid sound files as leaves and directories as inner nodes
