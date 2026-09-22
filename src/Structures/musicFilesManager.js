@@ -1,4 +1,4 @@
-const { readdir, mkdir, rename, stat, readFile, rm } = require('fs/promises');
+const { readdir, mkdir, rename, stat, rm } = require('fs/promises');
 const fs = require('fs')
 const path = require('path');
 const Fuse = require('fuse.js');
@@ -24,6 +24,8 @@ if (!fs.existsSync(reencodedDirAbs)) {
     fs.mkdirSync(reencodedDirAbs, { recursive: true });
 }
 
+
+const xxhashPromise = xxhash();
 
 /**
  * Syncs the sound files from the music directory to the database.
@@ -59,15 +61,16 @@ async function syncSoundFiles({ forceReencode = false } = {}) { // = {} is as de
 
 
     // hash all files
-    const { create64 } = await xxhash();
+    const { create64 } = await xxhashPromise;
 
     for (const soundList of diskFiles.values()) {
         for (const sound of soundList) {
-            sound.hash = create64()
-                .update((await stat(sound.path)).size.toString())
-                .update(await readFile(sound.path))
-                .digest()
-                .toString(16).padStart(16, '0')
+            const hasher = create64().update((await stat(sound.path)).size.toString());
+            const stream = fs.createReadStream(sound.path);
+            for await (const chunk of stream) {
+                hasher.update(chunk);
+            }
+            sound.hash = hasher.digest().toString(16).padStart(16, '0');
         }
     }
 
